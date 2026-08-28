@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PageRoute, RegistrationFormData } from '../../types';
 import { Button } from '../common/Button';
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
-import { SparkleDoodle, TrophyBadge } from '../illustrations/MicroDoodles';
-import { CheckCircle2, ArrowRight, ArrowLeft, ShieldCheck, User, Mail, Phone, School, Layers, QrCode, Download } from 'lucide-react';
+import { SparkleDoodle } from '../illustrations/MicroDoodles';
+import { CheckCircle2, ArrowRight, ArrowLeft, QrCode, Trophy, AlertCircle, Loader2, XCircle, Check } from 'lucide-react';
+import { supabase } from '../../client_config';
 
 interface RegisterPageProps {
   onNavigate: (page: PageRoute) => void;
@@ -12,6 +13,12 @@ interface RegisterPageProps {
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Live team name availability state
+  const [teamNameStatus, setTeamNameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [teamNameFeedback, setTeamNameFeedback] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     teamName: '',
@@ -19,18 +26,63 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     teamLeaderName: '',
     leaderEmail: '',
     leaderPhone: '',
-    college: '',
-    teamSize: 4,
+    college: 'Shri Madhwa Vadiraja Institute of Technology and Management',
+    teamSize: 5,
     member2Name: '',
     member2Email: '',
     member3Name: '',
     member3Email: '',
     member4Name: '',
     member4Email: '',
+    member5Name: '',
+    member5Email: '',
     projectIdea: '',
     githubOrg: '',
     acceptRules: true
   });
+
+  // Debounced real-time team name availability check
+  useEffect(() => {
+    const rawName = formData.teamName.trim();
+    if (rawName.length < 3) {
+      setTeamNameStatus('idle');
+      setTeamNameFeedback(null);
+      return;
+    }
+
+    setTeamNameStatus('checking');
+    setTeamNameFeedback('Checking availability...');
+
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('registrations')
+          .select('id')
+          .ilike('team_name', rawName)
+          .limit(1);
+
+        if (error) {
+          // If query restricted or network hiccup, don't hard block
+          setTeamNameStatus('idle');
+          setTeamNameFeedback(null);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          setTeamNameStatus('taken');
+          setTeamNameFeedback(`"${rawName}" is already taken. Please choose another squad name.`);
+        } else {
+          setTeamNameStatus('available');
+          setTeamNameFeedback(`"${rawName}" is available!`);
+        }
+      } catch (err) {
+        setTeamNameStatus('idle');
+        setTeamNameFeedback(null);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.teamName]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -42,14 +94,84 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (currentStep < 3) {
+    setErrorMessage(null);
+
+    if (currentStep === 1) {
+      // Quick check if team name is already taken
+      setIsSubmitting(true);
+      try {
+        const { data: existing } = await supabase
+          .from('registrations')
+          .select('id')
+          .ilike('team_name', formData.teamName.trim())
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          setErrorMessage(`Squad name "${formData.teamName.trim()}" is already taken! Please choose a unique team name.`);
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (err) {
+        // Continue if select is restricted by RLS
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      setCurrentStep(2);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+    } else if (currentStep < 3) {
       setCurrentStep(prev => prev + 1);
       window.scrollTo({ top: 120, behavior: 'smooth' });
     } else {
-      setIsSubmitted(true);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
+      setIsSubmitting(true);
+      try {
+        const { error } = await supabase.from('registrations').insert([
+          {
+            team_name: formData.teamName.trim(),
+            track: formData.track,
+            team_leader_name: formData.teamLeaderName.trim(),
+            leader_email: formData.leaderEmail.trim().toLowerCase(),
+            leader_phone: formData.leaderPhone.trim(),
+            college: formData.college.trim(),
+            team_size: Number(formData.teamSize) || 5,
+            member2_name: formData.member2Name.trim(),
+            member2_email: formData.member2Email.trim().toLowerCase(),
+            member3_name: formData.member3Name.trim(),
+            member3_email: formData.member3Email.trim().toLowerCase(),
+            member4_name: formData.member4Name.trim(),
+            member4_email: formData.member4Email.trim().toLowerCase(),
+            member5_name: formData.member5Name?.trim() || null,
+            member5_email: formData.member5Email?.trim().toLowerCase() || null,
+            project_idea: formData.projectIdea.trim(),
+            github_org: formData.githubOrg?.trim() || null,
+            accept_rules: formData.acceptRules
+          }
+        ]);
+
+        if (error) {
+          console.error('Supabase registration error:', error);
+          if (
+            error.code === '23505' ||
+            error.message?.toLowerCase().includes('unique') ||
+            error.message?.toLowerCase().includes('duplicate')
+          ) {
+            setErrorMessage(`Squad name "${formData.teamName.trim()}" is already registered. Please go back to Step 1 and choose a unique team name.`);
+          } else {
+            setErrorMessage(error.message || 'Failed to submit registration. Please try again.');
+          }
+          return;
+        }
+
+        setIsSubmitted(true);
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+      } catch (err: any) {
+        console.error('Unexpected error:', err);
+        setErrorMessage(err.message || 'An unexpected error occurred while saving data.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -115,9 +237,29 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                 {currentStep === 1 && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div>
-                      <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                        Squad / Team Name *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-mono font-bold text-ink uppercase">
+                          Squad / Team Name *
+                        </label>
+                        {teamNameStatus === 'checking' && (
+                          <span className="text-[11px] font-mono text-amber-700 font-bold flex items-center gap-1 animate-pulse">
+                            <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
+                            Checking availability...
+                          </span>
+                        )}
+                        {teamNameStatus === 'available' && (
+                          <span className="text-[11px] font-mono text-emerald-700 font-bold flex items-center gap-1 bg-emerald-100 border border-emerald-400 px-2 py-0.5 rounded-full animate-in fade-in">
+                            <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                            Name Available
+                          </span>
+                        )}
+                        {teamNameStatus === 'taken' && (
+                          <span className="text-[11px] font-mono text-rose-700 font-bold flex items-center gap-1 bg-rose-100 border border-rose-400 px-2 py-0.5 rounded-full animate-in shake duration-200">
+                            <XCircle className="w-3 h-3 text-rose-600" />
+                            Already Taken
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         name="teamName"
@@ -125,8 +267,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         value={formData.teamName}
                         onChange={handleChange}
                         placeholder="e.g. CodeTroopers, ByteBrawlers"
-                        className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                        className={`w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-sm focus:outline-none focus:ring-2 transition-all ${
+                          teamNameStatus === 'taken'
+                            ? 'border-2 border-red-500 focus:ring-red-500 bg-red-50/50'
+                            : teamNameStatus === 'available'
+                            ? 'border-2 border-emerald-500 focus:ring-emerald-500'
+                            : 'focus:ring-hpl-purple'
+                        }`}
                       />
+                      {teamNameStatus === 'taken' && teamNameFeedback && (
+                        <p className="mt-1.5 text-xs text-red-600 font-mono font-bold flex items-center gap-1 animate-in fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          {teamNameFeedback}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -155,11 +309,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         <select
                           name="teamSize"
                           value={formData.teamSize}
+                          disabled
                           onChange={handleChange}
                           className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                         >
-                          <option value={3}>3 Members</option>
-                          <option value={4}>4 Members (Recommended)</option>
+                          <option value={5} >5 Members</option>
                         </select>
                       </div>
                     </div>
@@ -294,39 +448,63 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                           className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
                         />
                       </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                          Member 4 Name & Role *
+                        </label>
+                        <input
+                          type="text"
+                          name="member4Name"
+                          required
+                          value={formData.member4Name}
+                          onChange={handleChange}
+                          placeholder="e.g. Pooja Hegde (AI/ML)"
+                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                          Member 4 Email *
+                        </label>
+                        <input
+                          type="email"
+                          name="member4Email"
+                          required
+                          value={formData.member4Email}
+                          onChange={handleChange}
+                          placeholder="member4@college.edu"
+                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                        />
+                      </div>
 
-                      {Number(formData.teamSize) === 4 && (
-                        <>
-                          <div>
-                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                              Member 4 Name & Role *
-                            </label>
-                            <input
-                              type="text"
-                              name="member4Name"
-                              required
-                              value={formData.member4Name}
-                              onChange={handleChange}
-                              placeholder="e.g. Pooja Hegde (AI/ML)"
-                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                              Member 4 Email *
-                            </label>
-                            <input
-                              type="email"
-                              name="member4Email"
-                              required
-                              value={formData.member4Email}
-                              onChange={handleChange}
-                              placeholder="member4@college.edu"
-                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                            />
-                          </div>
-                        </>
-                      )}
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                          Member 5 Name & Role *
+                        </label>
+                        <input
+                          type="text"
+                          name="member5Name"
+                          required
+                          value={formData.member5Name || ''}
+                          onChange={handleChange}
+                          placeholder="e.g. Rahul Shenoy (UI/UX)"
+                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                          Member 5 Email *
+                        </label>
+                        <input
+                          type="email"
+                          name="member5Email"
+                          required
+                          value={formData.member5Email || ''}
+                          onChange={handleChange}
+                          placeholder="member5@college.edu"
+                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -341,24 +519,23 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <input
                         type="text"
                         name="college"
-                        required
+                        disabled
                         value={formData.college}
-                        onChange={handleChange}
-                        placeholder="e.g. SMVITM Bantakal, NMAMIT Nitte, MIT Manipal"
-                        className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                        className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-dark text-ink font-display font-bold text-sm cursor-not-allowed opacity-90"
                       />
                     </div>
 
                     <div>
                       <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                        GitHub Organization / Team Username (Optional)
+                        Drive Link (Project Video) *
                       </label>
                       <input
-                        type="text"
+                        type="url"
                         name="githubOrg"
+                        required
                         value={formData.githubOrg}
                         onChange={handleChange}
-                        placeholder="https://github.com/your-team"
+                        placeholder="https://drive.google.com/..."
                         className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                       />
                     </div>
@@ -381,6 +558,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   </div>
                 )}
 
+                {errorMessage && (
+                  <div className="p-3 bg-red-100 border-2 border-red-500 rounded-xl flex items-center gap-3 text-red-800 text-xs font-mono font-bold animate-in fade-in">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between pt-4 border-t-2 border-ink">
                   {currentStep > 1 ? (
@@ -389,6 +573,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       variant="outline"
                       size="md"
                       onClick={handleBack}
+                      disabled={isSubmitting}
                       icon={<ArrowLeft className="w-4 h-4" />}
                       iconPosition="left"
                     >
@@ -400,9 +585,14 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     type="submit"
                     variant="purple"
                     size="lg"
-                    icon={<ArrowRight className="w-5 h-5" />}
+                    disabled={isSubmitting}
+                    icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
                   >
-                    {currentStep === 3 ? 'SUBMIT SQUAD REGISTRATION' : 'NEXT STEP'}
+                    {isSubmitting
+                      ? 'REGISTERING SQUAD...'
+                      : currentStep === 3
+                      ? 'SUBMIT SQUAD REGISTRATION'
+                      : 'NEXT STEP'}
                   </Button>
                 </div>
               </form>

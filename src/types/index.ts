@@ -111,6 +111,8 @@ export interface RegistrationFormData {
   member3Email: string;
   member4Name: string;
   member4Email: string;
+  member5Name?: string;
+  member5Email?: string;
   projectIdea: string;
   githubOrg?: string;
   acceptRules: boolean;

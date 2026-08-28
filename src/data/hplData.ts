@@ -551,7 +551,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-2',
     category: 'Participation',
     question: 'How many members can be in a team / squad?',
-    answer: 'Each squad must have 3 to 4 members. We recommend having a balanced mix of frontend, backend, AI/ML or hardware, and UI/UX design capabilities.'
+    answer: 'Each squad must have 5 members. We recommend having a balanced mix of frontend, backend, AI/ML or hardware, and UI/UX design capabilities.'
   },
   {
     id: 'faq-3',

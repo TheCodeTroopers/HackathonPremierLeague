@@ -343,14 +343,14 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                       </div>
                     </div>
 
-                    {/* Sep 4 */}
+                    {/* Sep 5 */}
                     <div className="flex items-start gap-2.5">
                       <div className="mt-1 flex-shrink-0">
                         <Clock className="w-4 h-4 text-[#D97706]" />
                       </div>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 4</span>
+                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 5</span>
                           <span className="bg-[#D97706] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">DEADLINE</span>
                         </div>
                         <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Registration Close (11:59 PM)</p>

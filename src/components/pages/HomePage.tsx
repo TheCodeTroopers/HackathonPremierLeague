@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PageRoute } from '../../types';
 import { HeroIllustration } from '../illustrations/HeroIllustration';
 import {
   Week1Illustration, Week2Illustration, Week3Illustration,
@@ -14,7 +15,7 @@ import {
 } from 'lucide-react';
 
 interface HomePageProps {
-  onNavigate: (route: string) => void;
+  onNavigate: (route: PageRoute) => void;
   onSelectSquad?: (squadId: string) => void;
   isLoaded?: boolean;
 }
