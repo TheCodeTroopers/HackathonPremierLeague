@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HPL — Hackathon Premier League | Code. Collaborate. Conquer.</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            paper: {
+              light: '#FBF6E8',
+              DEFAULT: '#F5EDCC',
+              dark: '#E8DFC8',
+              warm: '#F5EDCC',
+              cream: '#FDFAF0',
+            },
+            ink: {
+              DEFAULT: '#1E1B4B',
+              dark: '#111827',
+              muted: '#4B5563',
+            },
+            hpl: {
+              coral: '#E11D48',
+              orange: '#EA580C',
+              gold: '#F59E0B',
+              yellow: '#FBBF24',
+              emerald: '#059669',
+              teal: '#0D9488',
+              blue: '#2563EB',
+              indigo: '#3730A3',
+              navy: '#1E1B4B',
+              purple: '#5B21B6',
+              violet: '#7C3AED',
+            }
+          },
+          fontFamily: {
+            display: ['Space Grotesk', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            marker: ['Permanent Marker', 'cursive', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          boxShadow: {
+            'sketch': '4px 4px 0px #1E1B4B',
+            'sketch-lg': '6px 6px 0px #1E1B4B',
+            'sketch-xl': '8px 8px 0px #1E1B4B',
+            'sketch-sm': '2px 2px 0px #1E1B4B',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts for Comic Brush / Hand-Drawn Display Art -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Permanent+Marker&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
+
+  <!-- React 18 & Babel for instant browser execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- GSAP, ScrollTrigger & Anime.js for Comic Entrance & Scroll Animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+
+  <style>
+    @media (pointer: fine) {
+      *, *::before, *::after, html, body, a, button, input, select, textarea, [role="button"], .cursor-pointer {
+        cursor: none !important;
+      }
+    }
+    body {
+      background-color: #FBF9F2;
+      color: #1E1B4B;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, .font-display {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .font-marker {
+      font-family: 'Permanent Marker', cursive, sans-serif;
+    }
+    /* Kinetic Animations */
+    @keyframes marqueeSlow { 0%{transform:translateX(0%)} 100%{transform:translateX(-50%)} }
+    @keyframes textGlowOrange { 0%,100%{text-shadow:2px 2px 0 #1E1B4B,0 0 10px rgba(234,88,12,.2)} 50%{text-shadow:3px 3px 0 #1E1B4B,0 0 22px rgba(234,88,12,.45)} }
+    @keyframes textGlowPurple { 0%,100%{text-shadow:2px 2px 0 #1E1B4B,0 0 10px rgba(79,70,229,.2)} 50%{text-shadow:3px 3px 0 #1E1B4B,0 0 22px rgba(79,70,229,.45)} }
+    @keyframes floatSlow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+    .animate-marquee { display:flex; width:200%; animation:marqueeSlow 28s linear infinite; }
+    .animate-marquee:hover { animation-play-state:paused; }
+    .animate-glow-orange { animation:textGlowOrange 3s ease-in-out infinite; }
+    .animate-glow-purple { animation:textGlowPurple 3s ease-in-out infinite; }
+    .sketch-border { border: 2px solid #1E1B4B; }
+    .sketch-border-thick { border: 3px solid #1E1B4B; }
+    .shadow-sketch { box-shadow: 4px 4px 0px #1E1B4B; }
+    .shadow-sketch-sm { box-shadow: 2px 2px 0px #1E1B4B; }
+    .shadow-sketch-lg { box-shadow: 6px 6px 0px #1E1B4B; }
+    ::-webkit-scrollbar { width: 9px; }
+    ::-webkit-scrollbar-track { background: #FBF9F2; border-left: 2px solid #1E1B4B; }
+    ::-webkit-scrollbar-thumb { background: #1E1B4B; border-radius: 4px; }
+  </style>
+
+</head>
+<body class="selection:bg-amber-400 selection:text-ink min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const PREVIEW_PILLARS = [
+      { number: '01', title: 'THE IDEA', subtitle: 'Why a Premier League?', emoji: '💡', desc: 'Traditional 24-hour hackathons reward hasty hacks. HPL turns innovation into a premier 3-week league where solutions evolve through real engineering sprints.', points: ['3 progressive match weeks instead of overnight crunch', 'Head-to-head match fixtures for real problem-solving', 'Alignment with regional & municipal challenges'] },
+      { number: '02', title: 'THE SQUADS', subtitle: 'Cross-Disciplinary Powerhouses', emoji: '👥', desc: 'Squads assemble with 3 to 4 specialized builders: backend, frontend, AI/ML, and product presentation.', points: ['Balanced 3-4 member squads across technology disciplines', 'Official squad badges, numbers, and team repos', 'Assigned mentor advisors for each challenge track'] },
+      { number: '03', title: 'THE MATCHES', subtitle: 'Head-to-Head Showdowns', emoji: '⚔️', desc: 'Every week features official Match Days. Squads face off against peer teams, presenting working software demos.', points: ['Win: +3 Points | Tie: +1 Point | Loss: 0 Points', 'Live demo battles judged on code quality & UX', 'Real-time points allocation to the public leaderboard'] },
+      { number: '04', title: 'THE FEEDBACK', subtitle: 'Iterate & Engineer', emoji: '💬', desc: 'After every match day, squads receive detailed technical critiques. Week 2 introduces a surprise requirement.', points: ['1-on-1 mentor office hours and code reviews', 'Feature twists testing modularity and clean abstractions', 'Continuous improvement rewarded over static prototypes'] },
+      { number: '05', title: 'THE RANKINGS', subtitle: 'Climb the Table', emoji: '📈', desc: 'The live leaderboard updates dynamically after every evaluation round based on cumulative match points.', points: ['Dynamic table tracking Wins, Ties, Losses, and Points', 'Movement indicators (↑ Rising, → Stable, ↓ Falling)', 'Top 4 squads qualify for the Physical Grand Playoffs'] },
+      { number: '06', title: 'THE PLAYOFFS', subtitle: 'Knockout Arena', emoji: '🏟️', desc: 'The Top 4 ranked squads enter the playoff stadium for high-stakes semifinal and championship showdowns.', points: ['Physical arena sprint at SMVITM Bantakal Auditorium', 'Live code stress tests and jury cross-examinations', 'Bronze 3rd-place match and Championship Grand Finale'] },
+      { number: '07', title: 'THE CHAMPION', subtitle: 'Trophy & Legacy', emoji: '🏆', desc: 'The Grand Champion lifts the golden HPL Trophy, claims ₹30,000+ cash prize pool, and secures incubation.', points: ['Official Golden HPL Champion Trophy & Medals', '₹30K prize pool and cloud infrastructure credits', 'Direct angel incubation and tech internship fast-tracks'] }
+    ];
+
+    function App() {
+      const [isLoading, setIsLoading] = useState(true);
+      const [loadingProgress, setLoadingProgress] = useState(0);
+      const [activePage, setActivePage] = useState('home');
+      const [selectedWeek, setSelectedWeek] = useState(1);
+      const [pillarIdx, setPillarIdx] = useState(0);
+      const selectedPillar = PREVIEW_PILLARS[pillarIdx];
+
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setLoadingProgress(prev => {
+            if (prev >= 100) {
+              clearInterval(interval);
+              setTimeout(() => setIsLoading(false), 450);
+              return 100;
+            }
+            return Math.min(100, prev + 1.6);
+          });
+        }, 32);
+        return () => clearInterval(interval);
+      }, []);
+
+      useEffect(() => {
+        const runScrollAnimations = () => {
+          if (window.gsap && window.ScrollTrigger) {
+            window.gsap.registerPlugin(window.ScrollTrigger);
+            window.gsap.fromTo('.scroll-bento-card', 
+              { y: 55, opacity: 0, scale: 0.9 },
+              {
+                scrollTrigger: { trigger: '#about', start: 'top 82%', toggleActions: 'play reverse play reverse' },
+                y: 0, opacity: 1, scale: 1, stagger: 0.15, duration: 0.7, ease: 'back.out(1.6)'
+              }
+            );
+            window.gsap.fromTo('.scroll-journey-card',
+              { y: 50, opacity: 0, scale: 0.85 },
+              {
+                scrollTrigger: { trigger: '#journey', start: 'top 80%', toggleActions: 'play reverse play reverse' },
+                y: 0, opacity: 1, scale: 1, stagger: 0.18, duration: 0.75, ease: 'back.out(1.7)'
+              }
+            );
+          }
+        };
+        const timer = setTimeout(runScrollAnimations, 100);
+        return () => clearTimeout(timer);
+      }, []);
+
+      // Determine stage text for preview
+      let stageTxt = 'INITIALIZING THE LEAGUE...';
+      let stageDot = '#6366F1';
+      if (loadingProgress >= 10 && loadingProgress < 30) {
+        stageTxt = 'ASSEMBLING THE CHAMPIONSHIP...';
+        stageDot = '#D97706';
+      } else if (loadingProgress >= 30 && loadingProgress < 50) {
+        stageTxt = 'BUILDING THE LEAGUE...';
+        stageDot = '#4F46E5';
+      } else if (loadingProgress >= 50 && loadingProgress < 70) {
+        stageTxt = 'PREPARING MATCH DAY...';
+        stageDot = '#EA580C';
+      } else if (loadingProgress >= 70 && loadingProgress < 90) {
+        stageTxt = 'CALLING THE SQUADS...';
+        stageDot = '#059669';
+      } else if (loadingProgress >= 90) {
+        stageTxt = 'THE LEAGUE BEGINS.';
+        stageDot = '#E11D48';
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col justify-between relative">
+          {/* Detailed Loading Screen Matching User Specification */}
+          {isLoading && (
+            <div className="fixed inset-0 z-[9999] bg-[#FAF6EE] flex flex-col items-center justify-between p-6 select-none transition-all duration-500 overflow-hidden">
+              <div className="w-full max-w-xl flex flex-col items-center gap-3">
+                <div className="w-full flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: stageDot }} />
+                    <span className="font-display font-black text-xs sm:text-sm text-ink uppercase tracking-wider">HPL • SEASON 2026</span>
+                  </div>
+                  <button onClick={() => setIsLoading(false)} className="px-3 py-1 rounded-full bg-[#FFFDF7] border-2 border-ink text-xs font-mono font-black shadow-sketch-sm cursor-pointer">
+                    SKIP INTRO ➔
+                  </button>
+                </div>
+                <div className="w-full h-2.5 bg-[#EAE2D0] rounded-full overflow-hidden border border-ink/20 p-[1px]">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#F59E0B] transition-all duration-75" style={{ width: `${loadingProgress}%` }} />
+                </div>
+                <div className="font-mono text-xs font-black text-ink">✦ {Math.round(loadingProgress)}%</div>
+              </div>
+
+              {/* Storyboard Center Stage Canvas - No small card border */}
+              <div className="relative w-full max-w-lg h-[380px] flex items-center justify-center my-auto">
+                {/* 0-10%: Start */}
+                {loadingProgress < 10 && (
+                  <div className="relative flex flex-col items-center justify-center opacity-40">
+                    <div className="text-4xl animate-pulse">✏️</div>
+                    <div className="font-mono text-xs font-bold mt-2">&lt;code&gt; &#123; league &#125; fn()</div>
+                  </div>
+                )}
+
+                {/* 10-30%: Trophy */}
+                {loadingProgress >= 10 && loadingProgress < 30 && (
+                  <div className="relative flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+                    <div className="text-7xl animate-pulse">🏆</div>
+                    <div className="font-display font-black text-xl text-amber-700 mt-2 uppercase">CHAMPIONSHIP TROPHY</div>
+                  </div>
+                )}
+
+                {/* 30-50%: HPL Shield */}
+                {loadingProgress >= 30 && loadingProgress < 50 && (
+                  <div className="relative flex flex-col items-center justify-center animate-in zoom-in-95 duration-300">
+                    <div className="w-48 h-52 bg-[#FFFDF7] border-4 border-ink rounded-3xl flex flex-col items-center justify-center shadow-sketch-lg">
+                      <div className="font-display font-black text-5xl text-ink">HPL</div>
+                      <div className="font-mono font-black text-base text-[#4F46E5] mt-1">&lt; / &gt;</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 50-70%: Energy (Swashes, Rocket, Bulb, Doodles) */}
+                {loadingProgress >= 50 && loadingProgress < 70 && (
+                  <div className="relative w-full h-full flex items-center justify-center animate-in zoom-in-90 duration-300">
+                    <div className="absolute top-4 right-8 text-4xl transform -rotate-45 animate-bounce">🚀</div>
+                    <div className="absolute top-6 left-8 text-4xl animate-bounce">💡</div>
+                    <div className="absolute bottom-6 left-12 bg-ink text-white px-2.5 py-1 rounded-xl text-xs font-mono font-bold">⚡ [ ~/code ]</div>
+                    <div className="w-48 h-52 bg-ink text-white border-4 border-amber-400 rounded-3xl flex flex-col items-center justify-center shadow-sketch-xl">
+                      <div className="font-display font-black text-5xl text-white">HPL</div>
+                      <div className="font-mono font-black text-base text-amber-300 mt-1">&lt; / &gt;</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 70-90%: Teams Assembling */}
+                {loadingProgress >= 70 && loadingProgress < 90 && (
+                  <div className="relative w-full h-full flex items-center justify-center rounded-3xl overflow-hidden shadow-sketch-xl border-3 border-ink">
+                    <img src="src/assets/hpl_hero_arena_1787762692893.jpg" className="w-full h-full object-cover" alt="Teams" />
+                    <div className="absolute bottom-2 inset-x-2 bg-ink/90 text-white px-3 py-1.5 rounded-xl font-mono text-xs font-bold text-amber-300 text-center">
+                      SQUADS ACTIVE • LAPTOPS ONLINE
+                    </div>
+                  </div>
+                )}
+
+                {/* 90-100%: Reveal */}
+                {loadingProgress >= 90 && (
+                  <div className="text-center space-y-3 animate-in zoom-in-90 duration-300">
+                    <div className="text-4xl animate-bounce">🏆</div>
+                    <h1 className="font-display font-black text-7xl text-ink leading-none">HPL</h1>
+                    <div className="font-mono font-black text-sm tracking-widest text-[#4F46E5] uppercase">HACKATHON PREMIER LEAGUE</div>
+                    <div className="pt-2">
+                      <div className="px-7 py-2.5 rounded-full bg-[#EA580C] text-white font-display font-black text-base uppercase border-2 border-ink shadow-sketch animate-pulse inline-block">
+                        THE LEAGUE BEGINS.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Progression Text matching user specification */}
+              <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-[#FFFDF7] border-2 border-ink shadow-sketch-sm">
+                <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: stageDot }} />
+                <span className="font-mono text-xs sm:text-sm font-black text-ink tracking-wider uppercase">
+                  {stageTxt}
+                </span>
+              </div>
+            </div>
+          )}
+          {/* TOP NAVBAR (Matching media_1787841954823.png) */}
+          <header className="sticky top-0 z-40 bg-[#FBF9F2]/95 backdrop-blur-md border-b-2 border-[#1E1B4B]/15">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+              {/* Shield Logo */}
+              <div className="flex items-center gap-3 cursor-pointer group">
+                <div className="w-10 h-10 relative flex-shrink-0">
+                  <svg viewBox="0 0 100 100" fill="none" className="w-full h-full transform group-hover:scale-105 transition-transform">
+                    <polygon points="50,6 90,24 90,74 50,94 10,74 10,24" fill="#1E1B4B" stroke="#F59E0B" strokeWidth="4" />
+                    <path d="M 30 38 L 40 54 L 50 34 L 60 54 L 70 38 L 68 62 H 32 Z" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5" />
+                    <rect x="36" y="64" width="28" height="5" rx="1.5" fill="#F59E0B" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-xl font-black font-display tracking-tight text-ink uppercase block leading-none">HPL</span>
+                  <span className="text-[8.5px] font-mono font-bold tracking-wider text-ink-muted uppercase leading-tight mt-0.5">
+                    HACKATHON<br />PREMIER LEAGUE
+                  </span>
+                </div>
+              </div>
+
+              {/* Clean Nav Links with Active Orange Underline */}
+              <nav className="hidden md:flex items-center gap-7 lg:gap-8">
+                {[
+                  { label: 'HOME', page: 'home' },
+                  { label: 'ABOUT', page: 'league' },
+                  { label: 'TIMELINE', page: 'timeline' },
+                  { label: 'LEADERBOARD', page: 'leaderboard' },
+                  { label: 'MENTORS', page: 'mentors' },
+                  { label: 'SPONSORS', page: 'sponsors' },
+                  { label: 'FAQ', page: 'faq' }
+                ].map(item => {
+                  const isActive = activePage === item.page;
+                  return (
+                    <div key={item.label} className="relative flex flex-col items-center">
+                      <button
+                        onClick={() => {
+                          if (item.label === 'ABOUT') {
+                            setActivePage('home');
+                            setTimeout(() => {
+                              const el = document.getElementById('about');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }, 100);
+                          } else {
+                            setActivePage(item.page);
+                          }
+                        }}
+                        className={`text-xs lg:text-[13px] font-display font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                          isActive ? 'text-ink font-black' : 'text-ink/80 hover:text-ink'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                      {isActive && (
+                        <span className="w-8 h-[3px] bg-amber-500 rounded-full mt-1.5" />
+                      )}
+                    </div>
+                  );
+                })}
+              </nav>
+
+              {/* Purple Pill Button */}
+              <button
+                className="px-6 py-2.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+                <span>STARTING SOON</span>
+              </button>
+            </div>
+          </header>
+
+          {/* MAIN LANDING CONTENT */}
+          <main className="w-full flex-grow space-y-12 lg:space-y-16">
+            
+            {/* 1. HERO SECTION */}
+            <section className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 pt-2 pb-6 lg:pt-4 lg:pb-8 overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                
+                {/* LEFT: Text Column */}
+                <div className="lg:col-span-5 space-y-4 text-left z-20 relative lg:pr-2">
+                  {/* League Season Live Pill */}
+                  <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#FFFDF7] border-2 border-ink font-mono text-[11px] font-black text-ink shadow-sketch-sm select-none cursor-default">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
+                    <span>SEASON 1 • 3-WEEK INNOVATION LEAGUE • STARTING SOON</span>
+                  </div>
+
+                  {/* Comic Brush Display Headline */}
+                  <div className="space-y-0 select-none group">
+                    <div className="font-marker text-5xl sm:text-6xl lg:text-7xl xl:text-[5.4rem] tracking-tight leading-[0.92] text-ink hover:translate-x-1 transition-transform">
+                      CODE.
+                    </div>
+                    <div className="font-marker text-4xl sm:text-5xl lg:text-6xl xl:text-[4.7rem] tracking-tight leading-[0.94] text-[#4F46E5] animate-glow-purple hover:translate-x-1 transition-transform">
+                      COLLABORATE.
+                    </div>
+                    <div className="font-marker text-5xl sm:text-6xl lg:text-7xl xl:text-[5.4rem] tracking-tight leading-[0.92] text-[#EA580C] animate-glow-orange hover:translate-x-1 transition-transform">
+                      CONQUER.
+                    </div>
+                  </div>
+
+                  {/* Subtitle */}
+                  <div className="space-y-1 text-sm sm:text-base text-ink font-bold leading-snug">
+                    <p>A 3-Week League of Innovation.</p>
+                    <p className="text-ink/80 font-semibold">Build impactful solutions. Compete. Improve. Be the champion.</p>
+                  </div>
+
+                  {/* CTA Buttons */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <button className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 transition-all cursor-pointer flex items-center gap-2">
+                      <span>REGISTRATIONS STARTING SOON</span>
+                      <span className="text-base font-bold">&gt;</span>
+                    </button>
+                    <button className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#FFFDF7] hover:bg-[#EFE8D6] text-ink font-display font-bold text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 transition-all cursor-pointer">
+                      EXPLORE LEAGUE
+                    </button>
+                  </div>
+
+                  {/* Date Badge: STARTS 1 SEPTEMBER 2026 */}
+                  <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#FFFDF7] border-2 border-ink font-display text-xs sm:text-sm font-bold text-ink shadow-sketch-sm w-fit">
+                    <span className="text-[#4F46E5]">📅</span>
+                    <span>STARTS 1 SEPTEMBER 2026 – 22 SEPTEMBER 2026</span>
+                    <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold ml-1">SMVITM</span>
+                  </div>
+
+                  {/* Mini Highlights Pill Strip */}
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <span className="px-3 py-1 rounded-xl bg-[#FFFDF7] border border-ink text-[11px] font-mono font-black text-ink shadow-sketch-sm">
+                      🏆 ₹30K PRIZE POOL
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-[#FFFDF7] border border-ink text-[11px] font-mono font-black text-[#4F46E5] shadow-sketch-sm">
+                      ⚔️ 8+ MATCH DAYS
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-[#FFFDF7] border border-ink text-[11px] font-mono font-black text-[#EA580C] shadow-sketch-sm">
+                      ⚡ TOP 4 PLAYOFFS
+                    </span>
+                  </div>
+                </div>
+
+                {/* RIGHT: Master Hero Illustration with Organic Vignette - Zero Text Overlap */}
+                <div className="lg:col-span-7 flex items-center justify-center lg:justify-end w-full z-10 lg:-mr-4 xl:-mr-8">
+                  <img
+                    src="src/assets/hpl_hero_arena_1787762692893.jpg"
+                    alt="HPL Hero Arena"
+                    className="w-full lg:w-[110%] xl:w-[115%] h-auto max-h-[680px] lg:max-h-[760px] xl:max-h-[840px] 2xl:max-h-[900px] object-contain select-none block brightness-[1.03] contrast-[1.04] saturate-[1.02] drop-shadow-sm ml-auto -mt-4 lg:-mt-10 xl:-mt-14"
+                    style={{
+                      maskImage: 'radial-gradient(ellipse 84% 82% at 54% 48%, black 35%, rgba(0,0,0,0.88) 52%, rgba(0,0,0,0.25) 72%, transparent 86%)',
+                      WebkitMaskImage: 'radial-gradient(ellipse 84% 82% at 54% 48%, black 35%, rgba(0,0,0,0.88) 52%, rgba(0,0,0,0.25) 72%, transparent 86%)',
+                    }}
+                  />
+                </div>
+              </div>
+            </section>
+
+            {/* VINTAGE COMIC MARQUEE LIVE TICKER TAPE */}
+            <div className="w-full overflow-hidden bg-[#1E1B4B] py-3.5 border-y-2 border-ink select-none">
+              <div className="animate-marquee whitespace-nowrap flex items-center gap-8 font-mono text-xs font-black uppercase text-[#FBF9F2] tracking-widest">
+                <span>✨ REGISTRATIONS OPEN FOR SEASON 1</span>
+                <span className="text-[#EA580C]">✦</span>
+                <span>🏆 GRAND TROPHY PLAYOFFS AT SMVITM</span>
+                <span className="text-[#EA580C]">✦</span>
+                <span>⚔️ 8+ HEAD-TO-HEAD MATCH FIXTURES</span>
+                <span className="text-[#EA580C]">✦</span>
+                <span>🚀 ₹1,50,000+ IN CASH &amp; INCUBATION GRANTS</span>
+                <span className="text-[#EA580C]">✦</span>
+                <span>✨ REGISTRATIONS OPEN FOR SEASON 1</span>
+                <span className="text-[#EA580C]">✦</span>
+                <span>🏆 GRAND TROPHY PLAYOFFS AT SMVITM</span>
+                <span className="text-[#EA580C]">✦</span>
+              </div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+              
+              {/* 2. ABOUT HPL */}
+              <section id="about" className="space-y-10">
+                <div className="text-center space-y-3">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink text-[#F0E7D3] font-mono text-[10px] font-black uppercase tracking-widest shadow-sketch-sm">
+                    <span>✦</span><span>THE REVOLUTIONARY FORMAT</span><span>✦</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-display uppercase tracking-tight text-ink">
+                    Not Just a Hackathon. <span className="text-[#4F46E5]">A League.</span>
+                  </h2>
+                  <p className="text-base sm:text-lg text-ink/80 font-medium max-w-2xl mx-auto leading-relaxed">
+                    Inspired by the anticipation, fixtures, standings, and playoff energy of sports leagues — designed from the ground up for software builders.
+                  </p>
+                </div>
+
+                {/* 7 PILLARS COMIC BOOK INTERACTIVE FLIP-DECK */}
+                <div className="space-y-6 pt-2">
+                  <div className="text-center space-y-1">
+                    <span className="text-xs font-mono font-black text-[#EA580C] uppercase tracking-widest">
+                      ✦ COMPLETE TOURNAMENT LIFECYCLE ✦
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black font-display uppercase text-ink">
+                      THE 7 PILLARS OF HPL
+                    </h3>
+                    <p className="text-xs sm:text-sm text-ink/70 font-medium max-w-lg mx-auto">
+                      All 7 tournament stages in an interactive comic book spread — flip through without long scrolling!
+                    </p>
+                  </div>
+
+                  {/* Comic Book Card Spread */}
+                  <div className="relative max-w-4xl mx-auto">
+                    <div className="absolute inset-0 bg-[#EFE8D6] rounded-3xl border-2 border-ink/30 transform rotate-1 translate-y-3 translate-x-2 -z-20 shadow-sm" />
+                    <div className="absolute inset-0 bg-[#F5EEDC] rounded-3xl border-2 border-ink/50 transform -rotate-1 translate-y-1.5 -translate-x-1.5 -z-10 shadow-md" />
+                    <div className="relative bg-[#FFFDF7] border-2 border-ink rounded-3xl p-6 sm:p-8 lg:p-10 shadow-sketch-lg overflow-hidden space-y-6">
+                      <div className="flex items-center justify-between border-b-2 border-ink/10 pb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-full bg-ink text-white font-mono text-[10.5px] font-black uppercase tracking-wider">
+                            STAGE {selectedPillar ? selectedPillar.number : '01'} OF 07
+                          </span>
+                          <span className="font-mono text-xs font-bold text-ink/60 uppercase">
+                            ✦ {selectedPillar ? selectedPillar.subtitle : 'Why a Premier League?'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setPillarIdx(prev => prev === 0 ? 6 : prev - 1)}
+                            className="w-9 h-9 rounded-xl bg-[#FFFDF7] border-2 border-ink flex items-center justify-center text-ink hover:bg-[#F3EDD6] shadow-sketch-sm transition-all cursor-pointer font-bold"
+                          >
+                            ←
+                          </button>
+                          <button
+                            onClick={() => setPillarIdx(prev => (prev + 1) % 7)}
+                            className="w-9 h-9 rounded-xl bg-ink text-white border-2 border-ink flex items-center justify-center hover:bg-[#2A2663] shadow-sketch-sm transition-all cursor-pointer font-bold"
+                          >
+                            →
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        <div className="lg:col-span-6 space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-2xl flex items-center justify-center border-2 border-ink shadow-sketch text-3xl bg-amber-100">
+                              {selectedPillar ? selectedPillar.emoji : '💡'}
+                            </div>
+                            <div>
+                              <div className="font-mono text-xs font-black uppercase tracking-wider text-amber-700">
+                                {selectedPillar ? selectedPillar.subtitle : 'Why a Premier League?'}
+                              </div>
+                              <h3 className="font-display font-black text-2xl sm:text-3xl uppercase tracking-tight text-ink">
+                                {selectedPillar ? selectedPillar.title : 'THE IDEA'}
+                              </h3>
+                            </div>
+                          </div>
+                          <p className="text-sm sm:text-base text-ink/80 font-medium leading-relaxed">
+                            {selectedPillar ? selectedPillar.desc : 'Traditional 24-hour hackathons reward hasty hacks. HPL turns innovation into a premier 3-week league where solutions evolve through real engineering sprints.'}
+                          </p>
+                        </div>
+
+                        <div className="lg:col-span-6 space-y-3 bg-[#FAF6EE] border-2 border-ink/20 rounded-2xl p-5 shadow-inner">
+                          <div className="font-mono text-[11px] font-black text-ink uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                            <span>✨</span><span>KEY LEAGUE MECHANICS</span>
+                          </div>
+                          <div className="space-y-2">
+                            {(selectedPillar ? selectedPillar.points : [
+                              '3 progressive match weeks instead of overnight crunch',
+                              'Head-to-head match fixtures for real problem-solving',
+                              'Alignment with regional & municipal challenges'
+                            ]).map((pt, i) => (
+                              <div key={i} className="flex items-start gap-2 text-xs sm:text-sm font-bold text-ink">
+                                <span className="text-emerald-600 font-bold">✓</span>
+                                <span>{pt}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabs Bar inside Card */}
+                      <div className="pt-4 border-t border-ink/10 flex items-center justify-between overflow-x-auto gap-2">
+                        {['01 IDEA', '02 SQUADS', '03 MATCHES', '04 FEEDBACK', '05 RANKINGS', '06 PLAYOFFS', '07 CHAMPION'].map((tab, i) => (
+                          <button
+                            key={tab}
+                            onClick={() => setPillarIdx(i)}
+                            className={`px-3 py-1 rounded-lg font-mono text-[11px] font-black uppercase transition-all cursor-pointer whitespace-nowrap ${
+                              i === pillarIdx ? 'bg-ink text-amber-300 shadow-sketch-sm' : 'bg-ink/5 hover:bg-ink/10 text-ink'
+                            }`}
+                          >
+                            #{tab}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="scroll-bento-card bg-[#FFFDF7] border-2 border-ink rounded-2xl p-6 shadow-sketch hover:-translate-y-1 hover:shadow-sketch-lg transition-all space-y-4">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center border-2 border-ink bg-[#EEF2FF] text-2xl">
+                      💻
+                    </div>
+                    <h3 className="font-display font-black text-xl text-ink">3-Week Engineering Sprints</h3>
+                    <p className="text-sm text-ink/75 leading-relaxed">
+                      Forget superficial 24-hour prototypes. Squads build iteratively across 3 progressive weeks with mentor check-ins, feature twists, and real code reviews.
+                    </p>
+                  </div>
+
+                  <div className="scroll-bento-card bg-[#FFFDF7] border-2 border-ink rounded-2xl p-6 shadow-sketch hover:-translate-y-1 hover:shadow-sketch-lg transition-all space-y-4">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center border-2 border-ink bg-[#FFF7ED] text-2xl">
+                      ⚔️
+                    </div>
+                    <h3 className="font-display font-black text-xl text-ink">Head-to-Head Match Days</h3>
+                    <p className="text-sm text-ink/75 leading-relaxed">
+                      8+ structured match fixtures where squads defend architecture, stress tests, and user experience. Win: +3 pts, Tie: +1 pt, Loss: 0 pts.
+                    </p>
+                  </div>
+
+                  <div className="scroll-bento-card bg-[#FFFDF7] border-2 border-ink rounded-2xl p-6 shadow-sketch hover:-translate-y-1 hover:shadow-sketch-lg transition-all space-y-4">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center border-2 border-ink bg-[#FEF3C7] text-2xl">
+                      🏆
+                    </div>
+                    <h3 className="font-display font-black text-xl text-ink">Grand Auditorium Playoffs</h3>
+                    <p className="text-sm text-ink/75 leading-relaxed">
+                      The Top 4 ranked teams battle it out live on stage at the SMVITM Auditorium before industry juries and investors for the Championship Trophy.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Impact stats bar */}
+                <div className="bg-ink rounded-2xl border-2 border-ink shadow-sketch p-6 sm:p-8">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+                    <div>
+                      <div className="font-marker text-4xl sm:text-5xl text-[#F59E0B] leading-none">3</div>
+                      <div className="font-mono text-xs font-black text-[#F0E7D3] uppercase tracking-wider mt-1.5">WEEKS</div>
+                      <div className="font-sans text-xs text-[#F0E7D3]/65 mt-0.5">of progressive building</div>
+                    </div>
+                    <div>
+                      <div className="font-marker text-4xl sm:text-5xl text-[#F59E0B] leading-none">8+</div>
+                      <div className="font-mono text-xs font-black text-[#F0E7D3] uppercase tracking-wider mt-1.5">MATCH DAYS</div>
+                      <div className="font-sans text-xs text-[#F0E7D3]/65 mt-0.5">live head-to-head fixtures</div>
+                    </div>
+                    <div>
+                      <div className="font-marker text-4xl sm:text-5xl text-[#F59E0B] leading-none">TOP 4</div>
+                      <div className="font-mono text-xs font-black text-[#F0E7D3] uppercase tracking-wider mt-1.5">PLAYOFFS</div>
+                      <div className="font-sans text-xs text-[#F0E7D3]/65 mt-0.5">physical grand finale</div>
+                    </div>
+                    <div>
+                      <div className="font-marker text-4xl sm:text-5xl text-[#F59E0B] leading-none">₹30K</div>
+                      <div className="font-mono text-xs font-black text-[#F0E7D3] uppercase tracking-wider mt-1.5">PRIZE POOL</div>
+                      <div className="font-sans text-xs text-[#F0E7D3]/65 mt-0.5">cash awards &amp; trophies</div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 3. THE LEAGUE JOURNEY CONTAINER */}
+              <section className="bg-[#FFFDF7] border-2 border-ink rounded-3xl p-6 sm:p-8 lg:p-10 shadow-sketch space-y-8">
+                <div className="text-center">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black font-display uppercase tracking-wide text-ink flex items-center justify-center gap-3">
+                    <span className="text-[#F59E0B] text-xl">✦</span>
+                    <span>THE LEAGUE JOURNEY</span>
+                    <span className="text-[#F59E0B] text-xl">✦</span>
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center">
+                  {/* Step 1: Week 1 */}
+                  <div className="scroll-journey-card md:col-span-3 text-center space-y-3">
+                    <div className="bg-[#D1FAE5]/70 border-2 border-emerald-400/60 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm">
+                      <div className="text-6xl">💻</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="font-display font-black text-sm text-emerald-700 tracking-wider uppercase">WEEK 1</div>
+                      <div className="font-display font-black text-base text-ink uppercase">PART 1</div>
+                      <p className="font-bold text-xs text-amber-700 pt-1">Problem Statement Coming Soon</p>
+                      <p className="text-[11px] text-ink/65 font-medium">Build • Present • Improve</p>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:flex md:col-span-1 justify-center text-3xl font-bold text-ink/35 select-none">→</div>
+
+                  {/* Step 2: Week 2 */}
+                  <div className="scroll-journey-card md:col-span-3 text-center space-y-3">
+                    <div className="bg-[#EDE9FE]/70 border-2 border-purple-400/60 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm">
+                      <div className="text-6xl">🚀</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="font-display font-black text-sm text-[#7C3AED] tracking-wider uppercase">WEEK 2</div>
+                      <div className="font-display font-black text-base text-ink uppercase">PART 2</div>
+                      <p className="font-bold text-xs text-ink/80 pt-1">Problem Part 2 Released</p>
+                      <p className="text-[11px] text-ink/65 font-medium">Build • Present • Improve</p>
+                    </div>
+                  </div>
+
+                  <div className="hidden md:flex md:col-span-1 justify-center text-3xl font-bold text-ink/35 select-none">→</div>
+
+                  {/* Step 3: Playoffs */}
+                  <div className="scroll-journey-card md:col-span-3 text-center space-y-3">
+                    <div className="bg-[#FEF3C7]/70 border-2 border-amber-400/60 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm">
+                      <div className="text-6xl">🏆</div>
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className="font-display font-black text-sm text-[#EA580C] tracking-wider uppercase">PLAYOFFS</div>
+                      <div className="font-display font-black text-base text-ink uppercase">PART 3</div>
+                      <p className="font-bold text-xs text-ink/80 pt-1">Top 4 Teams</p>
+                      <p className="text-[11px] text-ink/65 font-medium">Grand Finale</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4 League Format Features Strip */}
+                <div className="bg-white/85 border-2 border-ink/15 rounded-2xl p-4 sm:p-5 shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-ink/10">
+                    <div className="flex items-center gap-3.5 pt-2 sm:pt-0 sm:px-3 first:pl-0">
+                      <div className="text-3xl">📋</div>
+                      <div className="text-left space-y-0.5">
+                        <div className="font-display font-black text-xs sm:text-[13px] text-ink uppercase tracking-wider">LEAGUE FORMAT</div>
+                        <div className="font-sans text-[11px] text-ink/70 font-medium leading-snug">Continuous competition over 3 weeks</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3.5 pt-2 sm:pt-0 sm:px-3">
+                      <div className="text-3xl">⚔️</div>
+                      <div className="text-left space-y-0.5">
+                        <div className="font-display font-black text-xs sm:text-[13px] text-ink uppercase tracking-wider">HEAD TO HEAD</div>
+                        <div className="font-sans text-[11px] text-ink/70 font-medium leading-snug">Compete in match-days earn league points</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3.5 pt-2 sm:pt-0 sm:px-3">
+                      <div className="text-3xl">📈</div>
+                      <div className="text-left space-y-0.5">
+                        <div className="font-display font-black text-xs sm:text-[13px] text-ink uppercase tracking-wider">IMPROVE &amp; ADAPT</div>
+                        <div className="font-sans text-[11px] text-ink/70 font-medium leading-snug">Feedback driven iterative development</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3.5 pt-2 sm:pt-0 sm:px-3 last:pr-0">
+                      <div className="text-3xl">🏆</div>
+                      <div className="text-left space-y-0.5">
+                        <div className="font-display font-black text-xs sm:text-[13px] text-ink uppercase tracking-wider">BE THE CHAMPION</div>
+                        <div className="font-sans text-[11px] text-ink/70 font-medium leading-snug">Top 4 battle it out for the title</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* 4. FAQ ACCORDION */}
+              <section id="faq" className="space-y-6">
+                <div className="text-center max-w-2xl mx-auto space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink text-[#F0E7D3] font-mono text-[10px] font-black uppercase tracking-widest shadow-sketch-sm">
+                    <span>❓</span><span>FREQUENTLY ASKED QUESTIONS</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-black font-display uppercase text-ink">
+                    Got <span className="text-[#4F46E5]">Questions?</span>
+                  </h2>
+                </div>
+
+                <div className="max-w-3xl mx-auto space-y-3">
+                  {[
+                    { q: 'What is the Hackathon Premier League (HPL)?', a: 'HPL is a 3-week innovation tournament structured like a premier sports league. Teams build, iterate, and climb the live leaderboard.' },
+                    { q: 'How many members can be in a team / squad?', a: 'Each squad must have 2 to 4 members with balanced roles across frontend, backend, AI/ML, and pitch/design.' },
+                    { q: 'When is the Grand Finale?', a: 'The Physical Grand Finale takes place on 22 August 2026 at the SMVITM Campus Auditorium Arena, Bantakal, Udupi.' },
+                    { q: 'How does the points and match day system work?', a: 'Squads compete in head-to-head fixtures. A win earns +3 league points, a tie earns +1 point, and a loss earns 0. Points accumulate on the live public leaderboard.' },
+                  ].map((faq, idx) => (
+                    <div key={idx} className="border-2 border-ink rounded-2xl bg-[#FFFDF7] p-5 space-y-2 shadow-sketch">
+                      <h4 className="font-display font-black text-sm sm:text-base text-ink">{faq.q}</h4>
+                      <p className="text-xs sm:text-sm text-ink/80 leading-relaxed font-medium">{faq.a}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </main>
+
+          {/* ANIMATED LEAGUE FOOTER */}
+          <footer className="relative w-full overflow-hidden select-none mt-12">
+            {/* Animated Ticker Tape */}
+            <div className="bg-[#F59E0B] border-y-2 border-ink text-ink font-display font-black text-xs tracking-wider uppercase overflow-hidden py-2 shadow-sm">
+              <div className="flex animate-marquee whitespace-nowrap gap-8 items-center">
+                <div className="flex items-center gap-8">
+                  <span>⚡ HACKATHON PREMIER LEAGUE 2026</span>
+                  <span>✦</span>
+                  <span>CODE TODAY. IMPACT TOMORROW.</span>
+                  <span>✦</span>
+                  <span>🟢 REGISTRATIONS LIVE</span>
+                  <span>✦</span>
+                  <span>3 WEEKS • 40+ SQUADS • HEAD-TO-HEAD BATTLES</span>
+                  <span>✦</span>
+                  <span>SMVITM BANTAKAL CAMPUS</span>
+                  <span>✦</span>
+                  <span>BE THE CHAMPION</span>
+                </div>
+                <div className="flex items-center gap-8">
+                  <span>⚡ HACKATHON PREMIER LEAGUE 2026</span>
+                  <span>✦</span>
+                  <span>CODE TODAY. IMPACT TOMORROW.</span>
+                  <span>✦</span>
+                  <span>🟢 REGISTRATIONS LIVE</span>
+                  <span>✦</span>
+                  <span>3 WEEKS • 40+ SQUADS • HEAD-TO-HEAD BATTLES</span>
+                  <span>✦</span>
+                  <span>SMVITM BANTAKAL CAMPUS</span>
+                  <span>✦</span>
+                  <span>BE THE CHAMPION</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Horizon Body (Royal Navy #1E1B4B matching original image) */}
+            <div className="relative bg-gradient-to-b from-[#1E1B4B] via-[#1B1847] to-[#15133B] text-white pt-10 pb-8 px-4 sm:px-6 lg:px-10 border-t-2 border-[#F59E0B]/30">
+              <div className="max-w-[1440px] mx-auto space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  
+                  {/* Left Brand */}
+                  <div className="lg:col-span-4 flex flex-col items-center lg:items-start text-center lg:text-left gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 relative flex-shrink-0">
+                        <svg viewBox="0 0 100 100" fill="none" className="w-full h-full">
+                          <polygon points="50,6 90,24 90,74 50,94 10,74 10,24" fill="#1E1B4B" stroke="#F59E0B" strokeWidth="4.5" />
+                          <path d="M 36 34 H 64 V 46 C 64 56 56 62 50 62 C 44 62 36 56 36 46 Z" fill="#F59E0B" />
+                          <rect x="46" y="62" width="8" height="8" fill="#F59E0B" />
+                          <rect x="38" y="70" width="24" height="4" rx="1" fill="#F59E0B" />
+                          <text x="50" y="86" fontFamily="'Space Grotesk', sans-serif" fontWeight="900" fontSize="13" fill="#FFFFFF" textAnchor="middle">HPL</text>
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="font-display font-black text-2xl tracking-wider text-white flex items-center gap-2">
+                          <span>HPL</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[9px] font-mono text-amber-300">SEASON 1</span>
+                        </div>
+                        <div className="font-mono text-[9.5px] font-bold text-white/70 tracking-widest uppercase">
+                          HACKATHON PREMIER LEAGUE
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-emerald-300">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Registrations Open • Season 2026</span>
+                    </div>
+                  </div>
+
+                  {/* Center Action */}
+                  <div className="lg:col-span-4 flex flex-col items-center text-center gap-3">
+                    <h3 className="font-display font-black italic text-xl sm:text-2xl text-white tracking-wide uppercase bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
+                      CODE TODAY. IMPACT TOMORROW.
+                    </h3>
+                    <p className="text-xs text-indigo-200/90 max-w-sm">
+                      Are you ready to rise in the league and conquer the championship?
+                    </p>
+                    <div className="relative group pt-1">
+                      <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full blur-md opacity-70 animate-pulse" />
+                      <button className="relative px-6 py-2.5 rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EA580C] text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider shadow-sm flex items-center gap-2 cursor-pointer">
+                        <span>🏆 REGISTER YOUR SQUAD</span>
+                        <span>➔</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Social & Partners */}
+                  <div className="lg:col-span-4 flex flex-col items-center lg:items-end text-center lg:text-right gap-3">
+                    <span className="font-mono text-[10px] font-black tracking-widest text-amber-400 uppercase">
+                      ✦ CONNECT WITH LEAGUE
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-xl bg-white/5 border border-white/15 flex items-center justify-center text-xs hover:scale-110 transition-transform cursor-pointer">📷</span>
+                      <span className="w-8 h-8 rounded-xl bg-white/5 border border-white/15 flex items-center justify-center text-xs hover:scale-110 transition-transform cursor-pointer">💼</span>
+                      <span className="w-8 h-8 rounded-xl bg-white/5 border border-white/15 flex items-center justify-center text-xs hover:scale-110 transition-transform cursor-pointer">🐙</span>
+                      <span className="w-8 h-8 rounded-xl bg-white/5 border border-white/15 flex items-center justify-center text-xs hover:scale-110 transition-transform cursor-pointer">▶️</span>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2 pt-1 text-[11px] font-display font-black text-white/80">
+                      <span className="px-2 py-1 rounded bg-white/5 border border-white/10">🛡️ CodeTroopers</span>
+                      <span className="px-2 py-1 rounded bg-white/5 border border-white/10">✨ IGNITE</span>
+                      <span className="px-2 py-1 rounded bg-white/5 border border-white/10">🔺 AIKYA</span>
+                      <span className="px-2 py-1 rounded bg-white/5 border border-white/10">⚡ IEEE</span>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div className="pt-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-white/50 text-center sm:text-left">
+                  <div>SMVITM Bantakal Campus, Udupi • Karnataka, India</div>
+                  <div>© 2026 HPL. Built for Student Innovators.</div>
+                </div>
+              </div>
+            </div>
+          </footer>
+
+          {/* FLOATING COMIC GLOVE SCROLL CONTROLLER */}
+          <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-1 select-none">
+            <button
+              onClick={() => {
+                if (window.scrollY > 300) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  window.scrollBy({ top: window.innerHeight * 0.85, behavior: 'smooth' });
+                }
+              }}
+              className="group relative flex flex-col items-center justify-center w-14 h-16 rounded-2xl bg-[#FFFDF7] border-2 border-[#1E1B4B] shadow-sketch hover:shadow-sketch-lg hover:-translate-y-1 active:translate-y-0.5 transition-all cursor-pointer p-1 overflow-hidden"
+            >
+              {/* Cartoon Glove Icon inside Button */}
+              <div className="relative z-10 text-xl group-hover:scale-125 transition-transform duration-200">
+                {window.scrollY > 300 ? '👆' : '👇'}
+              </div>
+              <div className="relative z-10 font-display font-black text-[10px] text-[#1E1B4B] flex items-center gap-0.5 mt-0.5">
+                <span>SCROLL ↕</span>
+              </div>
+              {/* Burning Comic Fuse Spark */}
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#F59E0B] rounded-full animate-ping opacity-75" />
+            </button>
+            <span className="font-mono text-[9px] font-black uppercase tracking-wider text-white bg-[#1E1B4B] border border-[#1E1B4B] px-2 py-0.5 rounded-full shadow-sketch-sm">
+              COMIC ↑
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
+

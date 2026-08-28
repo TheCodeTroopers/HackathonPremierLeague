@@ -1,0 +1,686 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    /* Exact light off-white paper canvas (#FBF9F2) */
+    background-color: #FBF9F2;
+    color: #1E1B4B;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+/* 
+  =======================================================================
+  HIDE DEFAULT OS CURSOR ON DESKTOP SO USERS ONLY SEE OUR CUSTOM CURSOR
+  =======================================================================
+*/
+@media (pointer: fine) {
+  *, *::before, *::after, html, body, a, button, input, select, textarea, [role="button"], .cursor-pointer {
+    cursor: none !important;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-10px) rotate(4deg); }
+}
+
+/* Comic halftone dot texture overlay on hero section */
+.hero-texture {
+  background-image: radial-gradient(circle, rgba(30,27,75,0.045) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+
+/* Custom 3D, Comic & Kinetic Typography Keyframe Animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.8deg); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(8px) rotate(-1deg); }
+}
+
+@keyframes comicWiggle {
+  0%, 100% { transform: rotate(-0.5deg) scale(1); }
+  50% { transform: rotate(0.8deg) scale(1.015); }
+}
+
+@keyframes sparkleSpin {
+  0% { transform: rotate(0deg) scale(0.9); opacity: 0.7; }
+  50% { transform: rotate(180deg) scale(1.2); opacity: 1; }
+  100% { transform: rotate(360deg) scale(0.9); opacity: 0.7; }
+}
+
+@keyframes textGlowOrange {
+  0%, 100% { text-shadow: 2px 2px 0px #1E1B4B, 0 0 10px rgba(234, 88, 12, 0.2); }
+  50% { text-shadow: 3px 3px 0px #1E1B4B, 0 0 20px rgba(234, 88, 12, 0.4); }
+}
+
+@keyframes textGlowPurple {
+  0%, 100% { text-shadow: 2px 2px 0px #1E1B4B, 0 0 10px rgba(79, 70, 229, 0.2); }
+  50% { text-shadow: 3px 3px 0px #1E1B4B, 0 0 20px rgba(79, 70, 229, 0.4); }
+}
+
+@keyframes badgePing {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+
+@keyframes marqueeSlow {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-comic-wiggle {
+  animation: comicWiggle 4s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 5s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkleSpin 3s linear infinite;
+}
+
+.animate-glow-orange {
+  animation: textGlowOrange 3s ease-in-out infinite;
+}
+
+.animate-glow-purple {
+  animation: textGlowPurple 3s ease-in-out infinite;
+}
+
+.animate-badge-pulse {
+  animation: badgePing 2.5s ease-in-out infinite;
+}
+
+/* Comic Pop Entrance Animations on Page Load / Refresh */
+@keyframes comicPopIn {
+  0% { transform: scale(0.4) translateY(30px); opacity: 0; }
+  70% { transform: scale(1.05) translateY(-5px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes comicSlideUp {
+  0% { transform: translateY(35px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.anim-title-word {
+  animation: comicPopIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.anim-title-word:nth-child(1) { animation-delay: 0.1s; }
+.anim-title-word:nth-child(2) { animation-delay: 0.25s; }
+.anim-title-word:nth-child(3) { animation-delay: 0.4s; }
+
+.anim-pill {
+  animation: comicPopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.anim-sub {
+  animation: comicSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.45s;
+}
+
+.anim-cta-group {
+  animation: comicPopIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.55s;
+}
+
+.anim-date-row {
+  animation: comicSlideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.65s;
+}
+
+.anim-illustration {
+  animation: comicPopIn 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.2s;
+}
+
+/* Smooth Comic Card Flip / Stage Transition */
+@keyframes comicCardFlipIn {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-comic-card-flip {
+  animation: comicCardFlipIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Anime/Manga Action Loading Keyframes */
+@keyframes mangaSlashIn {
+  0% {
+    transform: scale(1.3) translate(-40px, -20px) rotate(-3deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  70% {
+    transform: scale(0.97) translate(4px, 2px) rotate(0.5deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: scale(1) translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes mangaSlashInRight {
+  0% {
+    transform: scale(1.3) translate(40px, 20px) rotate(3deg);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  70% {
+    transform: scale(0.97) translate(-4px, -2px) rotate(-0.5deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: scale(1) translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes mangaCenterBurst {
+  0% {
+    transform: scale(0.3) rotate(-8deg);
+    opacity: 0;
+    filter: brightness(2) contrast(1.5);
+  }
+  65% {
+    transform: scale(1.08) rotate(1deg);
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes mangaSpeedLines {
+  0% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+}
+
+.anim-manga-slash {
+  animation: mangaSlashIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-manga-slash-right {
+  animation: mangaSlashInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-manga-burst {
+  animation: mangaCenterBurst 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.anim-speed-lines {
+  animation: mangaSpeedLines 1.2s ease-in-out infinite;
+}
+
+/* Ghibli Dreamy Floating & Soft Breathing Animations */
+@keyframes ghibliFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(0.4deg);
+  }
+}
+
+@keyframes ghibliGlowPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes ghibliCardFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.anim-ghibli-float {
+  animation: ghibliFloat 5s ease-in-out infinite;
+}
+
+.anim-ghibli-glow {
+  animation: ghibliGlowPulse 4s ease-in-out infinite;
+}
+
+.anim-ghibli-card {
+  animation: ghibliCardFadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Kinetic Ghibli Micro-Animations */
+@keyframes liquidWave {
+  0% { transform: translateX(0) translateZ(0) scaleY(1); }
+  50% { transform: translateX(-25%) translateZ(0) scaleY(1.2); }
+  100% { transform: translateX(-50%) translateZ(0) scaleY(1); }
+}
+
+@keyframes steamRise {
+  0% { transform: translateY(0) scaleX(1); opacity: 0; }
+  40% { opacity: 0.6; }
+  100% { transform: translateY(-24px) scaleX(1.4); opacity: 0; }
+}
+
+@keyframes spotlightSweepLeft {
+  0%, 100% { transform: rotate(-25deg); opacity: 0.4; }
+  50% { transform: rotate(15deg); opacity: 0.7; }
+}
+
+@keyframes spotlightSweepRight {
+  0%, 100% { transform: rotate(25deg); opacity: 0.4; }
+  50% { transform: rotate(-15deg); opacity: 0.7; }
+}
+
+@keyframes haloRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes flameFlicker {
+  0%, 100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.7)); }
+  33% { transform: scale(1.08, 0.94) translateY(-1px); filter: drop-shadow(0 0 14px rgba(245, 158, 11, 0.9)); }
+  66% { transform: scale(0.95, 1.05) translateY(1px); filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)); }
+}
+
+.anim-liquid-wave {
+  animation: liquidWave 3s linear infinite;
+}
+
+.anim-steam {
+  animation: steamRise 2.4s ease-out infinite;
+}
+
+.anim-spotlight-left {
+  animation: spotlightSweepLeft 6s ease-in-out infinite;
+}
+
+.anim-spotlight-right {
+  animation: spotlightSweepRight 6s ease-in-out infinite;
+}
+
+.anim-halo-rotate {
+  animation: haloRotate 20s linear infinite;
+}
+
+.anim-flame {
+  animation: flameFlicker 1.8s ease-in-out infinite;
+}
+
+@keyframes marqueeTicker {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-ticker {
+  animation: marqueeTicker 24s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-ticker:hover {
+  animation-play-state: paused;
+}
+
+.sketch-border {
+  border: 2px solid #1E1B4B;
+}
+
+.sketch-border-thick {
+  border: 3px solid #1E1B4B;
+}
+
+.sketch-shadow {
+  box-shadow: 4px 4px 0px #1E1B4B;
+}
+
+.sketch-shadow-sm {
+  box-shadow: 2px 2px 0px #1E1B4B;
+}
+
+.sketch-shadow-lg {
+  box-shadow: 6px 6px 0px #1E1B4B;
+}
+
+.sketch-shadow-xl {
+  box-shadow: 8px 8px 0px #1E1B4B;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 9px;
+}
+::-webkit-scrollbar-track {
+  background: #E8DFC8;
+  border-left: 2px solid #1E1B4B;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E1B4B;
+  border-radius: 4px;
+}
+
+/* ========================================================================= */
+/* BULLETPROOF LANDING PAGE ENTRANCE & SCROLL PARALLAX SYSTEM               */
+/* ========================================================================= */
+
+@keyframes heroWordPop {
+  0% {
+    opacity: 0;
+    transform: translateY(55px) scale(0.65) rotate(-3deg);
+    filter: blur(8px);
+  }
+  60% {
+    transform: translateY(-8px) scale(1.08) rotate(1deg);
+    filter: blur(0px);
+  }
+  80% {
+    transform: translateY(3px) scale(0.97) rotate(-0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroIllustrationReveal {
+  0% {
+    opacity: 0;
+    transform: translateX(60px) scale(0.88);
+    filter: blur(12px);
+  }
+  60% {
+    transform: translateX(-6px) scale(1.02);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroBadgePop {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.4);
+  }
+  70% {
+    transform: translateY(4px) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroSlideUpFade {
+  0% {
+    opacity: 0;
+    transform: translateY(35px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+/* Initial Hidden State before Entrance */
+.hero-pre-enter {
+  opacity: 0 !important;
+  transform: translateY(30px) scale(0.95);
+  pointer-events: none;
+}
+
+/* Staggered Active Keyframe Triggers */
+.hero-anim-pill {
+  animation: heroBadgePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.hero-anim-word-1 {
+  animation: heroWordPop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.22s both;
+}
+
+.hero-anim-word-2 {
+  animation: heroWordPop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.38s both;
+}
+
+.hero-anim-word-3 {
+  animation: heroWordPop 0.85s cubic-bezier(0.34, 1.56, 0.64, 1) 0.54s both;
+}
+
+.hero-anim-sub {
+  animation: heroSlideUpFade 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.68s both;
+}
+
+.hero-anim-cta {
+  animation: heroBadgePop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.8s both;
+}
+
+.hero-anim-dates {
+  animation: heroSlideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.92s both;
+}
+
+.hero-anim-illustration {
+  animation: heroIllustrationReveal 1.25s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+/* ========================================================================= */
+/* PRODUCTION-GRADE SCROLL REVEAL (Buttery Smooth 120 FPS, Zero Glitch)      */
+/* ========================================================================= */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translate3d(0, 24px, 0);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.stagger-1 { transition-delay: 0.04s; }
+.stagger-2 { transition-delay: 0.10s; }
+.stagger-3 { transition-delay: 0.16s; }
+.stagger-4 { transition-delay: 0.22s; }
+.stagger-5 { transition-delay: 0.28s; }
+.stagger-6 { transition-delay: 0.34s; }
+
+/* Spring Scale & Pop reveal variant for interactive cards */
+.reveal-pop {
+  opacity: 0;
+  transform: translate3d(0, 30px, 0) scale(0.96);
+  transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-pop.revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* Timeline rail line draw animation */
+.timeline-rail-draw {
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.timeline-rail-draw.revealed {
+  transform: scaleX(1);
+}
+
+/* ========================================================================= */
+/* DevHack 3.0-Style Slide-In Right Drawer Kinetic Animations                */
+/* ========================================================================= */
+@keyframes drawerSlideInRight {
+  0% {
+    transform: translate3d(100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes drawerSlideOutRight {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(100%, 0, 0);
+  }
+}
+
+@keyframes drawerBackdropFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes drawerBackdropFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes drawerItemSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 110%, 0) rotate(1.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+@keyframes drawerClosePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) rotate(-20deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12) rotate(3deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes drawerFadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.anim-drawer-in {
+  animation: drawerSlideInRight 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-drawer-out {
+  animation: drawerSlideOutRight 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.anim-backdrop-in {
+  animation: drawerBackdropFadeIn 0.35s ease-out both;
+}
+
+.anim-backdrop-out {
+  animation: drawerBackdropFadeOut 0.25s ease-in both;
+}
+
+.anim-drawer-close {
+  animation: drawerClosePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+.anim-drawer-footer {
+  animation: drawerFadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.48s both;
+}
+
+.drawer-text-stagger-1 {
+  animation: drawerItemSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+}
+
+.drawer-text-stagger-2 {
+  animation: drawerItemSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.23s both;
+}
+
+.drawer-text-stagger-3 {
+  animation: drawerItemSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.30s both;
+}
+
+.drawer-text-stagger-4 {
+  animation: drawerItemSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.37s both;
+}
+
+.drawer-text-stagger-5 {
+  animation: drawerItemSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.44s both;
+}
+
+
