@@ -7,12 +7,15 @@ import {
 } from '../illustrations/JourneyIllustrations';
 import { AboutIllustration } from '../illustrations/AboutIllustration';
 import { ComicPillarsBook } from '../common/ComicPillarsBook';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
 import { ParticleCanvas } from '../interactive/ParticleCanvas';
 import { FAQ_DATA } from '../../data/hplData';
 import {
   Calendar, Trophy, Rocket, Swords, Sparkles,
-  ChevronDown, Code2, Star, ArrowRight
+  ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink
 } from 'lucide-react';
+import registrationVideo from '../../assets/RegistrationVideo_opt.mp4';
 
 interface HomePageProps {
   onNavigate: (route: PageRoute) => void;
@@ -24,6 +27,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [hasEntered, setHasEntered] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   const rotatingTaglines = [
     'A 3-Week League of Innovation • Build impactful solutions.',
@@ -351,7 +355,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
       {/* ================================================================= */}
       {/* 1. HERO SECTION (Expanded max-w-[1440px] to fill the right side)  */}
       {/* ================================================================= */}
-      <section id="hero-section" className="relative w-full pt-2 pb-6 lg:pt-4 lg:pb-8 overflow-hidden">
+      <section id="hero-section" className="relative w-full pt-8 pb-8 sm:pt-10 lg:pt-14 lg:pb-12 overflow-hidden">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
@@ -424,22 +428,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 </p>
               </div>
 
-              {/* Floating Live Indicator Badge */}
-              <div
-                className={`anim-cta-group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1E1B4B] text-[#FBF9F2] border-2 border-[#1E1B4B] shadow-sketch-sm w-fit animate-badge-pulse ${
-                  hasEntered ? 'hero-anim-cta' : 'hero-pre-enter'
-                }`}
-              >
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
-                </span>
-                <span className="font-mono text-[10.5px] font-black tracking-widest uppercase text-amber-300">
-                  SEASON 1 ARENA • REGISTRATIONS STARTING SOON
-                </span>
-              </div>
 
-              {/* Action Buttons (Purple Capsule + Outline Capsule) */}
+
+              {/* Action Buttons (Purple Capsule + Yellow Demo Video Capsule + Outline Capsule) */}
               <div
                 className={`anim-cta-group flex flex-wrap items-center gap-3.5 pt-1 ${
                   hasEntered ? 'hero-anim-cta' : 'hero-pre-enter'
@@ -456,6 +447,17 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
+
+                {/* How to Register Demo Video Button (Opens Pop-up Modal) */}
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(true)}
+                  className="px-6 py-3.5 rounded-full bg-[#FEF08A] hover:bg-[#FDE047] text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2 group"
+                >
+                  <PlayCircle className="w-4 h-4 text-[#EA580C] group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span>HOW TO REGISTER DEMO VIDEO</span>
+                </button>
+
                 <button
                   onClick={() => {
                     const el = document.getElementById('about-hpl');
@@ -479,25 +481,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold ml-1">SMVITM</span>
               </div>
 
-              {/* Mini Highlights Pill Strip */}
-              <div
-                className={`anim-date-row flex flex-wrap items-center gap-2.5 pt-0.5 ${
-                  hasEntered ? 'hero-anim-dates' : 'hero-pre-enter'
-                }`}
-              >
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#FFFDF7] border-2 border-[#1E1B4B] text-[11px] font-mono font-black text-[#1E1B4B] shadow-sketch-sm hover:-translate-y-0.5 transition-transform cursor-default flex items-center gap-1.5">
-                  <span className="animate-spin text-xs" style={{ animationDuration: '6s' }}>🏆</span>
-                  <span>₹30K PRIZE POOL</span>
-                </span>
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#FFFDF7] border-2 border-[#1E1B4B] text-[11px] font-mono font-black text-[#4F46E5] shadow-sketch-sm hover:-translate-y-0.5 transition-transform cursor-default flex items-center gap-1.5">
-                  <span>⚔️</span>
-                  <span>8+ MATCH DAYS</span>
-                </span>
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#FFFDF7] border-2 border-[#1E1B4B] text-[11px] font-mono font-black text-[#EA580C] shadow-sketch-sm hover:-translate-y-0.5 transition-transform cursor-default flex items-center gap-1.5">
-                  <span className="animate-pulse">⚡</span>
-                  <span>TOP 4 PLAYOFFS</span>
-                </span>
-              </div>
+
 
             </div>
 
@@ -957,6 +941,69 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
         </section>
 
       </div>
+
+      {/* How to Register Demo Video Pop-up Modal */}
+      <Modal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        title="HOW TO REGISTER • DEMO VIDEO"
+        maxWidth="xl"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl overflow-hidden sketch-border bg-black aspect-video flex items-center justify-center shadow-sketch-sm">
+            <video
+              controls
+              playsInline
+              preload="auto"
+              key={isVideoModalOpen ? 'reg-video-open' : 'reg-video-closed'}
+              className="w-full h-full object-contain"
+            >
+              <source src={registrationVideo} type="video/mp4" />
+              Your browser does not support HTML5 video.
+            </video>
+          </div>
+          <div className="p-3.5 bg-paper-cream rounded-xl sketch-border text-xs font-sans text-[#1E1B4B] space-y-1.5">
+            <div className="font-mono font-bold uppercase text-[11px] text-[#4F46E5] flex items-center gap-1.5">
+              <Video className="w-4 h-4" />
+              <span>Squad Registration Walkthrough</span>
+            </div>
+            <p className="text-[#1E1B4B]/80 text-[11px] leading-relaxed">
+              Watch this quick walkthrough to learn how to choose your track, assemble your 5-member roster, add your project drive link, and generate your official HPL 2026 digital squad pass.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1E1B4B]">
+            <a
+              href={registrationVideo}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg border border-[#1E1B4B] text-xs font-mono font-bold bg-[#FFFDF7] hover:bg-[#EFE8D6] transition-colors inline-flex items-center gap-1.5"
+            >
+              <span>Open in New Tab</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVideoModalOpen(false);
+                  onNavigate('register');
+                }}
+                className="px-3.5 py-1.5 rounded-lg border border-[#1E1B4B] text-xs font-mono font-bold bg-[#FEF08A] hover:bg-[#FDE047] text-[#1E1B4B] transition-colors shadow-sketch-xs cursor-pointer"
+              >
+                GO TO REGISTER →
+              </button>
+              <Button
+                type="button"
+                variant="purple"
+                size="sm"
+                onClick={() => setIsVideoModalOpen(false)}
+              >
+                GOT IT
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

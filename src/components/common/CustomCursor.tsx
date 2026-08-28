@@ -182,7 +182,7 @@ export const CustomCursor: React.FC = () => {
   return (
     <>
       <div 
-        className="pointer-events-none fixed inset-0 z-[100005] overflow-hidden select-none"
+        className="pointer-events-none fixed inset-0 z-[10000000] overflow-hidden select-none"
         style={{ opacity: isVisible ? 1 : 0, transition: 'opacity 0.2s ease-out' }}
       >
           

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PageRoute, RegistrationFormData } from '../../types';
 import { Button } from '../common/Button';
+import { Modal } from '../common/Modal';
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
 import { SparkleDoodle } from '../illustrations/MicroDoodles';
-import { CheckCircle2, ArrowRight, ArrowLeft, QrCode, Trophy, AlertCircle, Loader2, XCircle, Check } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ArrowLeft, QrCode, Trophy, AlertCircle, Loader2, XCircle, Check, PlayCircle, Video, ExternalLink } from 'lucide-react';
 import { supabase } from '../../client_config';
+import driveDemoVideo from '../../assets/DriveDemo2.mp4';
 
 interface RegisterPageProps {
   onNavigate: (page: PageRoute) => void;
@@ -15,6 +17,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
 
   // Live team name availability state
   const [teamNameStatus, setTeamNameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
@@ -526,18 +529,40 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                        Drive Link (Project Video) *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-mono font-bold text-ink uppercase">
+                          Drive Link (Project Video) *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setIsVideoModalOpen(true)}
+                          className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-hpl-purple hover:text-hpl-coral transition-colors underline underline-offset-2 cursor-pointer"
+                        >
+                          <PlayCircle className="w-3.5 h-3.5" />
+                          <span>Watch Sample Video</span>
+                        </button>
+                      </div>
                       <input
                         type="url"
                         name="githubOrg"
                         required
                         value={formData.githubOrg}
                         onChange={handleChange}
-                        placeholder="https://drive.google.com/..."
+                        placeholder="https://drive.google.com/file/d/..."
                         className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                       />
+                      <div className="flex items-center justify-between mt-1 text-[11px] text-ink-muted font-sans">
+                        <span>Set Drive share permissions to <strong>"Anyone with the link can view"</strong></span>
+                        <a
+                          href={driveDemoVideo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink font-mono text-[10px] underline underline-offset-1"
+                        >
+                          <span>Open Demo in Tab</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      </div>
                     </div>
 
                     <div className="p-4 bg-paper-cream rounded-xl sketch-border space-y-2">
@@ -684,6 +709,57 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
+
+      {/* Sample Demo Video Modal */}
+      <Modal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        title="PROJECT VIDEO GUIDELINES & SAMPLE"
+        maxWidth="xl"
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl overflow-hidden sketch-border bg-black aspect-video flex items-center justify-center shadow-sketch-sm">
+            <video
+              controls
+              playsInline
+              preload="auto"
+              key={isVideoModalOpen ? 'drive-video-open' : 'drive-video-closed'}
+              className="w-full h-full object-contain"
+            >
+              <source src={driveDemoVideo} type="video/mp4" />
+              Your browser does not support HTML5 video.
+            </video>
+          </div>
+          <div className="p-3.5 bg-paper-cream rounded-xl sketch-border text-xs font-sans text-ink space-y-1.5">
+            <div className="font-mono font-bold uppercase text-[11px] text-hpl-purple flex items-center gap-1.5">
+              <Video className="w-4 h-4" />
+              <span>Drive Video Submission Guidelines</span>
+            </div>
+            <p className="text-ink-muted text-[11px] leading-relaxed">
+              Record a brief 2–3 minute video presentation covering your team intro, problem statement, architecture, and live prototype walkthrough. Upload it to Google Drive and paste the public link above.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-ink">
+            <a
+              href={driveDemoVideo}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg border border-ink text-xs font-mono font-bold bg-paper-cream hover:bg-paper-dark transition-colors inline-flex items-center gap-1.5"
+            >
+              <span>Open in New Tab</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            <Button
+              type="button"
+              variant="purple"
+              size="sm"
+              onClick={() => setIsVideoModalOpen(false)}
+            >
+              GOT IT
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

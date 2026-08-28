@@ -6,12 +6,10 @@ import { CustomCursor } from './components/common/CustomCursor';
 
 // Pages
 import { HomePage } from './components/pages/HomePage';
-import { LeaguePage } from './components/pages/LeaguePage';
 import { HowItWorksPage } from './components/pages/HowItWorksPage';
 import { MatchDayPage } from './components/pages/MatchDayPage';
 import { SquadsPage } from './components/pages/SquadsPage';
 import { LeaderboardPage } from './components/pages/LeaderboardPage';
-import { JourneyPage } from './components/pages/JourneyPage';
 import { TimelinePage } from './components/pages/TimelinePage';
 import { PlayoffsPage } from './components/pages/PlayoffsPage';
 import { MentorsPage } from './components/pages/MentorsPage';
