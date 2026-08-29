@@ -11,7 +11,9 @@ export type PageRoute =
   | 'mentors'
   | 'rulebook'
   | 'faq'
-  | 'register';
+  | 'register'
+  | 'sponsors'
+  | 'problem-statements';
 
 export interface Squad {
   id: string;

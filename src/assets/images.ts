@@ -9,6 +9,29 @@ import collaborationImg from './hpl_collaboration_1787762028921.jpg';
 import timelineHeaderImg from './hpl_timeline_header.jpg';
 import timelineChampionsImg from './hpl_timeline_champions.jpg';
 import timelineFooterBgImg from './hpl_timeline_footer_bg.jpg';
+import championshipAwaitsImg from './hpl_championship_awaits.jpg';
+import mentorsHeroImg from './hpl_mentors_hero.jpg';
+import mentorLaptopImg from './hpl_mentor_laptop.jpg';
+import mentorGrillingImg from './hpl_mentor_grilling.jpg';
+import mentorJuryImg from './hpl_mentor_jury.jpg';
+import journeyWeek1Img from './hpl_journey_week1.jpg';
+import journeyWeek2Img from './hpl_journey_week2.jpg';
+import journeyPlayoffsImg from './hpl_journey_playoffs.jpg';
+import sponsorsHeroImg from './hpl_sponsors_hero.jpg';
+import sponsorsHighFiveImg from './hpl_sponsors_highfive.jpg';
+import sponsorsTrophyImg from './hpl_sponsors_trophy.jpg';
+import sponsorsRocketImg from './hpl_sponsors_rocket.jpg';
+import psOriginalMockImg from './ps_original_mock.jpg';
+import ps3AggregatorImg from './ps3_internship_aggregator.jpg';
+
+// Real Partner & Sponsor Logos
+import shirvaLogo from './shirva.png';
+import smvitmLogo from './smvitm.png';
+import isteLogo from './iste.png';
+import igniteLogo from './ignite.jpeg';
+import ieeeLogo from './ieee.png';
+import codeTrooperLogo from './code trooper.png';
+import aikyaLogo from './Aikya logo_20260829_133319_0000.png';
 
 export const HPL_IMAGES = {
   hero: heroImg,
@@ -21,4 +44,26 @@ export const HPL_IMAGES = {
   timelineHeader: timelineHeaderImg,
   timelineChampions: timelineChampionsImg,
   timelineFooterBg: timelineFooterBgImg,
+  championshipAwaits: championshipAwaitsImg,
+  mentorsHero: mentorsHeroImg,
+  mentorLaptop: mentorLaptopImg,
+  mentorGrilling: mentorGrillingImg,
+  mentorJury: mentorJuryImg,
+  journeyWeek1: journeyWeek1Img,
+  journeyWeek2: journeyWeek2Img,
+  journeyPlayoffs: journeyPlayoffsImg,
+  sponsorsHero: sponsorsHeroImg,
+  sponsorsHighFive: sponsorsHighFiveImg,
+  sponsorsTrophy: sponsorsTrophyImg,
+  sponsorsRocket: sponsorsRocketImg,
+  psMockup: psOriginalMockImg,
+  ps3Aggregator: ps3AggregatorImg,
+  // Sponsor & Partner Brand Logos
+  shirvaLogo,
+  smvitmLogo,
+  isteLogo,
+  igniteLogo,
+  ieeeLogo,
+  codeTrooperLogo,
+  aikyaLogo,
 };

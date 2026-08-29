@@ -80,7 +80,7 @@ export const PILLARS_DATA: PillarStep[] = [
     points: [
       'Dynamic table tracking Wins, Ties, Losses, and Total Points',
       'Movement indicators (↑ Rising, → Stable, ↓ Falling)',
-      'Top 4 squads qualify for the Physical Grand Playoffs'
+      'Top 4 squads from each domain (12 teams) qualify for the Grand Finale'
     ]
   },
   {
@@ -90,7 +90,7 @@ export const PILLARS_DATA: PillarStep[] = [
     icon: Trophy,
     color: '#EA580C',
     accentBg: '#FFEDD5',
-    description: 'The Top 4 ranked squads enter the playoff stadium. Semifinal 1 (Rank 1 vs 4) and Semifinal 2 (Rank 2 vs 3) set up the high-stakes final showdown at the SMVITM Bantakal Auditorium.',
+    description: 'The top 4 ranked squads from each of the 3 domains (12 finalist teams total) enter the championship stadium for the high-stakes final showdown at the SMVITM Bantakal Auditorium.',
     points: [
       'Physical arena sprint at SMVITM Bantakal Auditorium',
       'Live code stress tests and jury cross-examinations',

@@ -108,7 +108,7 @@ export const SquadsPage: React.FC<SquadsPageProps> = ({ onNavigate, selectedSqua
 
                 {squad.isPlayoffQualified && (
                   <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-mono font-bold rounded border border-emerald-300">
-                    TOP 4
+                    FINALIST
                   </span>
                 )}
               </div>

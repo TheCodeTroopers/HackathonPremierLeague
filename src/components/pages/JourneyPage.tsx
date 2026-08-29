@@ -59,12 +59,12 @@ export const JourneyPage: React.FC<JourneyPageProps> = ({ onNavigate }) => {
       date: '24 JULY 2026',
       stage: 'STAGE 05',
       title: 'MATCH DAY 2: SHOWDOWN & PLAYOFF CUT',
-      subtitle: 'The Battle for Top 4',
+      subtitle: 'The Battle for Top 4 in Each Domain',
       tag: 'MATCH DAY 2',
       color: 'amber',
       illustration: <Week2Illustration className="w-20 h-20" />,
-      desc: 'Second head-to-head match day. Squads defend their refactored builds against simulated chaos tests. At the end of the day, the Top 4 Playoff qualifiers are officially announced.',
-      checklist: ['Load & Stress Benchmark Defense', 'Final Round-Robin Points Tally', 'Official Top 4 Playoff Selection']
+      desc: 'Second head-to-head match day. Squads defend their refactored builds against simulated chaos tests. At the end of the day, the Top 4 qualifiers from each domain (12 teams total) are officially announced.',
+      checklist: ['Load & Stress Benchmark Defense', 'Final Round-Robin Points Tally', 'Top 4 per Domain Finalist Selection (12 Teams)']
     },
     {
       date: '19 – 22 AUGUST 2026',
@@ -74,8 +74,8 @@ export const JourneyPage: React.FC<JourneyPageProps> = ({ onNavigate }) => {
       tag: 'GRAND FINALE',
       color: 'gold',
       illustration: <Week3Illustration className="w-20 h-20" />,
-      desc: 'The Top 4 squads gather at the SMVITM Auditorium Arena. Semifinals, 3rd place match, and Grand Finale live stage demonstrations in front of industry juries and venture investors.',
-      checklist: ['Physical Arena 24H Sprint', 'Semifinal 1 & 2 Knockouts', 'Grand Championship Trophy Presentation']
+      desc: 'The 12 finalist squads (top 4 from each of the 3 domains) gather at the SMVITM Auditorium Arena for live stage demonstrations in front of industry juries and venture investors.',
+      checklist: ['Physical Arena 24H Sprint', 'Championship Showdown Pitches', 'Grand Championship Trophy Presentation']
     }
   ];
 

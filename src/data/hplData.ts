@@ -12,7 +12,7 @@ export const HPL_META = {
   stats: [
     { value: '3', label: 'WEEKS', subtitle: 'Continuous Innovation' },
     { value: '8+', label: 'MATCH DAYS', subtitle: 'Head-to-Head Rounds' },
-    { value: 'TOP 4', label: 'PLAYOFFS', subtitle: 'Knockout Battle' },
+    { value: '12 TEAMS', label: 'PLAYOFFS', subtitle: 'Top 4 per Domain' },
     { value: '1', label: 'CHAMPION', subtitle: 'Golden Trophy & Cash' },
   ],
   pointsRules: [
@@ -290,18 +290,18 @@ export const TIMELINE_PHASES = [
       'Day 1 (22 July): Problem Part 2 modifier released',
       'Day 2 (23 July): Deep-dive mentor code review & QA testing',
       'Day 3 (24 July): Match Day 2 face-offs & live demo showdown',
-      'Day 4 (25 July): League points calculated & Top 4 Playoff cut announced'
+      'Day 4 (25 July): League points calculated & Top 4 per domain (12 finalists) announced'
     ]
   },
   {
     phaseNumber: '03',
     week: 'PLAYOFFS — PART 3',
     dateRange: '19 – 22 AUGUST 2026',
-    title: 'Part 3 Released: Semifinals & Grand Finale',
-    subHeader: 'Top 4 Battle for the Championship',
+    title: 'Part 3 Released: Grand Finale & Crowning',
+    subHeader: '12 Finalist Squads (Top 4 per Domain) Battle for the Championship',
     color: 'purple',
     badgeText: 'CHAMPIONSHIP ARENA',
-    description: 'The Top 4 squads enter the physical arena. 24-hour sprint to build final production deployment, live security audit, and grand jury defense.',
+    description: 'The 12 finalist squads (top 4 from each of the 3 domains) enter the physical arena. 24-hour sprint to build final production deployment, live security audit, and grand jury defense.',
     milestones: [
       'Day 1 (19 Aug): Playoff sprint begins & stadium setup',
       'Day 2 (20 Aug): Semifinal 1 (Rank 1 vs 4) & Semifinal 2 (Rank 2 vs 3)',
@@ -459,7 +459,7 @@ export const MENTORS_AND_JUDGES: PersonProfile[] = [
     id: 'pers-7',
     name: 'Mr. Ramachandra',
     title: 'System Designer & Principal Consultant',
-    company: 'Tata Consultancy Services (TCS)',
+    company: 'Enterprise Solutions Consultant',
     category: 'judge',
     avatarSeed: 'ramachandra',
     expertise: ['Enterprise Architecture', 'Cybersecurity', 'High-Availability Systems'],
@@ -499,7 +499,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
       'HPL spans 3 progressive weeks with two round-robin match fixtures and one playoff championship round.',
       'Points Allocation per match day: Win = 3 Points, Tie = 1 Point, Loss = 0 Points.',
       'In each match day, two squads in the same track present their weekly milestone build to a panel of expert mentors & judges.',
-      'The top 4 squads on the cumulative points table after Week 2 automatically qualify for the Grand Playoffs.'
+      'The top 4 squads from each of the 3 domains (12 finalist teams total) on the cumulative points table after Week 2 automatically qualify for the Grand Finale.'
     ]
   },
   {
@@ -518,13 +518,14 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
     id: 'evaluation-criteria',
     title: '4. Evaluation & Judging Rubric',
     icon: 'Scale',
-    summary: 'Detailed scoring weights across innovation, engineering, UI/UX, and local impact.',
+    summary: 'Universal evaluation across 6 core pillars for all problem statements.',
     rules: [
-      'Innovation & Problem Solving (25%): Uniqueness of approach and depth of domain understanding.',
-      'Technical Architecture & Code Quality (30%): Clean code, robustness, security, and smart API integration.',
-      'UI/UX & User Experience (20%): Intuitive user flow, responsiveness, accessibility, and visual polish.',
-      'Local Impact & Viability (15%): Tangible benefit to the Udupi region and practical implementation feasibility.',
-      'Presentation & Live Demo (10%): Clarity of pitch, handling judge questions, and live functioning demo.'
+      'Problem Understanding: Depth of domain understanding, identification of core pain points, and user persona empathy.',
+      'Functionality: End-to-end working system, core feature completeness, computational accuracy, and error resilience.',
+      'User Experience: Intuitive user journey, clean navigation, accessibility, responsive UI polish, and communication clarity.',
+      'Technical Implementation: Architectural robustness, clean modular code, secure API integrations, and git commit hygiene.',
+      'Innovation: Originality of concept, novel feature sets, creative problem solving, and competitive differentiation.',
+      'Practicality: Real-world viability, feasibility of deployment in target environments, cost efficiency, and tangible user impact.'
     ]
   },
   {
@@ -545,7 +546,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-1',
     category: 'General',
     question: 'What is the Hackathon Premier League (HPL)?',
-    answer: 'HPL is a 3-week innovation tournament structured like a premier sports league. Rather than a single 24-hour sprint, teams build, test, receive mentor feedback, iterate across weekly match days, and climb the live leaderboard into the Top 4 Playoffs.'
+    answer: 'HPL is a 3-week innovation tournament structured like a premier sports league. Rather than a single 24-hour sprint, teams build, test, receive mentor feedback, iterate across weekly match days, and climb the live leaderboard to qualify among the Top 4 in their domain (12 finalist teams) for the Grand Finale.'
   },
   {
     id: 'faq-2',
@@ -575,7 +576,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-6',
     category: 'Playoffs',
     question: 'Is it mandatory to participate in all weeks?',
-    answer: 'Yes! Continuous progression is the core philosophy of HPL. Week 1 lays the foundation, Week 2 introduces deep technical challenges, and the Top 4 ranked teams advance to the Physical Grand Finale.'
+    answer: 'Yes! Continuous progression is the core philosophy of HPL. Week 1 lays the foundation, Week 2 introduces deep technical challenges, and the top 4 ranked teams from each domain (12 finalists) advance to the Physical Grand Finale.'
   },
   {
     id: 'faq-7',

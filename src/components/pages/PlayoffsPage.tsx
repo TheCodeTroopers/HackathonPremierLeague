@@ -32,7 +32,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
           THE PLAYOFFS
         </h1>
         <p className="text-base sm:text-lg text-ink-muted leading-relaxed">
-          The Top 4 squads face off in a physical tournament bracket at SMVITM Bantakal to crown the Season 2026 Champion.
+          The 12 finalist squads (Top 4 from each of the 3 domains) face off in the physical championship arena at SMVITM Bantakal to crown the Season 2026 Champion.
         </p>
       </div>
 

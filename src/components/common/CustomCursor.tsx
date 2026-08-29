@@ -133,6 +133,48 @@ export const CustomCursor: React.FC = () => {
       }, 450);
     };
 
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const pId = ++particleIdRef.current;
+        const colors = ['#F59E0B', '#E11D48', '#7C3AED', '#2563EB', '#10B981'];
+        const chars = ['✦', '★', '✧', '•'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const char = chars[Math.floor(Math.random() * chars.length)];
+
+        setParticles((prev) => [
+          ...prev.slice(-6),
+          {
+            id: pId,
+            x: touch.clientX + (Math.random() * 12 - 6),
+            y: touch.clientY + (Math.random() * 12 - 6),
+            size: Math.random() * 4 + 8,
+            color,
+            char,
+            rotation: Math.random() * 90 - 45,
+          },
+        ]);
+
+        setTimeout(() => {
+          setParticles((prev) => prev.filter((p) => p.id !== pId));
+        }, 450);
+
+        const bId = ++burstIdRef.current;
+        const word = BURST_WORDS[Math.floor(Math.random() * BURST_WORDS.length)];
+        const burstColor = BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
+        const rotation = Math.floor(Math.random() * 20 - 10);
+
+        setBursts((prev) => [
+          ...prev.slice(-2),
+          { id: bId, x: touch.clientX, y: touch.clientY, word, color: burstColor, rotation },
+        ]);
+
+        setTimeout(() => {
+          setBursts((prev) => prev.filter((b) => b.id !== bId));
+        }, 450);
+      }
+    };
+
     const handleMouseUp = () => setIsClicking(false);
     const handleMouseLeave = () => setIsVisible(false);
     const handleMouseEnter = () => setIsVisible(true);
@@ -155,6 +197,7 @@ export const CustomCursor: React.FC = () => {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
     window.addEventListener('scroll', handleScroll, { passive: true });
     document.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('mouseenter', handleMouseEnter);
@@ -163,6 +206,7 @@ export const CustomCursor: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('scroll', handleScroll);
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseenter', handleMouseEnter);
@@ -186,7 +230,7 @@ export const CustomCursor: React.FC = () => {
         style={{ opacity: isVisible ? 1 : 0, transition: 'opacity 0.2s ease-out' }}
       >
           
-          {/* Floating Stardust Particles */}
+          {/* Floating Stardust Particles (Active on touch & click across all devices) */}
           {particles.map((p) => (
             <div
               key={p.id}
@@ -197,7 +241,7 @@ export const CustomCursor: React.FC = () => {
                 fontSize: `${p.size}px`,
                 color: p.color,
                 transform: `translate(-50%, -50%) rotate(${p.rotation}deg)`,
-                textShadow: '1px 2px 0px #1E1B4B',
+                textShadow: '1px 1.5px 0px #1E1B4B',
                 pointerEvents: 'none',
               }}
             >
@@ -205,7 +249,7 @@ export const CustomCursor: React.FC = () => {
             </div>
           ))}
 
-          {/* Comic Action Bursts on Click */}
+          {/* Comic Action Bursts on Click & Mobile Touch */}
           {bursts.map((b) => (
             <div
               key={b.id}
@@ -213,11 +257,11 @@ export const CustomCursor: React.FC = () => {
               style={{
                 left: `${b.x}px`,
                 top: `${b.y}px`,
-                transform: `translate(-50%, -50%) rotate(${b.rotation}deg) scale(1.15)`,
+                transform: `translate(-50%, -50%) rotate(${b.rotation}deg) scale(0.95)`,
               }}
             >
               <div className="relative flex items-center justify-center">
-                <svg viewBox="0 0 100 100" className="w-24 h-24 filter drop-shadow-[2.5px_3.5px_0px_#1E1B4B]">
+                <svg viewBox="0 0 100 100" className="w-20 h-20 filter drop-shadow-[2px_2.5px_0px_#1E1B4B]">
                   <polygon
                     points="50,2 62,24 88,12 78,38 98,50 78,62 88,88 62,76 50,98 38,76 12,88 22,62 2,50 22,38 12,12 38,24"
                     fill={b.color}
@@ -231,39 +275,39 @@ export const CustomCursor: React.FC = () => {
                     fillOpacity="0.35"
                   />
                 </svg>
-                <span className="absolute font-black font-display text-white text-xs tracking-wider uppercase drop-shadow-[1px_2px_0px_#1E1B4B]">
+                <span className="absolute font-black font-display text-white text-[11px] tracking-wider uppercase drop-shadow-[1px_1.5px_0px_#1E1B4B]">
                   {b.word}
                 </span>
               </div>
             </div>
           ))}
 
-          {/* Hardware-Accelerated 120 FPS Cursor Element */}
+          {/* Hardware-Accelerated 120 FPS Desktop Cursor Arrow (Hidden on mobile phones / touch screens) */}
           <div
             ref={cursorRef}
-            className="fixed top-0 left-0 will-change-transform pointer-events-none"
+            className="fixed top-0 left-0 will-change-transform pointer-events-none hidden md:block"
             style={{
               transform: `translate3d(-100px, -100px, 0)`,
             }}
           >
             <div
-              className={`flex items-center gap-2 transition-transform duration-75 ease-out ${
+              className={`flex items-center gap-1.5 transition-transform duration-75 ease-out ${
                 isClicking
-                  ? 'scale-85 rotate-[-8deg]'
+                  ? 'scale-75 rotate-[-8deg]'
                   : isHovering
-                  ? 'scale-115 rotate-[-12deg]'
-                  : 'scale-100 rotate-0'
+                  ? 'scale-90 rotate-[-10deg]'
+                  : 'scale-75 rotate-0'
               }`}
             >
-              {/* Chunky Comic Arrow Vector with Precise Tip at (0, 0) */}
-              <div className="relative w-9 h-10 filter drop-shadow-[3px_4px_0px_#1E1B4B]">
+              {/* Refined Comic Arrow Vector - Professional Compact Size */}
+              <div className="relative w-7 h-8 filter drop-shadow-[2px_2.5px_0px_#1E1B4B]">
                 <svg viewBox="0 0 40 44" fill="none" className="w-full h-full overflow-visible">
                   {/* Action Rays on Hover */}
                   {isHovering && (
                     <g className="animate-pulse">
-                      <line x1="-3" y1="-3" x2="-8" y2="-8" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
-                      <line x1="0" y1="-5" x2="0" y2="-12" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
-                      <line x1="-5" y1="0" x2="-12" y2="0" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
+                      <line x1="-3" y1="-3" x2="-7" y2="-7" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+                      <line x1="0" y1="-4" x2="0" y2="-10" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+                      <line x1="-4" y1="0" x2="-10" y2="0" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
                     </g>
                   )}
 
@@ -317,8 +361,8 @@ export const CustomCursor: React.FC = () => {
 
               {/* Context Comic Speech Tag on Hover */}
               {isHovering && (
-                <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-lg px-2.5 py-1 shadow-sketch-sm animate-comic-wiggle whitespace-nowrap">
-                  <span className="font-display font-black text-[10.5px] text-[#1E1B4B] tracking-wider uppercase block">
+                <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-lg px-2 py-0.5 shadow-sketch-xs animate-comic-wiggle whitespace-nowrap">
+                  <span className="font-display font-black text-[9.5px] text-[#1E1B4B] tracking-wider uppercase block">
                     {hoverTag}
                   </span>
                 </div>

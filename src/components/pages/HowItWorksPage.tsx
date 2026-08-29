@@ -55,8 +55,8 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onNavigate }) =>
       timing: 'Week 2 — Days 3 & 4',
       icon: Users,
       color: 'bg-rose-100 text-rose-900 border-rose-300',
-      description: 'Second round-robin showdown. Solutions are tested against real data pipelines, accessibility standards, and offline resilience. Cumulative points decide the Top 4 Cut.',
-      deliverable: 'Production Deployment v2.0 + Top 4 Playoff Selection'
+      description: 'Second round-robin showdown. Solutions are tested against real data pipelines, accessibility standards, and offline resilience. Cumulative points decide the Top 4 from each domain.',
+      deliverable: 'Production Deployment v2.0 + Selection of Top 4 per Domain (12 Finalists)'
     },
     {
       step: '06',
@@ -64,17 +64,18 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onNavigate }) =>
       timing: 'Week 3 — Grand Finale',
       icon: Trophy,
       color: 'bg-hpl-yellow text-ink border-ink',
-      description: 'The Top 4 qualified squads battle in physical Semifinals and Grand Finale at SMVITM Bantakal. Final jury deliberations award the Golden HPL Trophy and prize pool.',
+      description: 'The 12 qualified squads (top 4 from each of the 3 domains) battle in the Grand Finale at SMVITM Bantakal. Final jury deliberations award the Golden HPL Trophy and prize pool.',
       deliverable: 'Championship Live Pitch + Trophy Award Ceremony'
     }
   ];
 
   const evaluationRubric = [
-    { title: 'Technical Architecture & Code Quality', weight: '30%', desc: 'Modularity, clean git commits, test coverage, API efficiency, and security posture.' },
-    { title: 'Innovation & Problem Solving', weight: '25%', desc: 'Originality of the conceptual approach and depth of domain insight.' },
-    { title: 'UI/UX & User Experience', weight: '20%', desc: 'Visual polish, intuitive user journeys, accessibility, and responsive interface design.' },
-    { title: 'Local Impact & Viability', weight: '15%', desc: 'Practical utility and commercial or civic sustainability for Udupi and coastal Karnataka.' },
-    { title: 'Pitch & Live Demonstration', weight: '10%', desc: 'Clarity of presentation, handling judge cross-questions, and flawless live demo execution.' }
+    { title: 'Problem Understanding', weight: 'Core Pillar', desc: 'Grasp of the problem domain, identification of user pain points, clear objective alignment, and constraint awareness.' },
+    { title: 'Functionality', weight: 'Core Pillar', desc: 'Working completeness of features, end-to-end execution, computational accuracy, reliability, and error resilience.' },
+    { title: 'User Experience', weight: 'Core Pillar', desc: 'Intuitive user journeys, visual polish, accessibility, responsiveness, and frictionless usability.' },
+    { title: 'Technical Implementation', weight: 'Core Pillar', desc: 'Architectural soundness, clean code, secure API integrations, performance, and scalability.' },
+    { title: 'Innovation', weight: 'Core Pillar', desc: 'Originality of concept, novel feature sets, creative problem solving, and competitive advantage.' },
+    { title: 'Practicality', weight: 'Core Pillar', desc: 'Real-world viability, feasibility of deployment in target environments, cost efficiency, and tangible impact.' }
   ];
 
   return (
@@ -196,7 +197,7 @@ export const HowItWorksPage: React.FC<HowItWorksPageProps> = ({ onNavigate }) =>
               PLAYOFF QUALIFICATION
             </h3>
             <p className="text-xs sm:text-sm text-ink-muted leading-relaxed">
-              After Week 2 completion, the Top 4 squads on the cumulative league leaderboard automatically qualify for the Grand Playoffs.
+              After Week 2 completion, the top 4 squads from each of the 3 domains (12 teams total) on the cumulative league leaderboard automatically qualify for the Grand Finale.
             </p>
           </div>
 

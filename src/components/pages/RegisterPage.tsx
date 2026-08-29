@@ -25,7 +25,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     teamName: '',
-    track: 'Build For Udupi',
+    track: 'PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information',
     teamLeaderName: '',
     leaderEmail: '',
     leaderPhone: '',
@@ -43,6 +43,26 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     githubOrg: '',
     acceptRules: true
   });
+
+  // Preselect Problem Statement from navigation/localStorage if set
+  useEffect(() => {
+    try {
+      const preselectedPs = localStorage.getItem('hpl_selected_ps');
+      if (preselectedPs) {
+        if (preselectedPs.includes('WeatherGPT')) {
+          setFormData(prev => ({ ...prev, track: 'PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information' }));
+        } else if (preselectedPs.includes('Rural Market')) {
+          setFormData(prev => ({ ...prev, track: 'PS 02: Rural Market Intelligence Platform' }));
+        } else if (preselectedPs.includes('Internship') || preselectedPs.includes('Opportunity Aggregator')) {
+          setFormData(prev => ({ ...prev, track: 'PS 03: Internship and Opportunity Aggregator' }));
+        } else {
+          setFormData(prev => ({ ...prev, track: preselectedPs }));
+        }
+      }
+    } catch (e) {
+      // Ignore if localStorage unavailable
+    }
+  }, []);
 
   // Debounced real-time team name availability check
   useEffect(() => {
@@ -205,20 +225,20 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       </div>
 
       {/* Main Container */}
-      <div className="bg-paper-light sketch-border rounded-sketch-lg p-6 sm:p-10 shadow-sketch-xl">
+      <div className="bg-paper-light sketch-border rounded-sketch-lg p-4 sm:p-7 md:p-10 shadow-sketch-xl">
         {!isSubmitted ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             {/* Left Form Column */}
             <div className="lg:col-span-7 space-y-6">
               {/* Stepper Indicator */}
-              <div className="flex items-center justify-between border-b-2 border-ink pb-4">
+              <div className="flex items-center justify-between border-b-2 border-ink pb-4 gap-2">
                 {[
-                  { step: 1, label: 'SQUAD & TRACK' },
-                  { step: 2, label: 'MEMBERS' },
-                  { step: 3, label: 'COLLEGE & CONFIRM' }
+                  { step: 1, label: 'SQUAD & PROBLEM STATEMENT', shortLabel: 'Squad & PS' },
+                  { step: 2, label: 'MEMBERS', shortLabel: 'Members' },
+                  { step: 3, label: 'COLLEGE & CONFIRM', shortLabel: 'Confirm' }
                 ].map((s) => (
-                  <div key={s.step} className="flex items-center gap-2">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center font-display font-black text-xs sketch-border ${
+                  <div key={s.step} className="flex items-center gap-1.5 sm:gap-2">
+                    <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-display font-black text-xs sketch-border flex-shrink-0 ${
                       currentStep === s.step
                         ? 'bg-hpl-purple text-white shadow-sketch-sm'
                         : currentStep > s.step
@@ -227,8 +247,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     }`}>
                       {currentStep > s.step ? '✓' : s.step}
                     </span>
-                    <span className="hidden sm:inline text-xs font-mono font-bold text-ink uppercase">
+                    <span className="hidden md:inline text-xs font-mono font-bold text-ink uppercase">
                       {s.label}
+                    </span>
+                    <span className="inline md:hidden text-[11px] font-mono font-bold text-ink uppercase">
+                      {s.shortLabel}
                     </span>
                   </div>
                 ))}
@@ -236,11 +259,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
               {/* Form Flow */}
               <form onSubmit={handleNext} className="space-y-4">
-                {/* STEP 1: SQUAD & TRACK */}
+                {/* STEP 1: SQUAD & PROBLEM STATEMENT */}
                 {currentStep === 1 && (
                   <div className="space-y-4 animate-in fade-in duration-200">
                     <div>
-                      <div className="flex items-center justify-between mb-1">
+                      <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
                         <label className="block text-xs font-mono font-bold text-ink uppercase">
                           Squad / Team Name *
                         </label>
@@ -289,7 +312,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                          Preferred Challenge Track *
+                          Select Problem Statement (PS) *
                         </label>
                         <select
                           name="track"
@@ -297,11 +320,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                           onChange={handleChange}
                           className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                         >
-                          <option value="Build For Udupi">Build For Udupi (Smart City & Heritage)</option>
-                          <option value="Coastal Tech">Coastal Tech (Fisheries & Ecology)</option>
-                          <option value="AI for Governance">AI for Governance (Civic WhatsApp Bots)</option>
-                          <option value="Smart Pilgrimage">Smart Pilgrimage (Queue & Voice Guides)</option>
-                          <option value="Green Tech">Green Tech (Beach Cleanliness & Waste)</option>
+                          <option value="PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information">
+                            PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information
+                          </option>
+                          <option value="PS 02: Rural Market Intelligence Platform">
+                            PS 02: Rural Market Intelligence Platform
+                          </option>
+                          <option value="PS 03: Internship and Opportunity Aggregator">
+                            PS 03: Internship and Opportunity Aggregator
+                          </option>
                         </select>
                       </div>
 
@@ -330,7 +357,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         rows={3}
                         value={formData.projectIdea}
                         onChange={handleChange}
-                        placeholder="Describe the real-world issue in Udupi you plan to address..."
+                        placeholder="Describe your planned solution approach for your chosen Problem Statement..."
                         className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-sans text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                       />
                     </div>
@@ -551,13 +578,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         placeholder="https://drive.google.com/file/d/..."
                         className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-hpl-purple"
                       />
-                      <div className="flex items-center justify-between mt-1 text-[11px] text-ink-muted font-sans">
+                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 mt-1.5 text-[11px] text-ink-muted font-sans">
                         <span>Set Drive share permissions to <strong>"Anyone with the link can view"</strong></span>
                         <a
                           href={driveDemoVideo}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink font-mono text-[10px] underline underline-offset-1"
+                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink font-mono text-[10px] underline underline-offset-1 flex-shrink-0"
                         >
                           <span>Open Demo in Tab</span>
                           <ExternalLink className="w-2.5 h-2.5" />
@@ -591,7 +618,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t-2 border-ink">
+                <div className="flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between pt-4 border-t-2 border-ink gap-3">
                   {currentStep > 1 ? (
                     <Button
                       type="button"
@@ -601,10 +628,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       disabled={isSubmitting}
                       icon={<ArrowLeft className="w-4 h-4" />}
                       iconPosition="left"
+                      className="w-full xs:w-auto justify-center"
                     >
                       BACK
                     </Button>
-                  ) : <div />}
+                  ) : <div className="hidden xs:block" />}
 
                   <Button
                     type="submit"
@@ -612,6 +640,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     size="lg"
                     disabled={isSubmitting}
                     icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
+                    className="w-full xs:w-auto justify-center text-xs sm:text-sm"
                   >
                     {isSubmitting
                       ? 'REGISTERING SQUAD...'
@@ -667,8 +696,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   <span className="font-black text-sm text-hpl-yellow">{formData.teamName || 'CodeTroopers'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">TRACK:</span>
-                  <span className="font-black text-sm text-white">{formData.track}</span>
+                  <span className="text-slate-400 block text-[10px]">PROBLEM STATEMENT:</span>
+                  <span className="font-black text-xs sm:text-sm text-white line-clamp-2">{formData.track}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px]">TEAM LEADER:</span>

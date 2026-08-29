@@ -16,6 +16,7 @@ import {
   ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink
 } from 'lucide-react';
 import registrationVideo from '../../assets/RegistrationVideo_opt.mp4';
+import { HPL_IMAGES } from '../../assets/images';
 
 interface HomePageProps {
   onNavigate: (route: PageRoute) => void;
@@ -32,7 +33,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
   const rotatingTaglines = [
     'A 3-Week League of Innovation • Build impactful solutions.',
     '8+ Head-to-Head Match Days • Climb the Live Table.',
-    'Iterate with 15+ Industry Mentors from TCS & Niveus.',
+    'Iterate with 15+ Industry Mentors from Niveus & Top Tech Enterprises.',
     'Grand Playoffs Finale at SMVITM Auditorium • September 2026.'
   ];
 
@@ -668,14 +669,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                     <Trophy className="w-8 h-8 text-[#D97706]" />
                   </div>
                   <span className="px-2.5 py-1 rounded-full bg-[#FEF3C7] border border-[#D97706] text-[10px] font-mono font-black text-[#D97706] uppercase">
-                    TOP 4 FINALE
+                    12 SQUADS FINALE
                   </span>
                 </div>
                 <h3 className="font-display font-black text-xl text-[#1E1B4B]">
                   Grand Auditorium Playoffs
                 </h3>
                 <p className="text-sm text-[#1E1B4B]/75 leading-relaxed">
-                  The Top 4 ranked teams battle it out live on stage at the SMVITM Auditorium before industry juries and investors for the Championship Trophy.
+                  The top 4 ranked teams from each of the 3 domains (12 finalist teams total) battle it out live on stage at the SMVITM Auditorium before industry juries and investors for the Championship Trophy.
                 </p>
               </div>
               <div className="pt-4 mt-4 border-t-2 border-[#1E1B4B]/10">
@@ -693,7 +694,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
               {[
                 { num: '3', label: 'WEEKS', sub: 'of progressive building' },
                 { num: '8+', label: 'MATCH DAYS', sub: 'live head-to-head fixtures' },
-                { num: 'TOP 4', label: 'PLAYOFFS', sub: 'physical grand finale' },
+                { num: '12 TEAMS', label: 'PLAYOFFS', sub: 'Top 4 from each domain' },
                 { num: '₹30K', label: 'PRIZE POOL', sub: 'cash awards & trophies' },
               ].map((s, idx) => (
                 <div key={s.label} className={`scroll-stat-item reveal-on-scroll stagger-${idx + 1}`}>
@@ -729,9 +730,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
               onClick={() => onNavigate('timeline')}
               className="scroll-journey-card reveal-on-scroll stagger-1 md:col-span-3 text-center space-y-3 group cursor-pointer"
             >
-              {/* Mint Pastel Illustration Frame */}
-              <div className="bg-[#D1FAE5]/70 border-2 border-emerald-400/60 group-hover:border-emerald-500 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
-                <Week1Illustration className="w-44 h-32 transform group-hover:scale-105 transition-transform duration-300" />
+              {/* Mint Pastel Illustration Frame with Soft Shaded Corner Blend */}
+              <div className="relative overflow-hidden bg-[#D1FAE5]/70 border-2 border-emerald-400/60 group-hover:border-emerald-500 rounded-2xl h-48 sm:h-52 flex items-center justify-center shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
+                <img
+                  src={HPL_IMAGES.journeyWeek1}
+                  alt="Week 1 - Idea Submission, Brainstorming & Build"
+                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500 select-none"
+                  style={{
+                    maskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                  }}
+                />
+                {/* Soft pastel shaded corner & edge blend */}
+                <div 
+                  className="absolute inset-0 pointer-events-none rounded-2xl"
+                  style={{
+                    background: 'radial-gradient(ellipse 92% 88% at 50% 50%, transparent 66%, rgba(209, 250, 229, 0.45) 85%, rgba(209, 250, 229, 0.9) 100%)'
+                  }}
+                />
               </div>
               {/* Text labels */}
               <div className="space-y-0.5">
@@ -760,9 +776,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
               onClick={() => onNavigate('timeline')}
               className="scroll-journey-card reveal-on-scroll stagger-2 md:col-span-3 text-center space-y-3 group cursor-pointer"
             >
-              {/* Lavender/Purple Pastel Illustration Frame */}
-              <div className="bg-[#EDE9FE]/70 border-2 border-purple-400/60 group-hover:border-purple-500 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
-                <Week2Illustration className="w-44 h-32 transform group-hover:scale-105 transition-transform duration-300" />
+              {/* Lavender/Purple Pastel Illustration Frame with Soft Shaded Corner Blend */}
+              <div className="relative overflow-hidden bg-[#EDE9FE]/70 border-2 border-purple-400/60 group-hover:border-purple-500 rounded-2xl h-48 sm:h-52 flex items-center justify-center shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
+                <img
+                  src={HPL_IMAGES.journeyWeek2}
+                  alt="Week 2 - Inauguration, 1st Evaluation & Sprints"
+                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500 select-none"
+                  style={{
+                    maskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                  }}
+                />
+                {/* Soft lavender shaded corner & edge blend */}
+                <div 
+                  className="absolute inset-0 pointer-events-none rounded-2xl"
+                  style={{
+                    background: 'radial-gradient(ellipse 92% 88% at 50% 50%, transparent 66%, rgba(237, 233, 254, 0.45) 85%, rgba(237, 233, 254, 0.9) 100%)'
+                  }}
+                />
               </div>
               {/* Text labels */}
               <div className="space-y-0.5">
@@ -791,9 +822,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
               onClick={() => onNavigate('timeline')}
               className="scroll-journey-card reveal-on-scroll stagger-3 md:col-span-3 text-center space-y-3 group cursor-pointer"
             >
-              {/* Golden/Amber Pastel Illustration Frame */}
-              <div className="bg-[#FEF3C7]/70 border-2 border-amber-400/60 group-hover:border-amber-500 rounded-2xl p-4 flex items-center justify-center h-48 shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
-                <Week3Illustration className="w-44 h-32 transform group-hover:scale-105 transition-transform duration-300" />
+              {/* Golden/Amber Pastel Illustration Frame with Soft Shaded Corner Blend */}
+              <div className="relative overflow-hidden bg-[#FEF3C7]/70 border-2 border-amber-400/60 group-hover:border-amber-500 rounded-2xl h-48 sm:h-52 flex items-center justify-center shadow-sm group-hover:shadow-sketch group-hover:-translate-y-2 transition-all duration-300">
+                <img
+                  src={HPL_IMAGES.journeyPlayoffs}
+                  alt="Playoffs - Grand Finale, Top 4 from Each Domain (12 Teams) & Championship Trophy"
+                  className="w-full h-full object-cover object-center transform group-hover:scale-105 transition-transform duration-500 select-none"
+                  style={{
+                    maskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 92% 88% at 50% 50%, black 72%, rgba(0,0,0,0.85) 86%, transparent 100%)',
+                  }}
+                />
+                {/* Soft golden amber shaded corner & edge blend */}
+                <div 
+                  className="absolute inset-0 pointer-events-none rounded-2xl"
+                  style={{
+                    background: 'radial-gradient(ellipse 92% 88% at 50% 50%, transparent 66%, rgba(254, 243, 199, 0.45) 85%, rgba(254, 243, 199, 0.9) 100%)'
+                  }}
+                />
               </div>
               {/* Text labels */}
               <div className="space-y-0.5">
@@ -804,7 +850,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   PART 3
                 </div>
                 <p className="font-bold text-xs text-[#1E1B4B]/80 pt-1">
-                  Top 4 Teams
+                  Top 4 from Each Domain (12 Teams)
                 </p>
                 <p className="text-[11px] text-[#1E1B4B]/65 font-medium">
                   Grand Finale & Crowning
@@ -865,7 +911,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                     BE THE CHAMPION
                   </div>
                   <div className="font-sans text-[11px] text-[#1E1B4B]/70 font-medium leading-snug">
-                    Top 4 battle it out for the title
+                    Top 4 from each domain battle for the title
                   </div>
                 </div>
               </div>

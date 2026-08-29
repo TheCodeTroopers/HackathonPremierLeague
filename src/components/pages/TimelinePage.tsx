@@ -204,18 +204,31 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
               style={{ background: 'radial-gradient(circle at 60% 50%, rgba(246,240,226,0.95) 0%, rgba(251,249,242,0.5) 65%, transparent 88%)' }}
             />
 
-            <img
-              src={HPL_IMAGES.timelineHeader}
-              alt="HPL Season Timeline"
-              className={`w-full max-w-[340px] sm:max-w-[480px] lg:max-w-none lg:w-[112%] xl:w-[118%] h-auto max-h-[320px] sm:max-h-[440px] lg:max-h-[560px] object-contain select-none block brightness-[1.02] contrast-[1.03] saturate-[1.02] drop-shadow-xs mx-auto lg:ml-auto -mt-2 lg:-mt-6 will-change-transform ${hasEntered ? 'hero-anim-illustration' : 'hero-pre-enter'}`}
-              style={{
-                maskImage: 'radial-gradient(ellipse 88% 85% at 56% 50%, black 45%, rgba(0,0,0,0.85) 64%, rgba(0,0,0,0.2) 82%, transparent 94%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 88% 85% at 56% 50%, black 45%, rgba(0,0,0,0.85) 64%, rgba(0,0,0,0.2) 82%, transparent 94%)',
-              }}
-              loading="eager"
-            />
-          </div>
+            {/* Illustration Container with Subtle Natural Perimeter Feather (Zero Foggy Haze) */}
+            <div className="relative w-full max-w-[360px] sm:max-w-[520px] lg:max-w-none lg:w-[114%] xl:w-[120%] h-auto mx-auto lg:ml-auto -mt-2 lg:-mt-6">
+              
+              <img
+                src={HPL_IMAGES.timelineHeader}
+                alt="HPL Season Timeline"
+                className={`w-full h-auto max-h-[320px] sm:max-h-[440px] lg:max-h-[560px] object-contain select-none block brightness-[1.02] contrast-[1.03] saturate-[1.02] will-change-transform ${hasEntered ? 'hero-anim-illustration' : 'hero-pre-enter'}`}
+                style={{
+                  maskImage: 'radial-gradient(ellipse 94% 88% at 50% 50%, black 78%, rgba(0,0,0,0.8) 90%, transparent 100%)',
+                  WebkitMaskImage: 'radial-gradient(ellipse 94% 88% at 50% 50%, black 78%, rgba(0,0,0,0.8) 90%, transparent 100%)',
+                }}
+                loading="eager"
+              />
 
+              {/* Ultra-subtle bottom edge hairline ease (only 16px, preserves trophy pedestal & pencil cup completely) */}
+              <div 
+                className="absolute inset-x-0 bottom-0 h-4 sm:h-5 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to top, #FBF9F2 20%, transparent 100%)'
+                }}
+              />
+
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -743,7 +756,7 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                   ONLY THE BEST
                 </div>
                 <p className="text-xs text-[#1E1B4B]/75 font-medium leading-relaxed font-sans">
-                  Top 4 squads battle live on stage at the SMVITM Auditorium for the grand championship.
+                  The top 4 squads from each of the 3 domains (12 finalist teams) battle live on stage at the SMVITM Auditorium for the grand championship.
                 </p>
               </div>
 

@@ -75,7 +75,7 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
       points: [
         'Dynamic table tracking Wins, Ties, Losses, and Total Points',
         'Movement indicators (↑ Rising, → Stable, ↓ Falling)',
-        'Top 4 squads qualify for the Physical Grand Playoffs'
+        'Top 4 squads from each domain (12 teams) qualify for the Grand Finale'
       ]
     },
     {
@@ -84,7 +84,7 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
       subtitle: 'Knockout Arena',
       icon: Trophy,
       color: 'bg-amber-100 text-amber-900 border-amber-300',
-      description: 'The Top 4 ranked squads enter the playoff stadium. Semifinal 1 (Rank 1 vs 4) and Semifinal 2 (Rank 2 vs 3) set up the high-stakes final showdown.',
+      description: 'The top 4 ranked squads from each of the 3 domains (12 finalist teams total) enter the championship stadium for the high-stakes final showdown.',
       points: [
         'Physical arena sprint at SMVITM Bantakal Auditorium',
         'Live code stress tests and jury cross-examinations',

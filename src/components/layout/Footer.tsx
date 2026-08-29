@@ -12,6 +12,7 @@ import {
   Calendar,
   ExternalLink
 } from 'lucide-react';
+import { HPL_IMAGES } from '../../assets/images';
 
 interface FooterProps {
   onNavigate: (page: PageRoute) => void;
@@ -203,27 +204,36 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              {/* Powered By Logos */}
-              <div className="space-y-2 pt-1">
-                <span className="font-mono text-[10px] font-black tracking-widest text-white/60 uppercase block">
+              {/* Powered By & Collaboration Logos */}
+              <div className="space-y-2.5 pt-1">
+                <span className="font-mono text-[10px] sm:text-[11px] font-black tracking-widest text-white/60 uppercase block">
                   ORGANIZED IN COLLABORATION WITH
                 </span>
                 
                 <div className="flex flex-wrap items-center justify-center lg:justify-end gap-2 sm:gap-2.5">
                   {[
-                    { id: 'codetroopers', name: 'CodeTroopers', tag: 'Club', icon: '🛡️' },
-                    { id: 'ignite', name: 'IGNITE', tag: 'Innovation', icon: '✨' },
-                    { id: 'aikya', name: 'AIKYA', tag: 'Community', icon: '🔺' },
-                    { id: 'ieee', name: 'IEEE', tag: 'SMVITM', icon: '⚡' },
+                    { id: 'smvitm', name: 'SMVITM', logo: HPL_IMAGES.smvitmLogo },
+                    { id: 'shirva', name: 'Shirva Police', logo: HPL_IMAGES.shirvaLogo },
+                    { id: 'codetroopers', name: 'CodeTroopers', logo: HPL_IMAGES.codeTrooperLogo },
+                    { id: 'ignite', name: 'IGNITE AI', logo: HPL_IMAGES.igniteLogo },
+                    { id: 'aikya', name: 'AIKYA', logo: HPL_IMAGES.aikyaLogo },
+                    { id: 'ieee', name: 'IEEE', logo: HPL_IMAGES.ieeeLogo },
+                    { id: 'iste', name: 'ISTE', logo: HPL_IMAGES.isteLogo },
                   ].map((partner) => (
                     <div
                       key={partner.id}
                       onMouseEnter={() => setHoveredPartner(partner.id)}
                       onMouseLeave={() => setHoveredPartner(null)}
-                      className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 hover:border-amber-400/40 transition-all duration-300 flex items-center gap-1.5 cursor-pointer transform hover:-translate-y-0.5"
+                      className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 hover:border-amber-400/60 transition-all duration-200 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5 shadow-2xs"
                     >
-                      <span className="text-xs">{partner.icon}</span>
-                      <span className="font-display font-black text-xs text-white/90 tracking-tight">
+                      <div className="w-6 h-6 sm:w-7 sm:h-7 bg-white/95 rounded-lg p-0.5 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <img 
+                          src={partner.logo} 
+                          alt={partner.name} 
+                          className="w-full h-full object-contain" 
+                        />
+                      </div>
+                      <span className="font-display font-black text-xs sm:text-[12.5px] text-white tracking-tight whitespace-nowrap">
                         {partner.name}
                       </span>
                     </div>
@@ -253,6 +263,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 className="hover:text-amber-300 hover:underline transition-colors cursor-pointer"
               >
                 Official Rulebook
+              </button>
+              <span>•</span>
+              <button 
+                onClick={() => {
+                  onNavigate('sponsors');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="hover:text-amber-300 hover:underline transition-colors cursor-pointer"
+              >
+                Sponsors & Partners
               </button>
               <span>•</span>
               <button 

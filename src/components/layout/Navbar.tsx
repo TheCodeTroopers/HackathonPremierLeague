@@ -18,13 +18,27 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
     { label: 'TIMELINE', page: 'timeline' },
     { label: 'LEADERBOARD', page: 'leaderboard' },
     { label: 'MENTORS', page: 'mentors' },
+    { label: 'SPONSORS', page: 'sponsors' },
+    { label: 'PROBLEM STATEMENTS', page: 'problem-statements' },
     { label: 'FAQ', page: 'faq' },
   ];
 
-  // Track desktop and mobile scroll depth
+  // Smooth scroll depth tracker with hysteresis buffer to eliminate jitter
   useEffect(() => {
+    let ticking = false;
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 60);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentY = window.scrollY;
+          setIsScrolled(prev => {
+            if (!prev && currentY > 70) return true;
+            if (prev && currentY < 30) return false;
+            return prev;
+          });
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -61,114 +75,119 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
   };
 
   return (
-    <header className={`sticky top-0 z-40 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-transparent border-b-0 border-transparent shadow-none pointer-events-none py-3 sm:py-4' 
-        : 'bg-[#FBF9F2]/95 backdrop-blur-md border-b-2 border-[#1E1B4B]/15 shadow-sm h-20'
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="flex items-center justify-between h-full">
-          
-          {/* HPL Brand Shield Logo (Morphs into a sleek floating pill when scrolled) */}
-          <button
-            onClick={() => handleNavClick('home')}
-            className={`flex items-center gap-2 sm:gap-2.5 group text-left cursor-pointer focus:outline-none transition-all duration-300 ${
-              isScrolled 
-                ? 'pointer-events-auto bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-full px-3.5 py-1.5 shadow-[2.5px_2.5px_0px_#1E1B4B] hover:bg-amber-50 hover:shadow-[3.5px_3.5px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5' 
-                : ''
-            }`}
-          >
-            <div className={`relative flex-shrink-0 transition-all duration-300 ${
-              isScrolled ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-10 h-10'
+    <>
+      <header className="sticky top-0 z-40 w-full h-16 sm:h-20 pointer-events-none transition-all duration-300">
+      {/* Top Full Navbar Background Bar (Fades out when scrolled) */}
+      <div className={`absolute inset-0 transition-opacity duration-300 ${
+        isScrolled 
+          ? 'opacity-0 pointer-events-none' 
+          : 'opacity-100 bg-[#FAF6EE]/95 backdrop-blur-md border-b-2 border-[#1E1B4B]/15 shadow-sm pointer-events-auto'
+      }`} />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between">
+        
+        {/* Left: HPL Brand Shield Logo (Morphs into a sleek floating pill when scrolled) */}
+        <button
+          onClick={() => handleNavClick('home')}
+          className={`flex items-center gap-2 sm:gap-2.5 group text-left cursor-pointer focus:outline-none pointer-events-auto transition-all duration-300 ${
+            isScrolled 
+              ? 'bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-full px-3.5 py-1.5 shadow-[2.5px_2.5px_0px_#1E1B4B] hover:bg-amber-50 hover:shadow-[3.5px_3.5px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5' 
+              : ''
+          }`}
+        >
+          <div className={`relative flex-shrink-0 transition-all duration-300 ${
+            isScrolled ? 'w-7 h-7 sm:w-8 sm:h-8' : 'w-9 h-9 sm:w-10 sm:h-10'
+          }`}>
+            <svg viewBox="0 0 100 100" fill="none" className="w-full h-full transform group-hover:scale-105 transition-transform duration-200">
+              {/* Shield Body */}
+              <polygon points="50,6 90,24 90,74 50,94 10,74 10,24" fill="#1E1B4B" stroke="#F59E0B" strokeWidth="4" />
+              {/* Golden Crown / Trophy inside shield */}
+              <path d="M 30 38 L 40 54 L 50 34 L 60 54 L 70 38 L 68 62 H 32 Z" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5" />
+              <rect x="36" y="64" width="28" height="5" rx="1.5" fill="#F59E0B" />
+            </svg>
+          </div>
+          <div className="flex flex-col">
+            <span className={`font-black font-display tracking-tight text-ink uppercase leading-none transition-all duration-300 ${
+              isScrolled ? 'text-base sm:text-lg' : 'text-lg sm:text-xl'
             }`}>
-              <svg viewBox="0 0 100 100" fill="none" className="w-full h-full transform group-hover:scale-105 transition-transform duration-200">
-                {/* Shield Body */}
-                <polygon points="50,6 90,24 90,74 50,94 10,74 10,24" fill="#1E1B4B" stroke="#F59E0B" strokeWidth="4" />
-                {/* Golden Crown / Trophy inside shield */}
-                <path d="M 30 38 L 40 54 L 50 34 L 60 54 L 70 38 L 68 62 H 32 Z" fill="#FBBF24" stroke="#D97706" strokeWidth="1.5" />
-                <rect x="36" y="64" width="28" height="5" rx="1.5" fill="#F59E0B" />
-              </svg>
-            </div>
-            <div className="flex flex-col">
-              <span className={`font-black font-display tracking-tight text-ink uppercase leading-none transition-all duration-300 ${
-                isScrolled ? 'text-base sm:text-lg' : 'text-xl'
-              }`}>
-                HPL
+              HPL
+            </span>
+            {!isScrolled && (
+              <span className="hidden xs:block text-[8px] sm:text-[9px] font-mono font-bold tracking-wider text-ink-muted uppercase leading-tight mt-0.5">
+                HACKATHON PREMIER LEAGUE
               </span>
-              {!isScrolled && (
-                <span className="text-[8.5px] font-mono font-bold tracking-wider text-ink-muted uppercase leading-tight mt-0.5">
-                  HACKATHON<br />PREMIER LEAGUE
-                </span>
-              )}
-            </div>
+            )}
+          </div>
+        </button>
+
+        {/* Center: Desktop Nav Items (Visible at the top, cleanly fades out when scrolling down) */}
+        <nav className={`transition-all duration-300 ${
+          isScrolled 
+            ? 'opacity-0 scale-95 pointer-events-none hidden lg:hidden' 
+            : 'hidden lg:flex items-center gap-6 xl:gap-8 opacity-100 scale-100 pointer-events-auto'
+        }`}>
+          {navItems.map((item) => {
+            const isActive = (item.label === 'HOME' && activePage === 'home') ||
+                             (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
+                             (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
+                             (item.label === 'MENTORS' && activePage === 'mentors') ||
+                             (item.label === 'SPONSORS' && activePage === 'sponsors') ||
+                             (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
+                             (item.label === 'FAQ' && activePage === 'faq');
+
+            return (
+              <div key={item.label} className="relative py-1">
+                <button
+                  onClick={() => handleNavClick(item.page)}
+                  className={`font-display text-xs xl:text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
+                    isActive
+                      ? 'text-ink font-black'
+                      : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {item.label}
+                </button>
+                {isActive && (
+                  <div className="absolute -bottom-1 left-0 right-0 h-[2.5px] bg-[#4F46E5] rounded-full" />
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Right: Floating MENU Pill & Register CTA */}
+        <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
+          {/* Floating Big Standalone MENU Button when Scrolled / Mobile Menu at top */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className={`inline-flex items-center gap-2 rounded-full border-[2.5px] border-[#1E1B4B] bg-[#FFFDF7] text-[#1E1B4B] font-display font-black uppercase transition-all duration-300 cursor-pointer ${
+              isScrolled 
+                ? 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[3.5px_3.5px_0px_#1E1B4B] hover:bg-[#FBBF24] hover:shadow-[4.5px_4.5px_0px_#1E1B4B] hover:scale-105 active:translate-x-0.5 active:translate-y-0.5' 
+                : 'flex lg:hidden px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
+            }`}
+            aria-label="Open menu drawer"
+          >
+            <Menu className={`transition-all duration-300 ${isScrolled ? 'w-4 h-4 sm:w-5 sm:h-5 text-[#1E1B4B]' : 'w-3.5 h-3.5'}`} />
+            <span className="tracking-wider">MENU</span>
+            {isScrolled && (
+              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-ping ml-0.5" />
+            )}
           </button>
 
-          {/* Desktop Nav Items (Visible at the top, hidden when scrolling down) */}
-          <nav className={`transition-all duration-300 ${
-            isScrolled 
-              ? 'opacity-0 scale-95 pointer-events-none hidden' 
-              : 'hidden md:flex items-center gap-7 lg:gap-8 opacity-100 scale-100'
-          }`}>
-            {navItems.map((item) => {
-              const isActive = (item.label === 'HOME' && activePage === 'home') ||
-                               (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
-                               (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
-                               (item.label === 'MENTORS' && activePage === 'mentors') ||
-                               (item.label === 'FAQ' && activePage === 'faq');
-
-              return (
-                <div key={item.label} className="relative py-1">
-                  <button
-                    onClick={() => handleNavClick(item.page)}
-                    className={`font-display text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                      isActive
-                        ? 'text-ink font-black'
-                        : 'text-ink-muted hover:text-ink'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                  {isActive && (
-                    <div className="absolute -bottom-1.5 left-0 right-0 h-[3px] bg-[#4F46E5] rounded-full" />
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-
-          {/* Action Buttons: Big Standalone MENU Button when Scrolled */}
-          <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
-            {/* The Big Standalone MENU Button */}
+          {/* Starting Soon / Register Capsule (Visible only at top) */}
+          <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
             <button
-              onClick={() => setMobileMenuOpen(true)}
-              className={`items-center gap-2 rounded-full border-[2.5px] border-[#1E1B4B] bg-[#FFFDF7] text-[#1E1B4B] font-display font-black uppercase transition-all duration-300 cursor-pointer ${
-                isScrolled 
-                  ? 'flex px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[3.5px_3.5px_0px_#1E1B4B] hover:bg-[#FBBF24] hover:shadow-[4.5px_4.5px_0px_#1E1B4B] hover:scale-105 active:translate-x-0.5 active:translate-y-0.5 animate-in zoom-in-90' 
-                  : 'flex md:hidden px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
-              }`}
-              aria-label="Open menu drawer"
+              onClick={() => handleNavClick('register')}
+              className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <Menu className={`transition-all duration-300 ${isScrolled ? 'w-4 h-4 sm:w-5 sm:h-5 text-[#1E1B4B]' : 'w-3.5 h-3.5'}`} />
-              <span className="tracking-wider">MENU</span>
-              {isScrolled && (
-                <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-ping ml-0.5" />
-              )}
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
+              <span>STARTING SOON</span>
             </button>
-
-            {/* Starting Soon Capsule */}
-            <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
-              <button
-                onClick={() => handleNavClick('register')}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
-                <span>STARTING SOON</span>
-              </button>
-            </div>
           </div>
-
         </div>
+
       </div>
+    </header>
 
       {/* ========================================================================= */}
       {/* DevHack-Style Slide-In Right Drawer (Mounted via Portal to document.body) */}
@@ -221,6 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                                    (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
                                    (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                                    (item.label === 'MENTORS' && activePage === 'mentors') ||
+                                   (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                                    (item.label === 'FAQ' && activePage === 'faq');
 
                   return (
@@ -320,6 +340,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
         </div>,
         document.body
       )}
-    </header>
+    </>
   );
 };
