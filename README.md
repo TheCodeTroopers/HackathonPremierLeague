@@ -65,4 +65,4 @@ npm run build
 * **IGNITE** (Innovation & Incubation Forum)
 * **AIKYA** (Student Welfare Forum)
 * **IEEE SMVITM Student Chapter**
-* **ISTE SMVITM Chapter**
+* **ISTE SMVITM Chapter**.
