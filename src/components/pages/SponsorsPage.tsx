@@ -610,7 +610,7 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
                         ISTE
                       </h4>
                       <p className="font-sans text-xs sm:text-sm text-[#1E1B4B]/75 font-semibold leading-tight mt-1">
-                        Sahyadri Chapter
+                        Student Chapter SMVITM
                       </p>
                     </div>
                   </div>
@@ -654,7 +654,7 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
                     CodeTroopers
                   </h4>
                   <p className="font-sans text-xs text-[#1E1B4B]/65 font-medium mt-0.5">
-                    Code. Create. Conquer.
+                    Learn . Build . Lead
                   </p>
                 </div>
               </div>
