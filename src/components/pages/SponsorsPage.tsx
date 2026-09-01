@@ -97,6 +97,7 @@ const ThoughtLeadershipIllustration = ({ className = "w-12 h-12" }: { className?
   </svg>
 );
 
+
 // 6. Exclusive Benefits: Hand-drawn golden gift box with red ribbon & bow
 const ExclusiveBenefitsIllustration = ({ className = "w-12 h-12" }: { className?: string }) => (
   <svg viewBox="0 0 64 64" fill="none" className={className}>
