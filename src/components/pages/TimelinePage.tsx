@@ -1072,60 +1072,10 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                         : 'border-[#1E1B4B]/35 bg-[#FBF9F2]'
                   }`}
                 >
-                  <StageBanner title="STAGE 1" part="REGISTRATION & LAUNCH" date="2 – 8 SEPTEMBER 2026" color="green" />
-
-                  <div className="space-y-4 flex-grow">
-                    
-                    {/* Sep 2 */}
-                    <div className="flex items-start gap-2.5">
-                      <div className="mt-1 flex-shrink-0">
-                        <FileCheck className="w-4 h-4 text-[#059669]" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 2</span>
-                          <span className="bg-[#059669] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">PORTAL OPEN</span>
-                        </div>
-                        <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Registration Open with Problem Statement (PS)</p>
-                        <p className="text-[11px] text-[#1E1B4B]/70 font-medium leading-tight font-sans">Registration must be done along with the solution. Deliverable is video for the PS.</p>
-                      </div>
-                    </div>
-
-                    {/* Sep 6 */}
-                    <div className="flex items-start gap-2.5">
-                      <div className="mt-1 flex-shrink-0">
-                        <Clock className="w-4 h-4 text-[#D97706]" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 6</span>
-                          <span className="bg-[#D97706] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">DEADLINE</span>
-                        </div>
-                        <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Registration Close (11:59 PM)</p>
-                        <p className="text-[11px] text-[#1E1B4B]/70 font-medium leading-tight font-sans">Idea and video submission portal locks for initial screening.</p>
-                      </div>
-                    </div>
-
-                    {/* Sep 8 */}
-                    <div className="flex items-start gap-2.5">
-                      <div className="mt-1 flex-shrink-0">
-                        <PartyPopper className="w-4 h-4 text-[#7C3AED]" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 8</span>
-                          <span className="bg-[#7C3AED] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">INAUGURATION</span>
-                        </div>
-                        <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Shortlist Release & Grand Inauguration</p>
-                        <p className="text-[11px] text-[#1E1B4B]/70 font-medium leading-tight font-sans">Qualified squads announced. Official season opening & briefing ceremony!</p>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <div className="pt-3 mt-4 border-t border-[#1E1B4B]/15">
-                    <span className="text-[10px] font-mono text-[#059669] font-black uppercase tracking-wider">✦ SQUADS QUALIFIED</span>
-                  </div>
+                  <div 
+                    className={`w-3 h-3 rounded-full ${isCurrent ? 'animate-pulse' : ''}`}
+                    style={{ background: isUnlocked ? p.accentColor : '#CBD5E1' }}
+                  />
                 </div>
 
                 {/* Horizontal Stem Connector */}
