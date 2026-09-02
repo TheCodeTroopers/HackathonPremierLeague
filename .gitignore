@@ -8,7 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Dependencies
-node_modules/
+node_modules
 dist
 dist-ssr
 *.local
@@ -29,26 +29,3 @@ dist-ssr
 .env.local
 .env.*.local
 !.env.example
-
-# Env folder (no dot prefix)
-env
-env/
-
-# Python scratch scripts & temp files
-src/assets/cropper.py
-src/assets/py_check.txt
-src/assets/mock_dimensions.json
-src/assets/png_info.json
-src/assets/ps_ref_clean.png
-src/assets/ps_original_mock.jpg
-src/assets/ps_01_weathergpt.png
-src/assets/ps_02_rural_market.png
-src/assets/ps_03_hourglass.png
-src/assets/ps_03_mystery_box.png
-src/assets/ps_hourglass.png
-src/assets/ps_mystery_box.png
-src/assets/ps_mystery_box_mobile.png
-src/assets/ps_rural_market.png
-src/assets/ps_rural_market_mobile.png
-src/assets/ps_weathergpt.png
-src/assets/ps_weathergpt_mobile.png

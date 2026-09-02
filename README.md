@@ -37,7 +37,7 @@
 6. **Leaderboard (`/leaderboard`)**: Real-time standings with top 3 podium celebration, movement indicators (↑ rising, → stable, ↓ falling), match records (W-T-L), and Top 4 Playoff qualification line.
 7. **The Journey (`/journey`)**: Full chronological season timeline from July 15 kickoff to the August 22 Grand Finale.
 8. **Playoffs (`/playoffs`)**: Knockout tournament bracket (Semifinal 1 & 2, 3rd Place match, Grand Championship Finale), SMVITM Bantakal arena details, and prize pool breakdown.
-9. **Mentors & Judges (`/mentors`)**: Tabbed directory with illustrated avatars, company affiliations (Unloadin, Niveus Solutions, Unicourt, 890K, 360Labs, Vaan.T.in), and interactive 1-on-1 office hours booking modal.
+9. **Mentors & Judges (`/mentors`)**: Tabbed directory with illustrated avatars, company affiliations (Unloadin, Niveus Solutions, Unicourt, 890K, 360Labs, Vaan.T.in, TCS), and interactive 1-on-1 office hours booking modal.
 10. **Rulebook (`/rulebook`)**: Searchable accordion rulebook covering Eligibility, Points Structure, Git standards, and Fair Play policies.
 11. **FAQ (`/faq`)**: Categorized expandable accordion FAQ with real-time search.
 12. **Register (`/register`)**: Interactive 4-step wizard matching the mockup form, complete with instant validation and dynamic digital HPL League Pass generator.
