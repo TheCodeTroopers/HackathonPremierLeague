@@ -479,64 +479,93 @@ export const MENTORS_AND_JUDGES: PersonProfile[] = [
 
 export const RULEBOOK_SECTIONS: RuleCategory[] = [
   {
-    id: 'eligibility',
-    title: '1. Eligibility & Team Formation',
+    id: 'about-eligibility',
+    title: '1. About & Eligibility',
     icon: 'Users',
-    summary: 'Rules governing squad composition, college affiliations, and registration guidelines.',
+    summary: 'General information about HPL 2026 and who is eligible to participate.',
     rules: [
-      'Each squad must consist of exactly 3 to 4 registered undergraduate/postgraduate engineering or technology students.',
-      'Cross-departmental and inter-disciplinary teams are strongly encouraged (e.g. 2 Developers + 1 AI/Data + 1 UI/UX & Pitch).',
-      'All team members must carry valid institution ID cards throughout match days and playoff rounds.',
-      'A participant cannot be registered in more than one squad concurrently.'
+      'Hackathon Premier League (HPL) 2026 is a three-week hackathon organized by SMVITM.',
+      'HPL 2026 is open only to students of Shri Madhwa Vadiraja Institute of Technology and Management.',
+      'Participants may belong to any year or department.',
+      'Inter-departmental team formation is encouraged.'
     ]
   },
   {
-    id: 'league-format',
-    title: '2. League Match Days & Points Structure',
+    id: 'team-formation',
+    title: '2. Team Formation & Registration',
     icon: 'Trophy',
-    summary: 'How squads earn points, compete head-to-head, and qualify for playoffs.',
+    summary: 'Rules governing squad composition and the registration process.',
     rules: [
-      'HPL spans 3 progressive weeks with two round-robin match fixtures and one playoff championship round.',
-      'Points Allocation per match day: Win = 3 Points, Tie = 1 Point, Loss = 0 Points.',
-      'In each match day, two squads in the same track present their weekly milestone build to a panel of expert mentors & judges.',
-      'The top 4 squads from each of the 3 domains (12 finalist teams total) on the cumulative points table after Week 2 automatically qualify for the Grand Finale.'
+      'Each team must consist of exactly 5 members.',
+      'A participant can be part of only one team.',
+      'The team composition cannot be changed once the registration form is submitted.',
+      'Registration closes at 11:59 PM on 6 September 2026.',
+      'Teams must select one of the three official problem statements during registration.',
+      'The selected problem statement cannot be changed after the registration form is submitted.',
+      'Any correction or issue regarding registration details must be communicated to an HPL Coordinator.'
     ]
   },
   {
-    id: 'code-submission',
-    title: '3. Code Integrity & Repository Rules',
+    id: 'registration-video',
+    title: '3. Registration Video',
     icon: 'Code',
-    summary: 'Guidelines on Git commit history, open-source libraries, and original development.',
+    summary: 'Requirements for the mandatory registration video submission.',
     rules: [
-      'All squads must initialize a clean GitHub repository under the official HPL organization upon problem release.',
-      'Code must be written during the official match window. Pre-built entire commercial products will lead to instant disqualification.',
-      'Open-source frameworks, packages, and public APIs are permitted provided they are declared in the README.md.',
-      'Frequent, descriptive git commits by all team members are evaluated as proof of authentic teamwork.'
+      'Every team must submit a video demonstrating their proposed solution as part of registration.',
+      'The video must include: Project Walkthrough, Technology Stack, Technology Justification, Problem Solving Approach, and Uniqueness.',
+      'Maximum duration: 3 minutes. The video must not exceed 3 minutes.',
+      'The video must be uploaded to Google Drive with sharing permission set to "Anyone with the link".',
+      'The video file name must be the team name.'
     ]
   },
   {
     id: 'evaluation-criteria',
-    title: '4. Evaluation & Judging Rubric',
+    title: '4. Evaluation Pillars',
     icon: 'Scale',
-    summary: 'Universal evaluation across 6 core pillars for all problem statements.',
+    summary: 'Universal evaluation criteria for all problem statements.',
     rules: [
-      'Problem Understanding: Depth of domain understanding, identification of core pain points, and user persona empathy.',
-      'Functionality: End-to-end working system, core feature completeness, computational accuracy, and error resilience.',
-      'User Experience: Intuitive user journey, clean navigation, accessibility, responsive UI polish, and communication clarity.',
-      'Technical Implementation: Architectural robustness, clean modular code, secure API integrations, and git commit hygiene.',
-      'Innovation: Originality of concept, novel feature sets, creative problem solving, and competitive differentiation.',
-      'Practicality: Real-world viability, feasibility of deployment in target environments, cost efficiency, and tangible user impact.'
+      'Problem Understanding: Depth of domain understanding and identification of core pain points.',
+      'Functionality: Working system, core feature completeness, and computational accuracy.',
+      'User Experience: Intuitive user journey, clean navigation, and accessibility.',
+      'Technical Implementation: Architectural robustness, secure API integrations, and code quality.',
+      'Innovation: Originality of concept and creative problem solving.',
+      'Practicality: Real-world viability and tangible user impact.'
     ]
   },
   {
-    id: 'fair-play',
-    title: '5. Fair Play, Code of Conduct & Disqualification',
+    id: 'tech-and-ai',
+    title: '5. Technology & AI Usage',
     icon: 'ShieldAlert',
-    summary: 'Zero tolerance for plagiarism, harassment, or unethical conduct.',
+    summary: 'Rules regarding technology stacks and the use of Artificial Intelligence tools.',
     rules: [
-      'Zero tolerance for plagiarized code or uncredited copying from other repositories.',
-      'All participants must maintain professional respect toward mentors, judges, peers, and organizing staff.',
-      'The decision of the Chief Grand Jury panel on scoring, tie-breakers, and playoff results is final and binding.'
+      'There are no restrictions on the technology stack. Teams are free to use the technologies, programming languages, frameworks, platforms, APIs, libraries, and tools of their choice.',
+      'Participants are permitted to use AI tools and services while developing their solutions.'
+    ]
+  },
+  {
+    id: 'shortlisting-fees',
+    title: '6. Shortlisting & Registration Fee',
+    icon: 'Code',
+    summary: 'Information about shortlisting, registration fees, and refund policy.',
+    rules: [
+      'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 8 September 2026.',
+      'A registration fee will apply only to shortlisted teams.',
+      'Team with no IEEE member: ₹200 / team. Team with at least one IEEE member: ₹150 / team.',
+      'Teams may cancel their participation at any time, but must inform an HPL Coordinator.',
+      'Once the shortlisted-team registration fee has been paid, it is non-refundable.'
+    ]
+  },
+  {
+    id: 'code-of-conduct',
+    title: '7. Code of Conduct & Fair Play',
+    icon: 'Scale',
+    summary: 'Guidelines for professional behavior and originality of work.',
+    rules: [
+      'Submit original work and avoid plagiarism. Do not copy or misuse another team\'s work.',
+      'Do not access another team\'s code, accounts, systems, or data without authorization.',
+      'Do not intentionally disrupt or sabotage another team\'s work.',
+      'Maintain respectful and professional behaviour toward participants, coordinators, mentors, and judges.',
+      'Any form of cheating, plagiarism, misconduct, or unfair practice may result in disqualification.'
     ]
   }
 ];
