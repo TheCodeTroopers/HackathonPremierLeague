@@ -558,7 +558,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-3',
     category: 'Participation',
     question: 'Who is eligible to participate?',
-    answer: 'Any enrolled student from recognized engineering, technology, polytechnic, or university institutions in India is eligible. Cross-college collaborations are welcome!'
+    answer: 'Participation is exclusively open to students of SMVITM. Students from all branches and academic years (1st to 4th year) are eligible to participate. Please note that external college students are not permitted.'
   },
   {
     id: 'faq-4',
