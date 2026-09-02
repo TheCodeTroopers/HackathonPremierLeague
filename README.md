@@ -57,12 +57,10 @@ npm run dev
 npm run build
 ```
 
----
-
 ## 👥 Powered by & Organizers
 
 * **CodeTroopers** (Lead Technical Club)
 * **IGNITE** (Innovation & Incubation Forum)
 * **AIKYA** (Student Welfare Forum)
 * **IEEE SMVITM Student Chapter**
-* **ISTE SMVITM Chapter**
+* **ISTE SMVITM Chapter**.

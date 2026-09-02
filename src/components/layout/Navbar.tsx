@@ -174,14 +174,14 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
             )}
           </button>
 
-          {/* Starting Soon / Register Capsule (Visible only at top) */}
+          {/* Register Capsule (Visible only at top) */}
           <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
             <button
               onClick={() => handleNavClick('register')}
               className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
-              <span>STARTING SOON</span>
+              <span>REGISTER NOW</span>
             </button>
           </div>
         </div>

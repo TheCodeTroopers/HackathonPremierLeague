@@ -11,6 +11,7 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { ParticleCanvas } from '../interactive/ParticleCanvas';
 import { FAQ_DATA } from '../../data/hplData';
+
 import {
   Calendar, Trophy, Rocket, Swords, Sparkles,
   ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink
@@ -373,7 +374,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400" />
                 </span>
-                <span>SEASON 1 • 3-WEEK INNOVATION LEAGUE • STARTING SOON</span>
+                <span>SEASON 1 • 3-WEEK INNOVATION LEAGUE</span>
               </div>
 
               {/* Giant Marker Typography: CODE. COLLABORATE. CONQUER. */}
@@ -444,7 +445,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                     className="relative px-7 py-3.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2.5"
                   >
                     <Trophy className="w-4 h-4 text-amber-300 animate-bounce" />
-                    <span>REGISTRATIONS STARTING SOON</span>
+                    <span>REGISTER NOW!</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
