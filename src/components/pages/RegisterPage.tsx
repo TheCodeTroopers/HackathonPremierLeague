@@ -165,8 +165,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             member3_email: formData.member3Email.trim().toLowerCase(),
             member4_name: formData.member4Name.trim(),
             member4_email: formData.member4Email.trim().toLowerCase(),
-            member5_name: formData.member5Name.trim(),
-            member5_email: formData.member5Email.trim().toLowerCase(),
+            member5_name: (formData.member5Name || '').trim(),
+            member5_email: (formData.member5Email || '').trim().toLowerCase(),
             project_idea: formData.projectIdea.trim(),
             github_org: formData.githubOrg?.trim() || null,
             accept_rules: formData.acceptRules
