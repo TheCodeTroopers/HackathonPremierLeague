@@ -294,6 +294,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   </span>
                 </div>
                 {[
+                  { name: 'Yashwanth', phone: '8217561286' },
                   { name: 'Abhishek Kini', phone: '9844101520' },
                   { name: 'Bhushan Poojary', phone: '7381709385' },
                   { name: 'Tejas Nayak', phone: '8296151023' },
