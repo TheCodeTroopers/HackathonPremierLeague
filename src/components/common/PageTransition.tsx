@@ -127,7 +127,7 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children, pageKe
       </div>
 
       {/* Page Content */}
-      <div ref={wrapRef} className="w-full will-change-transform">
+      <div ref={wrapRef} className="w-full">
         {children}
       </div>
     </div>

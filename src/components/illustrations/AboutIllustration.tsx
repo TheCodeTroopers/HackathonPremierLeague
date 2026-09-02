@@ -10,6 +10,7 @@ export const AboutIllustration: React.FC<{ className?: string }> = ({ className 
           alt="HPL Developer Team Collaborating and High Fiving"
           className="w-full h-auto object-cover transform group-hover:scale-[1.01] transition-transform duration-300 select-none block"
           loading="eager"
+          decoding="async"
         />
         <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-ink/10 rounded-3xl" />
       </div>

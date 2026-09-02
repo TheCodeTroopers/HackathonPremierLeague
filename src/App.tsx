@@ -20,11 +20,17 @@ import { SponsorsPage } from './components/pages/SponsorsPage';
 import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
+import { preloadAllImages } from './utils/imagePreloader';
 
 export function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePage, setActivePage] = useState<PageRoute>('home');
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
+
+  // Preload all assets in the background immediately on mount
+  useEffect(() => {
+    preloadAllImages();
+  }, []);
 
   // Prevent auto-scrolling on page refresh and clean lingering hashes
   useEffect(() => {

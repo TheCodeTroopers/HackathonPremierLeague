@@ -80,7 +80,11 @@ src/assets/ps_rural_market_mobile.png
 src/assets/ps_weathergpt.png
 src/assets/ps_weathergpt_mobile.png
 
-# ── 7. MISC ─────────────────────────────────────────────────────
+# ── 7. MISC & AI METADATA ────────────────────────────────────────
 .cache/
 .temp/
 *.tmp
+.gemini/
+.antigravity/
+coverage/
+

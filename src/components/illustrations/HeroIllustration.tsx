@@ -30,6 +30,7 @@ export const HeroIllustration: React.FC<{ className?: string }> = ({ className =
           WebkitMaskImage: 'radial-gradient(ellipse 84% 82% at 54% 48%, black 35%, rgba(0,0,0,0.88) 52%, rgba(0,0,0,0.25) 72%, transparent 86%)',
         }}
         loading="eager"
+        decoding="async"
       />
     </div>
   );

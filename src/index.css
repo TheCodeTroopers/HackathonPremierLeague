@@ -14,7 +14,7 @@
     background-color: #FBF9F2;
     color: #1E1B4B;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -745,75 +745,6 @@
 .anim-glint-shine {
   animation: glintShine 2.4s ease-in-out infinite;
 }
-
-/* =========================================================================
-   TRAIN TIMELINE — Sticky Horizontal Scroll
-   ========================================================================= */
-
-@keyframes trainChug {
-  0%, 100% { transform: translateY(0px); }
-  25%       { transform: translateY(-3px); }
-  75%       { transform: translateY(2px); }
-}
-
-@keyframes trainWheelSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes smokePuff {
-  0%   { transform: translateY(0) scale(0.6); opacity: 0.8; }
-  60%  { opacity: 0.4; }
-  100% { transform: translateY(-28px) scale(1.8); opacity: 0; }
-}
-
-@keyframes smokePuff2 {
-  0%   { transform: translateY(0) scale(0.5); opacity: 0.6; }
-  100% { transform: translateY(-22px) scale(1.5); opacity: 0; }
-}
-
-@keyframes nodeRipple {
-  0%   { transform: scale(1); opacity: 0.6; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-
-.anim-train-chug {
-  animation: trainChug 0.4s ease-in-out infinite;
-}
-
-.anim-train-wheel {
-  animation: trainWheelSpin 0.6s linear infinite;
-  transform-origin: center;
-}
-
-.anim-smoke-1 {
-  animation: smokePuff 1.4s ease-out infinite;
-}
-
-.anim-smoke-2 {
-  animation: smokePuff2 1.8s ease-out infinite 0.5s;
-}
-
-.anim-smoke-3 {
-  animation: smokePuff 2.2s ease-out infinite 1s;
-}
-
-.anim-node-ripple {
-  animation: nodeRipple 1.8s ease-out infinite;
-}
-
-.scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-
-.timeline-node-active {
-  box-shadow: 0 0 0 4px rgba(79,70,229,0.25), 0 0 16px rgba(79,70,229,0.3);
-}
-
 
 
 

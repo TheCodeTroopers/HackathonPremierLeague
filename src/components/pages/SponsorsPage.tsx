@@ -488,6 +488,8 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
               <img
                 src={HPL_IMAGES.sponsorsHero}
                 alt="Our Sponsors, Our Strength - Four Collegiate Developers with Golden Trophy"
+                loading="eager"
+                decoding="async"
                 className="w-full h-auto object-cover transform scale-[1.14] block select-none"
                 style={{
                   mixBlendMode: 'multiply',
