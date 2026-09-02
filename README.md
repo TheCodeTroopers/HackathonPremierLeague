@@ -57,8 +57,6 @@ npm run dev
 npm run build
 ```
 
----
-
 ## 👥 Powered by & Organizers
 
 * **CodeTroopers** (Lead Technical Club)
