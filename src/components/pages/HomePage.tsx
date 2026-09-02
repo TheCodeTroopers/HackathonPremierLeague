@@ -467,7 +467,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   }}
                   className="px-7 py-3.5 rounded-full bg-[#FFFDF7] hover:bg-[#EFE8D6] text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2"
                 >
-                  <span>📄 EXPLORE RULEBOOK</span>
+                  <span>EXPLORE RULEBOOK</span>
                   <span className="text-amber-600 font-bold">✦</span>
                 </button>
               </div>
