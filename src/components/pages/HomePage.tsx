@@ -805,7 +805,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   PART 2
                 </div>
                 <p className="font-bold text-xs text-[#1E1B4B]/80 pt-1">
-                  9 September 2026 Onwards
+                  8 September 2026 Onwards
                 </p>
                 <p className="text-[11px] text-[#1E1B4B]/65 font-medium">
                   Inauguration • 1st Evaluation • Sprints
