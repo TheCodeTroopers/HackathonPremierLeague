@@ -18,6 +18,7 @@ import { FAQPage } from './components/pages/FAQPage';
 import { RegisterPage } from './components/pages/RegisterPage';
 import { SponsorsPage } from './components/pages/SponsorsPage';
 import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage';
+import { ContactPage } from './components/pages/ContactPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
 
@@ -50,7 +51,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -130,6 +131,9 @@ export function App() {
           )}
           {activePage === 'problem-statements' && (
             <ProblemStatementsPage onNavigate={handleNavigate} />
+          )}
+          {activePage === 'contact' && (
+            <ContactPage onNavigate={handleNavigate} />
           )}
           {activePage === 'register' && (
             <RegisterPage onNavigate={handleNavigate} />

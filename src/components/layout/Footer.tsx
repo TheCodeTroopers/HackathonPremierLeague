@@ -246,6 +246,80 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
 
           {/* --------------------------------------------------------------- */}
+          {/* CONTACT US SECTION                                              */}
+          {/* --------------------------------------------------------------- */}
+          <div className="pt-8 border-t border-white/10 space-y-5">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              <span className="font-mono text-[11px] font-black tracking-widest text-amber-400 uppercase">
+                Contact Us
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+              {/* Faculty Coordinators */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/30 text-[9px] font-mono font-black text-amber-300 uppercase tracking-widest">
+                    Faculty Coordinators
+                  </span>
+                </div>
+                {[
+                  { name: 'Dr. Rajesh Nayak', phone: '9164510062' },
+                  { name: 'Mr. Raghvendra G S', phone: '9738405453' },
+                ].map((person) => (
+                  <div key={person.phone} className="flex items-center gap-3 group">
+                    <div className="w-7 h-7 rounded-lg bg-amber-400/10 border border-amber-400/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-amber-300 text-xs">👨‍🏫</span>
+                    </div>
+                    <div>
+                      <div className="font-display font-black text-xs text-white tracking-tight">{person.name}</div>
+                      <a
+                        href={`tel:+91${person.phone}`}
+                        className="font-mono text-[11px] text-indigo-300 hover:text-amber-300 transition-colors"
+                      >
+                        +91 {person.phone}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Core Team Members */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-400/15 border border-indigo-400/30 text-[9px] font-mono font-black text-indigo-300 uppercase tracking-widest">
+                    Core Team
+                  </span>
+                </div>
+                {[
+                  { name: 'Abhishek Kini', phone: '9844101520' },
+                  { name: 'Bhushan Poojary', phone: '7381709385' },
+                  { name: 'Tejas Nayak', phone: '8296151023' },
+                  { name: 'Pradyumna Upadhyaya', phone: '9980441036' },
+                ].map((person) => (
+                  <div key={person.phone} className="flex items-center gap-3 group">
+                    <div className="w-7 h-7 rounded-lg bg-indigo-400/10 border border-indigo-400/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-indigo-300 text-xs">⚡</span>
+                    </div>
+                    <div>
+                      <div className="font-display font-black text-xs text-white tracking-tight">{person.name}</div>
+                      <a
+                        href={`tel:+91${person.phone}`}
+                        className="font-mono text-[11px] text-indigo-300 hover:text-amber-300 transition-colors"
+                      >
+                        +91 {person.phone}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+
+          {/* --------------------------------------------------------------- */}
           {/* BOTTOM STRIP: QUICK NAVIGATION & VENUE INFO                     */}
           {/* --------------------------------------------------------------- */}
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-white/50 text-center sm:text-left">
@@ -295,13 +369,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 League Timeline
               </button>
               <span>•</span>
-              <a 
-                href="mailto:hpl@sode-edu.in" 
-                className="hover:text-amber-300 hover:underline transition-colors flex items-center gap-1"
+              <button
+                onClick={() => {
+                  onNavigate('contact');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="hover:text-amber-300 hover:underline transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>Contact</span>
                 <ExternalLink className="w-3 h-3" />
-              </a>
+              </button>
             </div>
 
             <div>

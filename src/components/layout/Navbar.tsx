@@ -21,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
     { label: 'SPONSORS', page: 'sponsors' },
     { label: 'PROBLEM STATEMENTS', page: 'problem-statements' },
     { label: 'FAQ', page: 'faq' },
+    { label: 'CONTACT', page: 'contact' },
   ];
 
   // Smooth scroll depth tracker with hysteresis buffer to eliminate jitter
@@ -133,7 +134,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                              (item.label === 'MENTORS' && activePage === 'mentors') ||
                              (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                              (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
-                             (item.label === 'FAQ' && activePage === 'faq');
+                             (item.label === 'FAQ' && activePage === 'faq') ||
+                             (item.label === 'CONTACT' && activePage === 'contact');
 
             return (
               <div key={item.label} className="relative py-1">
@@ -241,7 +243,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                                    (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                                    (item.label === 'MENTORS' && activePage === 'mentors') ||
                                    (item.label === 'SPONSORS' && activePage === 'sponsors') ||
-                                   (item.label === 'FAQ' && activePage === 'faq');
+                                   (item.label === 'FAQ' && activePage === 'faq') ||
+                                   (item.label === 'CONTACT' && activePage === 'contact');
 
                   return (
                     <button
