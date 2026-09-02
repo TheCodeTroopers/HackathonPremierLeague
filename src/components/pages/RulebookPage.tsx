@@ -34,6 +34,18 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
         <p className="text-base sm:text-lg text-ink-muted leading-relaxed">
           Comprehensive tournament regulations, git commit standards, points formulas, and fair-play policies.
         </p>
+        
+        <div className="pt-4 flex justify-center">
+          <a
+            href="/HPL_2026_Official_Rulebook.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-hpl-purple hover:bg-[#4338CA] text-white font-display font-black text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>DOWNLOAD PDF RULEBOOK</span>
+          </a>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -91,18 +103,6 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
         })}
       </div>
 
-      {/* Fair Play Box */}
-      <div className="bg-rose-50 border-2 border-rose-300 sketch-border rounded-2xl p-6 sm:p-8 space-y-3 shadow-sketch">
-        <div className="flex items-center gap-3">
-          <ShieldAlert className="w-6 h-6 text-hpl-coral flex-shrink-0" />
-          <h3 className="text-xl font-black font-display uppercase text-rose-950">
-            ZERO TOLERANCE FOR PLAGIARISM
-          </h3>
-        </div>
-        <p className="text-xs sm:text-sm text-rose-900 leading-relaxed font-sans">
-          All code repos are subjected to automated AST-level similarity scans. Plagiarized libraries or previously completed commercial applications will result in immediate disqualification and institution notification.
-        </p>
-      </div>
     </div>
   );
 };
