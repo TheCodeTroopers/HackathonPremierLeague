@@ -11,6 +11,7 @@ import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
 import { ParticleCanvas } from '../interactive/ParticleCanvas';
 import { FAQ_DATA } from '../../data/hplData';
+
 import {
   Calendar, Trophy, Rocket, Swords, Sparkles,
   ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink
