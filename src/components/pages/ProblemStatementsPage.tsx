@@ -511,16 +511,12 @@ export const ProblemStatementsPage: React.FC<ProblemStatementsPageProps> = ({ on
                   Build an intelligent conversational AI solution that provides accurate weather forecasts, severe weather alerts, and climate insights through natural language interactions.
                 </p>
 
-                {/* Tech Stack Pills */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  {['AI/ML', 'NLP', 'Data Science', 'Climate Tech'].map((tag) => (
-                    <span 
-                      key={tag}
-                      className="px-3 py-1 rounded-full border border-purple-300 text-[#582A9C] bg-purple-50/60 font-sans text-xs font-bold tracking-tight select-none"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                {/* Tech Stack: Your Choice */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#582A9C]">Tech Stack</span>
+                  <span className="px-2.5 py-1 rounded-full border border-purple-300 text-[#582A9C] bg-purple-50/60 font-sans text-xs font-bold tracking-tight select-none italic">
+                    Your Choice 🚀
+                  </span>
                 </div>
 
                 {/* Evaluation Criteria Mini-List */}
@@ -644,16 +640,12 @@ export const ProblemStatementsPage: React.FC<ProblemStatementsPageProps> = ({ on
                   Develop a data-driven solution that empowers farmers and rural businesses with real-time market insights, price trends, demand prediction, and supply chain intelligence to make smarter decisions and maximize income.
                 </p>
 
-                {/* Tech Stack Pills */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  {['Data Analytics', 'IoT', 'Agritech', 'Business Intelligence'].map((tag) => (
-                    <span 
-                      key={tag}
-                      className="px-3 py-1 rounded-full border border-emerald-300 text-[#0F766E] bg-emerald-50/60 font-sans text-xs font-bold tracking-tight select-none"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                {/* Tech Stack: Your Choice */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#0F766E]">Tech Stack</span>
+                  <span className="px-2.5 py-1 rounded-full border border-emerald-300 text-[#0F766E] bg-emerald-50/60 font-sans text-xs font-bold tracking-tight select-none italic">
+                    Your Choice 🚀
+                  </span>
                 </div>
 
                 {/* Evaluation Criteria Mini-List */}
@@ -776,16 +768,12 @@ export const ProblemStatementsPage: React.FC<ProblemStatementsPageProps> = ({ on
                   Build a smart platform that aggregates internships, jobs, scholarships, and opportunities from across the web, and helps students discover the right opportunities based on their skills, interests, and goals.
                 </p>
 
-                {/* Tech Stack / Focus Pills */}
-                <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                  {['Web Development', 'AI/ML', 'Data Aggregation', 'UX/UI'].map((tag) => (
-                    <span 
-                      key={tag}
-                      className="px-3 py-1 rounded-full border border-orange-300 text-[#EA580C] bg-orange-50/60 font-sans text-xs font-bold tracking-tight select-none"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                {/* Tech Stack: Your Choice */}
+                <div className="flex items-center gap-2 pt-0.5">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#EA580C]">Tech Stack</span>
+                  <span className="px-2.5 py-1 rounded-full border border-orange-300 text-[#EA580C] bg-orange-50/60 font-sans text-xs font-bold tracking-tight select-none italic">
+                    Your Choice 🚀
+                  </span>
                 </div>
 
                 {/* Mini Evaluated Ribbon */}
