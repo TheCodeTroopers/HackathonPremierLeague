@@ -14,7 +14,7 @@ import { FAQ_DATA } from '../../data/hplData';
 
 import {
   Calendar, Trophy, Rocket, Swords, Sparkles,
-  ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink
+  ChevronDown, Code2, Star, ArrowRight, PlayCircle, Video, ExternalLink, BookOpen
 } from 'lucide-react';
 import registrationVideo from '../../assets/RegistrationVideo_opt.mp4';
 import { HPL_IMAGES } from '../../assets/images';
@@ -460,12 +460,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   <span>HOW TO REGISTER DEMO VIDEO</span>
                 </button>
 
+                {/* Official Rule Book Button in Hero */}
+                <button
+                  onClick={() => onNavigate('rulebook')}
+                  className="px-6 py-3.5 rounded-full bg-[#FAF6EE] hover:bg-purple-100 text-[#582A9C] font-display font-black text-xs sm:text-sm uppercase tracking-wide border-2 border-[#582A9C] shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2 group"
+                >
+                  <BookOpen className="w-4 h-4 text-[#582A9C] group-hover:rotate-6 transition-transform flex-shrink-0" />
+                  <span>OFFICIAL RULE BOOK</span>
+                </button>
+
                 <button
                   onClick={() => {
                     onNavigate('rulebook');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="px-7 py-3.5 rounded-full bg-[#FFFDF7] hover:bg-[#EFE8D6] text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-full bg-[#FFFDF7] hover:bg-[#EFE8D6] text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2"
                 >
                   <span>EXPLORE RULEBOOK</span>
                   <span className="text-amber-600 font-bold">✦</span>

@@ -23,6 +23,9 @@ import sponsorsTrophyImg from './hpl_sponsors_trophy.jpg';
 import sponsorsRocketImg from './hpl_sponsors_rocket.jpg';
 import psOriginalMockImg from './ps_original_mock.jpg';
 import ps3AggregatorImg from './ps3_internship_aggregator.jpg';
+import rulebookHeroArtImg from './hpl_rulebook_hero_art.jpg';
+import rulebookTrophyArtImg from './hpl_rulebook_trophy.jpg';
+import rulebookSquadArtImg from './hpl_rulebook_squad.jpg';
 
 // Real Partner & Sponsor Logos
 import shirvaLogo from './shirva.png';
@@ -58,6 +61,9 @@ export const HPL_IMAGES = {
   sponsorsRocket: sponsorsRocketImg,
   psMockup: psOriginalMockImg,
   ps3Aggregator: ps3AggregatorImg,
+  rulebookHero: rulebookHeroArtImg,
+  rulebookTrophy: rulebookTrophyArtImg,
+  rulebookSquad: rulebookSquadArtImg,
   // Sponsor & Partner Brand Logos
   shirvaLogo,
   smvitmLogo,

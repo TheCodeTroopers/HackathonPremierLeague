@@ -15,6 +15,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
 
   const navItems: { label: string; page: PageRoute }[] = [
     { label: 'HOME', page: 'home' },
+    { label: 'RULE BOOK', page: 'rulebook' },
     { label: 'TIMELINE', page: 'timeline' },
     { label: 'LEADERBOARD', page: 'leaderboard' },
     { label: 'MENTORS', page: 'mentors' },
@@ -129,6 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
         }`}>
           {navItems.map((item) => {
             const isActive = (item.label === 'HOME' && activePage === 'home') ||
+                             (item.label === 'RULE BOOK' && activePage === 'rulebook') ||
                              (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
                              (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                              (item.label === 'MENTORS' && activePage === 'mentors') ||
@@ -239,10 +241,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                 {navItems.map((item, index) => {
                   const num = String(index + 1).padStart(2, '0');
                   const isActive = (item.label === 'HOME' && activePage === 'home') ||
+                                   (item.label === 'RULE BOOK' && activePage === 'rulebook') ||
                                    (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
                                    (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                                    (item.label === 'MENTORS' && activePage === 'mentors') ||
                                    (item.label === 'SPONSORS' && activePage === 'sponsors') ||
+                                   (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
                                    (item.label === 'FAQ' && activePage === 'faq') ||
                                    (item.label === 'CONTACT' && activePage === 'contact');
 
