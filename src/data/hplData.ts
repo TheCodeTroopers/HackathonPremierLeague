@@ -7,7 +7,7 @@ export const HPL_META = {
   season: 'Season 2026',
   tagline: 'CODE. COLLABORATE. CONQUER.',
   subTagline: 'A 3-Week League of Innovation. Build impactful solutions. Compete. Improve. Be the champion.',
-  dates: 'STARTS 1 SEPTEMBER 2026 – 22 SEPTEMBER 2026',
+  dates: 'STARTS 2 SEPTEMBER 2026 – 23 SEPTEMBER 2026',
   venue: 'SMVITM Campus, Bantakal, Udupi & Hybrid Arena',
   stats: [
     { value: '3', label: 'WEEKS', subtitle: 'Continuous Innovation' },

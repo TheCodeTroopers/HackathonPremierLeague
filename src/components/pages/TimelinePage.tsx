@@ -337,18 +337,18 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                     backdropFilter: 'blur(2px)',
                   }}
                 >
-                  <StageBanner title="STAGE 1" part="REGISTRATION & LAUNCH" date="1 – 8 SEPTEMBER 2026" color="green" />
+                  <StageBanner title="STAGE 1" part="REGISTRATION & LAUNCH" date="2 – 8 SEPTEMBER 2026" color="green" />
 
                   <div className="space-y-4 flex-grow">
                     
-                    {/* Sep 1 */}
+                    {/* Sep 2 */}
                     <div className="flex items-start gap-2.5">
                       <div className="mt-1 flex-shrink-0">
                         <FileCheck className="w-4 h-4 text-[#059669]" />
                       </div>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 1</span>
+                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 2</span>
                           <span className="bg-[#059669] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">PORTAL OPEN</span>
                         </div>
                         <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Registration Open with Problem Statement (PS)</p>
@@ -356,14 +356,14 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                       </div>
                     </div>
 
-                    {/* Sep 5 */}
+                    {/* Sep 6 */}
                     <div className="flex items-start gap-2.5">
                       <div className="mt-1 flex-shrink-0">
                         <Clock className="w-4 h-4 text-[#D97706]" />
                       </div>
                       <div className="space-y-0.5">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 5</span>
+                          <span className="font-mono text-xs font-black text-[#1E1B4B] uppercase tracking-wide">SEP 6</span>
                           <span className="bg-[#D97706] text-white font-mono text-[9px] font-bold px-1.5 py-0.5 rounded-full">DEADLINE</span>
                         </div>
                         <p className="text-xs text-[#1E1B4B] font-bold leading-snug font-display">Registration Close (11:59 PM)</p>

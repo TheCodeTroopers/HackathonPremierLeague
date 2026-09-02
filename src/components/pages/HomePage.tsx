@@ -472,14 +472,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 </button>
               </div>
 
-              {/* Date Badge: STARTS 1 SEPTEMBER 2026 */}
+              {/* Date Badge: STARTS 2 SEPTEMBER 2026 */}
               <div
                 className={`anim-date-row inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#FFFDF7] border-2 border-[#1E1B4B] font-display text-xs sm:text-sm font-bold text-[#1E1B4B] shadow-sketch-sm hover:shadow-sketch transition-all hover:-translate-y-0.5 w-fit ${
                   hasEntered ? 'hero-anim-dates' : 'hero-pre-enter'
                 }`}
               >
                 <Calendar className="w-4 h-4 text-[#4F46E5] flex-shrink-0 animate-pulse" />
-                <span>STARTS 1 SEPTEMBER 2026 – 22 SEPTEMBER 2026</span>
+                <span>STARTS 2 SEPTEMBER 2026 – 23 SEPTEMBER 2026</span>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold ml-1">SMVITM</span>
               </div>
 
@@ -759,7 +759,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   PART 1
                 </div>
                 <p className="font-bold text-xs text-amber-700 pt-1">
-                  1 – 6 September 2026
+                  2 – 6 September 2026
                 </p>
                 <p className="text-[11px] text-[#1E1B4B]/65 font-medium">
                   Idea Submission • Build • Present
