@@ -488,6 +488,8 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
               <img
                 src={HPL_IMAGES.sponsorsHero}
                 alt="Our Sponsors, Our Strength - Four Collegiate Developers with Golden Trophy"
+                loading="eager"
+                decoding="async"
                 className="w-full h-auto object-cover transform scale-[1.14] block select-none"
                 style={{
                   mixBlendMode: 'multiply',
@@ -857,23 +859,27 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
               </p>
             </div>
 
-            {/* Right: Action Button & Email Contact with Smooth Navigation */}
-            <div className="flex flex-col sm:flex-row md:flex-col items-center md:items-end gap-3 flex-shrink-0">
-              <a
-                href="mailto:sponsors@hpl.dev?subject=HPL%202026%20Sponsorship%20Inquiry"
-                className="px-6 sm:px-8 py-3 rounded-full bg-[#FBBF24] hover:bg-amber-400 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-sketch-sm hover:shadow-sketch hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center gap-2 cursor-pointer group"
-              >
-                <span>BECOME A SPONSOR</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
-
-              <a
-                href="mailto:sponsors@hpl.dev"
-                className="font-mono text-xs sm:text-sm text-purple-200 hover:text-white transition-colors flex items-center gap-1.5"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                <span>sponsors@hpl.dev</span>
-              </a>
+            {/* Right: Bold Hackathon Energy Stats */}
+            <div className="flex flex-col items-center md:items-end gap-2 flex-shrink-0 text-center md:text-right">
+              <div className="flex items-center gap-3">
+                <div className="text-center">
+                  <div className="font-display font-black text-2xl sm:text-3xl text-[#FBBF24] leading-none">40+</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-purple-300 mt-0.5">Squads</div>
+                </div>
+                <div className="w-px h-8 bg-purple-400/40" />
+                <div className="text-center">
+                  <div className="font-display font-black text-2xl sm:text-3xl text-[#FBBF24] leading-none">3</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-purple-300 mt-0.5">Weeks</div>
+                </div>
+                <div className="w-px h-8 bg-purple-400/40" />
+                <div className="text-center">
+                  <div className="font-display font-black text-2xl sm:text-3xl text-[#FBBF24] leading-none">∞</div>
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-purple-300 mt-0.5">Ideas</div>
+                </div>
+              </div>
+              <p className="font-mono text-[11px] text-purple-300 uppercase tracking-widest pt-1">
+                ✦ Fuelling Innovation. Season 2026 ✦
+              </p>
             </div>
 
             {/* Far Right: PREVIOUS Rocket Launching Artwork with gentle float (Clean & Razor Sharp!) */}

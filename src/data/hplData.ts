@@ -558,7 +558,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-3',
     category: 'Participation',
     question: 'Who is eligible to participate?',
-    answer: 'Participation is exclusively open to students of SMVITM. Students from all branches and academic years (1st to 4th year) are eligible to participate. Please note that external college students are not permitted.'
+    answer: 'HPL 2026 is an internal hackathon exclusively for students of Shri Madhwa Vadiraja Institute of Technology & Management (SMVITM), Bantakal. Every currently enrolled student — from any branch (CS, ECE, MECH, AIDS, AIML, MBA) and any year (1st to 4th year) — is fully eligible to participate. No prior hackathon experience is required. Just bring your passion to build!'
   },
   {
     id: 'faq-4',

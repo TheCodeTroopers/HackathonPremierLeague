@@ -14,7 +14,7 @@
     background-color: #FBF9F2;
     color: #1E1B4B;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, .font-display {

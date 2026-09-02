@@ -34,9 +34,9 @@ export const PILLARS_DATA: PillarStep[] = [
     icon: Users,
     color: '#2563EB',
     accentBg: '#DBEAFE',
-    description: 'Squads assemble with 3 to 4 specialized builders. Just like premier sports franchises, successful squads balance backend architects, frontend craftsmen, AI/ML researchers, and product presenters.',
+    description: 'Squads assemble with exactly 5 specialized builders. Just like premier sports franchises, successful squads balance backend architects, frontend craftsmen, AI/ML researchers, product designers, and presenters.',
     points: [
-      'Balanced 3-4 member squads across technology disciplines',
+      'Exactly 5-member squads across technology disciplines',
       'Official squad badges, numbers, and team repos',
       'Assigned mentor advisors for each challenge track'
     ]

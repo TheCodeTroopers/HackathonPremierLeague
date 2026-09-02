@@ -1,5 +1,45 @@
-# Logs
-logs
+# ════════════════════════════════════════════════════════════════
+#  .gitignore  —  HackathonPremierLeague
+#  Only source code is pushed. Credentials, deps, and build
+#  artifacts are NEVER committed.
+# ════════════════════════════════════════════════════════════════
+
+# ── 1. CREDENTIALS & ENVIRONMENT VARIABLES ──────────────────────
+# Never commit secrets, API keys, or environment config.
+.env
+.env.*
+!.env.example
+*.local
+env/
+secrets/
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+service-account*.json
+firebase-*.json
+google-credentials*.json
+
+# ── 2. DEPENDENCIES ─────────────────────────────────────────────
+# Install fresh via `npm install` — never commit node_modules.
+node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# ── 3. BUILD OUTPUT ─────────────────────────────────────────────
+dist/
+dist-ssr/
+build/
+out/
+.output/
+
+# ── 4. LOGS ─────────────────────────────────────────────────────
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,34 +47,21 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Dependencies
-node_modules/
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ── 5. OS & EDITOR JUNK ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+!.vscode/settings.json
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-!.env.example
-
-# Env folder (no dot prefix)
-env
-env/
-
-# Python scratch scripts & temp files
+# ── 6. TEMPORARY / SCRATCH ASSETS ───────────────────────────────
 src/assets/cropper.py
 src/assets/py_check.txt
 src/assets/mock_dimensions.json
@@ -52,3 +79,12 @@ src/assets/ps_rural_market.png
 src/assets/ps_rural_market_mobile.png
 src/assets/ps_weathergpt.png
 src/assets/ps_weathergpt_mobile.png
+
+# ── 7. MISC & AI METADATA ────────────────────────────────────────
+.cache/
+.temp/
+*.tmp
+.gemini/
+.antigravity/
+coverage/
+

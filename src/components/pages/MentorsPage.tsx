@@ -231,6 +231,8 @@ export const MentorsPage: React.FC<MentorsPageProps> = ({ onNavigate }) => {
               <img
                 src={HPL_IMAGES.mentorsHero}
                 alt="HPL Mentors & Judges Stage - Revealing Soon with Championship Trophy"
+                loading="eager"
+                decoding="async"
                 className="w-full h-auto object-contain transform group-hover:scale-[1.01] transition-transform duration-500 block select-none"
                 style={{
                   maskImage: 'radial-gradient(ellipse 80% 74% at 50% 50%, black 48%, rgba(0,0,0,0.85) 64%, rgba(0,0,0,0.3) 80%, transparent 96%)',
