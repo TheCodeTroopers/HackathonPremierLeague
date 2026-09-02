@@ -32,9 +32,9 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
       subtitle: 'Cross-Disciplinary Powerhouses',
       icon: Users,
       color: 'bg-blue-100 text-blue-900 border-blue-300',
-      description: 'Squads assemble with 3 to 4 specialized builders. Just like premier sports franchises, successful squads balance backend architects, frontend craftsmen, AI/ML researchers, and product presenters.',
+      description: 'Squads assemble with exactly 5 specialized builders. Just like premier sports franchises, successful squads balance backend architects, frontend craftsmen, AI/ML researchers, product designers, and presenters.',
       points: [
-        'Balanced 3-4 member squads across technology disciplines',
+        'Exactly 5-member squads across technology disciplines',
         'Official squad badges, numbers, and team repos',
         'Assigned mentor advisors for each challenge track'
       ]
@@ -219,7 +219,7 @@ export const LeaguePage: React.FC<LeaguePageProps> = ({ onNavigate }) => {
           READY TO FORM YOUR SQUAD?
         </h3>
         <p className="text-sm text-ink-muted max-w-lg mx-auto mb-6">
-          Gather 3 to 4 team members and claim your spot in Season 2026.
+          Gather exactly 5 members and claim your spot in Season 2026.
         </p>
         <Button
           variant="purple"
