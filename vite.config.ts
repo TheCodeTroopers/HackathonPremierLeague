@@ -17,6 +17,10 @@ try {
   if (fs.existsSync(uploadedPosterPath)) {
     fs.copyFileSync(uploadedPosterPath, destPosterPath);
   }
+} catch (e) {
+  // Silent fallback
+}
+
 // Auto-sync admin illustration assets directly into src/assets/
 const adminEvalSrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/admin_team_evaluation_1788626880689.jpg';
 const adminEvalDest = path.resolve(__dirname, 'src/assets/hpl_admin_eval_art.jpg');
