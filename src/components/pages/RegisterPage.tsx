@@ -722,17 +722,17 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
               <Button
                 variant="purple"
                 size="md"
-                onClick={() => onNavigate('match-day')}
+                onClick={() => onNavigate('timeline')}
                 icon={<ArrowRight className="w-4 h-4" />}
               >
-                GO TO MATCH DAY ARENA
+                VIEW TOURNAMENT TIMELINE
               </Button>
               <Button
                 variant="outline"
                 size="md"
-                onClick={() => onNavigate('leaderboard')}
+                onClick={() => onNavigate('rulebook')}
               >
-                VIEW LIVE LEADERBOARD
+                READ OFFICIAL RULE BOOK
               </Button>
             </div>
           </div>

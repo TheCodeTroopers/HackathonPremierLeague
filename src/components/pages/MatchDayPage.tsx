@@ -27,31 +27,31 @@ export const MatchDayPage: React.FC<MatchDayPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-      {/* Match Day Arena Header with Countdown */}
+      {/* Match Day Arena Header with Countdown & Coming Soon Badge */}
       <div className="bg-ink text-paper-light sketch-border rounded-sketch-lg p-6 sm:p-10 shadow-sketch-xl relative overflow-hidden">
         {/* Background Grid Accent */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-hpl-coral text-white text-xs font-mono font-bold tracking-wider shadow-sm animate-pulse">
-              <span className="w-2 h-2 rounded-full bg-white" />
-              MATCH DAY ARENA • LIVE STAGE
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400/20 border border-amber-400 text-amber-300 text-xs font-mono font-bold tracking-wider shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+              <span>ARENA COMING SOON • UNLOCKS AFTER SHORTLISTING</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-white leading-tight">
-              WEEK 2 SHOWDOWN: <br />
-              <span className="text-hpl-yellow">PRESSURE TEST & REFIT</span>
+              MATCH DAY ARENA: <br />
+              <span className="text-hpl-yellow">HEAD-TO-HEAD SHOWDOWN</span>
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 font-sans max-w-xl leading-relaxed">
-              Squads are head-to-head in technical defense. Live APIs, resilience stress tests, and mentor evaluation boards are now active.
+              Match Day rounds, live scoring, surprise problem twists, and milestone submissions will go live once shortlisted squads are officially announced on <strong>8 September 2026</strong>.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-300 pt-2">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-hpl-yellow" />
-                <span>Round Window: 24 July 02:00 PM - 06:00 PM IST</span>
+                <span>Shortlist Announcement: 8 September 2026</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-hpl-coral" />
@@ -62,7 +62,7 @@ export const MatchDayPage: React.FC<MatchDayPageProps> = ({ onNavigate }) => {
 
           {/* Countdown Clock */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
-            <CountdownTimer label="CURRENT SPRINT SUBMISSION LOCKS IN" />
+            <CountdownTimer label="MATCH DAY ARENA UNLOCKS IN" targetDate="2026-09-08T10:00:00" />
           </div>
         </div>
       </div>
@@ -97,11 +97,16 @@ export const MatchDayPage: React.FC<MatchDayPageProps> = ({ onNavigate }) => {
       {activeTab === 'fixtures' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl sm:text-3xl font-black font-display uppercase text-ink">
-              HEAD-TO-HEAD BATTLE CARDS
-            </h2>
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-black font-display uppercase text-ink">
+                HEAD-TO-HEAD BATTLE CARDS
+              </h2>
+              <p className="text-xs font-mono text-amber-800 font-semibold mt-1">
+                ✦ PREVIEW FORMAT • Official fixture matchups unlock once squads are shortlisted on Sept 8
+              </p>
+            </div>
             <span className="text-xs font-mono font-bold text-ink-muted uppercase">
-              4 MATCHES SCHEDULED
+              PREVIEW FORMAT
             </span>
           </div>
 
