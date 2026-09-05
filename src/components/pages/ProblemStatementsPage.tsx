@@ -34,11 +34,9 @@ interface ProblemStatementsPageProps {
 
 export const EVALUATION_CRITERIA = [
   { name: 'Problem Understanding', icon: Brain, bg: 'bg-purple-50 text-[#582A9C] border-purple-200' },
-  { name: 'Functionality', icon: CheckCircle2, bg: 'bg-emerald-50 text-[#0F766E] border-emerald-200' },
-  { name: 'User Experience', icon: Layout, bg: 'bg-blue-50 text-blue-800 border-blue-200' },
-  { name: 'Technical Implementation', icon: Code2, bg: 'bg-indigo-50 text-indigo-800 border-indigo-200' },
-  { name: 'Innovation', icon: Sparkles, bg: 'bg-amber-50 text-amber-900 border-amber-200' },
-  { name: 'Practicality', icon: Compass, bg: 'bg-rose-50 text-rose-800 border-rose-200' }
+  { name: 'Functionality/Feature Implementation', icon: CheckCircle2, bg: 'bg-emerald-50 text-[#0F766E] border-emerald-200' },
+  { name: 'Tech Stack Used', icon: Layout, bg: 'bg-blue-50 text-blue-800 border-blue-200' },
+  { name: 'Presentation', icon: Sparkles, bg: 'bg-amber-50 text-amber-900 border-amber-200' },
 ];
 
 // ── PROBLEM STATEMENT DATA (CLEANED: NO TECH STACK, NO TIPS, NO DELIVERABLES) ──
