@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PageRoute } from '../../types';
-import { Menu } from 'lucide-react';
+import { Menu, ShieldCheck } from 'lucide-react';
+import { isCurrentAdminAuthenticated, logoutAdminSession } from '../../services/adminAuthService';
 
 interface NavbarProps {
   activePage: PageRoute;
@@ -12,6 +13,11 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsAdminLoggedIn(isCurrentAdminAuthenticated());
+  }, [activePage, mobileMenuOpen]);
 
   const navItems: { label: string; page: PageRoute }[] = [
     { label: 'HOME', page: 'home' },
@@ -176,6 +182,35 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
             )}
           </button>
 
+          {/* Admin Portal Button */}
+          <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden md:flex items-center gap-1.5'}`}>
+            <button
+              onClick={() => handleNavClick('admin')}
+              className={`px-3.5 py-2 rounded-full border-2 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs text-xs font-display font-bold uppercase tracking-wider ${
+                isAdminLoggedIn
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-950 hover:bg-emerald-100'
+                  : 'border-[#1E1B4B]/20 hover:border-[#1E1B4B] bg-[#FFFDF7] hover:bg-amber-50 text-[#1E1B4B]'
+              }`}
+              title={isAdminLoggedIn ? "Idea Submissions Dashboard (Logged In)" : "Idea Submissions Admin Sign In"}
+            >
+              <ShieldCheck className={`w-3.5 h-3.5 ${isAdminLoggedIn ? 'text-emerald-600' : 'text-[#4F46E5]'}`} />
+              <span>{isAdminLoggedIn ? 'ADMIN (ACTIVE)' : 'ADMIN SIGN IN'}</span>
+            </button>
+            {isAdminLoggedIn && (
+              <button
+                onClick={() => {
+                  logoutAdminSession();
+                  setIsAdminLoggedIn(false);
+                  onNavigate('home');
+                }}
+                className="px-2.5 py-1.5 rounded-full border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer text-[11px] font-bold font-display"
+                title="Sign out of Admin Portal"
+              >
+                LOGOUT
+              </button>
+            )}
+          </div>
+
           {/* Register Capsule (Visible only at top) */}
           <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
             <button
@@ -335,6 +370,29 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                   <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
                   <span>REGISTER SQUAD • ₹30K POOL</span>
                 </button>
+
+                {/* Admin Portal Link */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleNavClick('admin')}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 text-[#1E1B4B] font-display font-bold text-xs uppercase tracking-wider text-center border-2 border-[#1E1B4B]/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <ShieldCheck className={`w-4 h-4 ${isAdminLoggedIn ? 'text-emerald-600' : 'text-[#4F46E5]'}`} />
+                    <span>{isAdminLoggedIn ? 'ADMIN DASHBOARD' : 'ADMIN SIGN IN'}</span>
+                  </button>
+                  {isAdminLoggedIn && (
+                    <button
+                      onClick={() => {
+                        logoutAdminSession();
+                        setIsAdminLoggedIn(false);
+                        closeMenu(() => onNavigate('home'));
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border-2 border-rose-300 font-display font-bold text-xs uppercase transition-colors cursor-pointer"
+                    >
+                      LOGOUT
+                    </button>
+                  )}
+                </div>
 
               </div>
 
