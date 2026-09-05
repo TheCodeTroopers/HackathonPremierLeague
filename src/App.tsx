@@ -19,13 +19,28 @@ import { RegisterPage } from './components/pages/RegisterPage';
 import { SponsorsPage } from './components/pages/SponsorsPage';
 import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage';
 import { ContactPage } from './components/pages/ContactPage';
+import { AdminPage } from './components/pages/AdminPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
 import { preloadAllImages } from './utils/imagePreloader';
 
+const getInitialPage = (): PageRoute => {
+  if (typeof window !== 'undefined' && window.location.hash) {
+    const rawHash = window.location.hash.replace('#', '') as PageRoute;
+    const validPages: PageRoute[] = [
+      'home', 'how-it-works', 'match-day', 'squads',
+      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact', 'admin'
+    ];
+    if (validPages.includes(rawHash)) {
+      return rawHash;
+    }
+  }
+  return 'home';
+};
+
 export function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [activePage, setActivePage] = useState<PageRoute>('home');
+  const [activePage, setActivePage] = useState<PageRoute>(getInitialPage);
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
 
   // Preload all assets in the background immediately on mount
@@ -57,12 +72,15 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact', 'admin'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
       }
     };
+
+    // Run once on mount so direct URLs like #admin immediately open the page
+    handleHashChange();
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
@@ -96,8 +114,10 @@ export function App() {
       {/* Unique Animated Mouse Cursor & Scroll Indicator */}
       <CustomCursor />
 
-      {/* Top Sticky Header */}
-      <Navbar activePage={activePage} onNavigate={handleNavigate} />
+      {/* Top Sticky Header (Hidden on Admin portal for clean workspace view) */}
+      {activePage !== 'admin' && (
+        <Navbar activePage={activePage} onNavigate={handleNavigate} />
+      )}
 
       {/* Main Multi-Page Container */}
       <main className="flex-grow">
@@ -144,11 +164,14 @@ export function App() {
           {activePage === 'register' && (
             <RegisterPage onNavigate={handleNavigate} />
           )}
+          {activePage === 'admin' && (
+            <AdminPage onNavigate={handleNavigate} />
+          )}
         </PageTransition>
       </main>
 
-      {/* Editorial Footer with Partner Logos & Callout Banner (Customized footer active on timeline) */}
-      {activePage !== 'timeline' && activePage !== 'journey' && (
+      {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal & Timeline) */}
+      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && (
         <Footer onNavigate={handleNavigate} />
       )}
     </div>

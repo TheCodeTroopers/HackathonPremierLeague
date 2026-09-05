@@ -380,6 +380,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <span>Contact</span>
                 <ExternalLink className="w-3 h-3" />
               </button>
+              <span>•</span>
+              <button
+                onClick={() => {
+                  onNavigate('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="hover:text-amber-300 hover:underline transition-colors cursor-pointer text-white/60 hover:text-white"
+              >
+                Admin Portal
+              </button>
             </div>
 
             <div>
