@@ -21,7 +21,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
     { label: 'MENTORS', page: 'mentors' },
     { label: 'SPONSORS', page: 'sponsors' },
     { label: 'PROBLEM STATEMENTS', page: 'problem-statements' },
-    { label: 'FAQ', page: 'faq' },
     { label: 'CONTACT', page: 'contact' },
   ];
 
@@ -136,7 +135,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                              (item.label === 'MENTORS' && activePage === 'mentors') ||
                              (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                              (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
-                             (item.label === 'FAQ' && activePage === 'faq') ||
                              (item.label === 'CONTACT' && activePage === 'contact');
 
             return (
@@ -247,7 +245,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                                    (item.label === 'MENTORS' && activePage === 'mentors') ||
                                    (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                                    (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
-                                   (item.label === 'FAQ' && activePage === 'faq') ||
                                    (item.label === 'CONTACT' && activePage === 'contact');
 
                   return (
