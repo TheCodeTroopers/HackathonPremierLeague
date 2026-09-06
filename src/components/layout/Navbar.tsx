@@ -127,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
             ? 'opacity-0 scale-95 pointer-events-none hidden lg:hidden' 
             : 'hidden lg:flex items-center gap-6 xl:gap-8 opacity-100 scale-100 pointer-events-auto'
         }`}>
-          {navItems.map((item) => {
+          {navItems.filter(item => ['HOME', 'PROBLEM STATEMENTS', 'TIMELINE', 'RULE BOOK', 'LEADERBOARD'].includes(item.label)).map((item) => {
             const isActive = (item.label === 'HOME' && activePage === 'home') ||
                              (item.label === 'RULE BOOK' && activePage === 'rulebook') ||
                              (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
@@ -159,23 +159,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
 
         {/* Right: Floating MENU Pill & Register CTA */}
         <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
-          {/* Floating Big Standalone MENU Button when Scrolled / Mobile Menu at top */}
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className={`inline-flex items-center gap-2 rounded-full border-[2.5px] border-[#1E1B4B] bg-[#FFFDF7] text-[#1E1B4B] font-display font-black uppercase transition-all duration-300 cursor-pointer ${
-              isScrolled 
-                ? 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[3.5px_3.5px_0px_#1E1B4B] hover:bg-[#FBBF24] hover:shadow-[4.5px_4.5px_0px_#1E1B4B] hover:scale-105 active:translate-x-0.5 active:translate-y-0.5' 
-                : 'flex lg:hidden px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
-            }`}
-            aria-label="Open menu drawer"
-          >
-            <Menu className={`transition-all duration-300 ${isScrolled ? 'w-4 h-4 sm:w-5 sm:h-5 text-[#1E1B4B]' : 'w-3.5 h-3.5'}`} />
-            <span className="tracking-wider">MENU</span>
-            {isScrolled && (
-              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-ping ml-0.5" />
-            )}
-          </button>
-
           {/* Register Capsule (Visible only at top) */}
           <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
             <button
@@ -186,6 +169,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
               <span>REGISTER NOW</span>
             </button>
           </div>
+
+          {/* Floating Big Standalone MENU Button when Scrolled / Mobile Menu at top */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className={`inline-flex items-center gap-2 rounded-full border-[2.5px] border-[#1E1B4B] bg-[#FFFDF7] text-[#1E1B4B] font-display font-black uppercase transition-all duration-300 cursor-pointer ${
+              isScrolled 
+                ? 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[3.5px_3.5px_0px_#1E1B4B] hover:bg-[#FBBF24] hover:shadow-[4.5px_4.5px_0px_#1E1B4B] hover:scale-105 active:translate-x-0.5 active:translate-y-0.5' 
+                : 'flex px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
+            }`}
+            aria-label="Open menu drawer"
+          >
+            <Menu className={`transition-all duration-300 ${isScrolled ? 'w-4 h-4 sm:w-5 sm:h-5 text-[#1E1B4B]' : 'w-3.5 h-3.5'}`} />
+            <span className="tracking-wider">MENU</span>
+            {isScrolled && (
+              <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-ping ml-0.5" />
+            )}
+          </button>
         </div>
 
       </div>
