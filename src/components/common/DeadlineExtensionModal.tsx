@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Calendar, Clock, Trophy, ArrowRight, AlertTriangle, Sparkles, ShieldAlert } from 'lucide-react';
+import { X, Clock, Trophy, ArrowRight, AlertTriangle, Sparkles, ShieldAlert } from 'lucide-react';
 import { PageRoute } from '../../types';
 
 interface DeadlineExtensionModalProps {
@@ -14,40 +14,6 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
   onClose,
   onNavigate
 }) => {
-  // Target deadline: 8th September 2026, 5:00 PM IST (17:00:00+05:30)
-  const [timeLeft, setTimeLeft] = useState({
-    days: 2,
-    hours: 4,
-    minutes: 0,
-    seconds: 0,
-    isExpired: false
-  });
-
-  useEffect(() => {
-    const calculateTimeRemaining = () => {
-      // 8 September 2026 17:00:00 IST
-      const target = new Date('2026-09-08T17:00:00+05:30').getTime();
-      const now = new Date().getTime();
-      const difference = target - now;
-
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
-        return;
-      }
-
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((difference / 1000 / 60) % 60);
-      const seconds = Math.floor((difference / 1000) % 60);
-
-      setTimeLeft({ days, hours, minutes, seconds, isExpired: false });
-    };
-
-    calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   // Keyboard accessibility and body scroll lock
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -89,8 +55,6 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
   };
 
   if (!isOpen || typeof document === 'undefined') return null;
-
-  const format = (n: number) => n.toString().padStart(2, '0');
 
   return createPortal(
     <div 
@@ -136,7 +100,7 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
         {/* Card Content Area */}
         <div className="p-5 sm:p-7 space-y-5">
           
-          {/* Header Tag & Title */}
+          {/* Header Tag & Title (Reason removed) */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEE2E2] border-2 border-[#BE123C] text-[#BE123C] font-mono text-xs font-black uppercase tracking-wider shadow-sketch-sm rotate-[-1deg]">
               <AlertTriangle className="w-3.5 h-3.5 text-[#BE123C] animate-bounce" />
@@ -149,10 +113,6 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
             >
               REGISTRATION EXTENDED!
             </h2>
-
-            <p className="text-xs sm:text-sm font-semibold text-[#1E1B4B]/80 max-w-md mx-auto leading-relaxed">
-              Due to requests from student squads, the official registration window for students has been extended!
-            </p>
           </div>
 
           {/* Red Highlighted Golden-Bordered Deadline Box */}
@@ -193,35 +153,10 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
               </div>
             </div>
 
-            {/* Live Countdown Timer Grid */}
-            <div className="pt-2 border-t border-[#BE123C]/15">
-              <div className="text-[10px] font-mono font-bold text-[#1E1B4B]/60 uppercase tracking-wider mb-1.5 text-center">
-                TIME REMAINING TO REGISTER SQUAD
-              </div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="bg-[#1E1B4B] text-white rounded-lg py-1.5 px-1 border border-[#1E1B4B] shadow-sm">
-                  <div className="font-display font-black text-base sm:text-lg leading-none">{format(timeLeft.days)}</div>
-                  <div className="font-mono text-[9px] font-bold text-amber-400 mt-1">DAYS</div>
-                </div>
-                <div className="bg-[#1E1B4B] text-white rounded-lg py-1.5 px-1 border border-[#1E1B4B] shadow-sm">
-                  <div className="font-display font-black text-base sm:text-lg leading-none">{format(timeLeft.hours)}</div>
-                  <div className="font-mono text-[9px] font-bold text-amber-400 mt-1">HOURS</div>
-                </div>
-                <div className="bg-[#1E1B4B] text-white rounded-lg py-1.5 px-1 border border-[#1E1B4B] shadow-sm">
-                  <div className="font-display font-black text-base sm:text-lg leading-none">{format(timeLeft.minutes)}</div>
-                  <div className="font-mono text-[9px] font-bold text-amber-400 mt-1">MINS</div>
-                </div>
-                <div className="bg-[#BE123C] text-white rounded-lg py-1.5 px-1 border border-[#1E1B4B] shadow-sm">
-                  <div className="font-display font-black text-base sm:text-lg leading-none text-amber-300">{format(timeLeft.seconds)}</div>
-                  <div className="font-mono text-[9px] font-bold text-amber-200 mt-1">SECS</div>
-                </div>
-              </div>
-            </div>
-
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2.5 pt-2">
+          <div className="space-y-2.5 pt-1">
             <button
               onClick={handleRegisterClick}
               className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-display font-black text-sm uppercase tracking-wider text-center border-2 border-[#1E1B4B] shadow-[4px_4px_0px_#1E1B4B] hover:shadow-[6px_6px_0px_#1E1B4B] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2 group"
