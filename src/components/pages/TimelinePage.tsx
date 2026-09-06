@@ -156,12 +156,12 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       headerBg: '#991B1B',
       headerTextColor: '#FFFFFF',
       accentColor: '#EF4444',
-      day: '06',
+      day: '08',
       month: 'SEP',
-      yearDay: '2026 SUN 11:59 PM',
-      title: 'Registration Close (11:59 PM)',
-      subtitle: 'Idea and video submission portal locks for initial jury screening.',
-      tag: 'DEADLINE',
+      yearDay: '2026 TUE 5:00 PM',
+      title: 'Registration Close (5:00 PM)',
+      subtitle: 'Extended deadline! Idea and video submission portal locks for initial jury screening.',
+      tag: 'EXTENDED DEADLINE',
       icon: <AlertCircle className="w-3.5 h-3.5 text-[#EF4444]" />
     },
     {

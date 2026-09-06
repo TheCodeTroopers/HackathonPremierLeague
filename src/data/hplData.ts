@@ -499,7 +499,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
       'Each team must consist of exactly 5 members.',
       'A participant can be part of only one team.',
       'The team composition cannot be changed once the registration form is submitted.',
-      'Registration closes at 11:59 PM on 6 September 2026.',
+      'Registration strictly closes at 5:00 PM on 8 September 2026 (Extended).',
       'Teams must select one of the three official problem statements during registration.',
       'The selected problem statement cannot be changed after the registration form is submitted.',
       'Any correction or issue regarding registration details must be communicated to an HPL Coordinator.'

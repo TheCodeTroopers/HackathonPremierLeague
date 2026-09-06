@@ -22,6 +22,8 @@ import { ContactPage } from './components/pages/ContactPage';
 import { AdminPage } from './components/pages/AdminPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
+import { DeadlineExtensionModal } from './components/common/DeadlineExtensionModal';
+import { DeadlineMarquee } from './components/layout/DeadlineMarquee';
 import { preloadAllImages } from './utils/imagePreloader';
 
 const getInitialPage = (): PageRoute => {
@@ -42,6 +44,23 @@ export function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePage, setActivePage] = useState<PageRoute>(getInitialPage);
   const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
+  const [isDeadlineModalOpen, setIsDeadlineModalOpen] = useState(false);
+
+  // Show deadline extension banner modal once per user on start (via localStorage)
+  useEffect(() => {
+    if (isLoading) return;
+    try {
+      const hasSeenBanner = localStorage.getItem('hpl_deadline_extended_banner_seen');
+      if (!hasSeenBanner) {
+        const timer = setTimeout(() => {
+          setIsDeadlineModalOpen(true);
+        }, 350);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      // Fallback if localStorage access is restricted
+    }
+  }, [isLoading]);
 
   // Preload all assets in the background immediately on mount
   useEffect(() => {
@@ -111,12 +130,25 @@ export function App() {
       {/* 6-Stage Hand-Drawn Loading Screen from Storyboard */}
       {isLoading && <LoadingScreen onComplete={() => setIsLoading(false)} />}
 
+      {/* Deadline Extension Start Banner Modal (Shown once per user via localStorage) */}
+      <DeadlineExtensionModal
+        isOpen={isDeadlineModalOpen}
+        onClose={() => setIsDeadlineModalOpen(false)}
+        onNavigate={handleNavigate}
+      />
+
       {/* Unique Animated Mouse Cursor & Scroll Indicator */}
       <CustomCursor />
 
-      {/* Top Sticky Header (Hidden on Admin portal for clean workspace view) */}
+      {/* Top Sticky Header & Red Marquee Alert Section Just Below Header */}
       {activePage !== 'admin' && (
-        <Navbar activePage={activePage} onNavigate={handleNavigate} />
+        <>
+          <Navbar activePage={activePage} onNavigate={handleNavigate} />
+          <DeadlineMarquee 
+            onNavigate={handleNavigate} 
+            onOpenNotice={() => setIsDeadlineModalOpen(true)} 
+          />
+        </>
       )}
 
       {/* Main Multi-Page Container */}
