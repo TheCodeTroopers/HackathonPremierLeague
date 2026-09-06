@@ -865,7 +865,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                                 {item.team_name}
                               </span>
                               <span className="text-[11px] font-mono text-slate-500 block">
-                                {item.team_size || 5} Members
+                                {item.team_size || (item.member5_name ? 5 : 4)} Members
                               </span>
                             </div>
                           </div>
@@ -1081,13 +1081,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <div className="space-y-3 bg-white p-5 rounded-xl border border-slate-200">
               <h3 className="font-display font-bold text-sm text-[#1E1B4B] uppercase flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#4F46E5]" />
-                <span>Squad Roster (5 Members)</span>
+                <span>Squad Roster ({activeModalItem.team_size || (activeModalItem.member5_name ? 5 : 4)} Members)</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
                 {/* Team Leader */}
                 <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-200">
-                  <div className="font-mono text-[10px] uppercase font-bold text-[#4F46E5]">Team Leader</div>
+                  <div className="font-mono text-[10px] uppercase font-bold text-[#4F46E5]">Team Leader (Member 1)</div>
                   <div className="font-display font-bold text-sm text-[#1E1B4B]">{activeModalItem.team_leader_name}</div>
                   <div className="text-slate-600 font-mono text-[11px]">{activeModalItem.leader_email}</div>
                   <div className="text-slate-500 font-mono text-[11px]">{activeModalItem.leader_phone}</div>
@@ -1114,12 +1114,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   <div className="text-slate-600 font-mono text-[11px]">{activeModalItem.member4_email}</div>
                 </div>
 
-                {/* Member 5 */}
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 sm:col-span-2">
-                  <div className="font-mono text-[10px] uppercase font-bold text-slate-500">Member 5</div>
-                  <div className="font-display font-bold text-sm text-[#1E1B4B]">{activeModalItem.member5_name || 'Member 5'}</div>
-                  <div className="text-slate-600 font-mono text-[11px]">{activeModalItem.member5_email || 'N/A'}</div>
-                </div>
+                {/* Member 5 (Conditional if team size is 5) */}
+                {(Number(activeModalItem.team_size) === 5 || Boolean(activeModalItem.member5_name)) && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 sm:col-span-2">
+                    <div className="font-mono text-[10px] uppercase font-bold text-slate-500">Member 5</div>
+                    <div className="font-display font-bold text-sm text-[#1E1B4B]">{activeModalItem.member5_name || 'Member 5'}</div>
+                    <div className="text-slate-600 font-mono text-[11px]">{activeModalItem.member5_email || 'N/A'}</div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex items-center gap-2 text-xs font-mono text-slate-500">

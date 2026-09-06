@@ -30,7 +30,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     leaderEmail: '',
     leaderPhone: '',
     college: 'Shri Madhwa Vadiraja Institute of Technology and Management',
-    teamSize: 5,
+    teamSize: 4,
     member2Name: '',
     member2Email: '',
     member3Name: '',
@@ -150,6 +150,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     } else {
       setIsSubmitting(true);
       try {
+        const isTeamSize5 = Number(formData.teamSize) === 5;
         const { error } = await supabase.from('registrations').insert([
           {
             team_name: formData.teamName.trim(),
@@ -158,15 +159,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
             leader_email: formData.leaderEmail.trim().toLowerCase(),
             leader_phone: formData.leaderPhone.trim(),
             college: formData.college.trim(),
-            team_size: Number(formData.teamSize) || 5,
+            team_size: Number(formData.teamSize) || 4,
             member2_name: formData.member2Name.trim(),
             member2_email: formData.member2Email.trim().toLowerCase(),
             member3_name: formData.member3Name.trim(),
             member3_email: formData.member3Email.trim().toLowerCase(),
             member4_name: formData.member4Name.trim(),
             member4_email: formData.member4Email.trim().toLowerCase(),
-            member5_name: (formData.member5Name || '').trim(),
-            member5_email: (formData.member5Email || '').trim().toLowerCase(),
+            member5_name: isTeamSize5 ? (formData.member5Name || '').trim() : null,
+            member5_email: isTeamSize5 ? (formData.member5Email || '').trim().toLowerCase() : null,
             project_idea: formData.projectIdea.trim(),
             github_org: formData.githubOrg?.trim() || null,
             accept_rules: formData.acceptRules
@@ -334,16 +335,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
                       <div>
                         <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                          Team Size *
+                          Team Size (Min 4, Max 5) *
                         </label>
                         <select
                           name="teamSize"
                           value={formData.teamSize}
-                          disabled
                           onChange={handleChange}
-                          className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                          className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple cursor-pointer"
                         >
-                          <option value={5} >5 Members</option>
+                          <option value={4}>4 Members (Leader + 3 Members)</option>
+                          <option value={5}>5 Members (Leader + 4 Members)</option>
                         </select>
                       </div>
                     </div>
@@ -367,8 +368,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                 {/* STEP 2: MEMBERS */}
                 {currentStep === 2 && (
                   <div className="space-y-4 animate-in fade-in duration-200">
-                    <div className="p-3 bg-paper-cream rounded-xl sketch-border text-xs font-mono font-bold text-ink">
-                      TEAM LEADER (PRIMARY POINT OF CONTACT)
+                    <div className="p-3 bg-paper-cream rounded-xl sketch-border flex flex-wrap items-center justify-between gap-2 text-xs font-mono font-bold text-ink">
+                      <span>TEAM LEADER (MEMBER 1 OF {formData.teamSize} - PRIMARY POC)</span>
+                      <span className="text-[11px] bg-purple-100 text-hpl-purple px-2.5 py-0.5 rounded-full border border-purple-300">
+                        {formData.teamSize} Members Total
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -417,7 +421,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     </div>
 
                     <div className="p-3 bg-paper-cream rounded-xl sketch-border text-xs font-mono font-bold text-ink mt-2">
-                      SQUAD CO-BUILDERS
+                      SQUAD CO-BUILDERS (MEMBERS 2 TO {formData.teamSize})
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -507,34 +511,38 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                         />
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 5 Name & Role *
-                        </label>
-                        <input
-                          type="text"
-                          name="member5Name"
-                          required
-                          value={formData.member5Name || ''}
-                          onChange={handleChange}
-                          placeholder="e.g. Rahul Shenoy (UI/UX)"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 5 Email *
-                        </label>
-                        <input
-                          type="email"
-                          name="member5Email"
-                          required
-                          value={formData.member5Email || ''}
-                          onChange={handleChange}
-                          placeholder="member5@college.edu"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
+                      {Number(formData.teamSize) === 5 && (
+                        <>
+                          <div>
+                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                              Member 5 Name & Role *
+                            </label>
+                            <input
+                              type="text"
+                              name="member5Name"
+                              required={Number(formData.teamSize) === 5}
+                              value={formData.member5Name || ''}
+                              onChange={handleChange}
+                              placeholder="e.g. Rahul Shenoy (UI/UX)"
+                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                              Member 5 Email *
+                            </label>
+                            <input
+                              type="email"
+                              name="member5Email"
+                              required={Number(formData.teamSize) === 5}
+                              value={formData.member5Email || ''}
+                              onChange={handleChange}
+                              placeholder="member5@college.edu"
+                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -704,6 +712,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   <span className="font-bold text-white">{formData.teamLeaderName || 'Squad Lead'}</span>
                 </div>
                 <div>
+                  <span className="text-slate-400 block text-[10px]">SQUAD SIZE:</span>
+                  <span className="font-bold text-emerald-400">{formData.teamSize} Members (Leader + {Number(formData.teamSize) - 1} Co-builders)</span>
+                </div>
+                <div className="col-span-2">
                   <span className="text-slate-400 block text-[10px]">INSTITUTION:</span>
                   <span className="font-bold text-white truncate block">{formData.college || 'SMVITM Bantakal'}</span>
                 </div>
