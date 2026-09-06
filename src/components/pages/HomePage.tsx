@@ -76,25 +76,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
     return () => observer.disconnect();
   }, [isLoaded]);
 
-  // Pure rAF Parallax on Scroll (Zero React Re-renders, 120 FPS Compositor-Linked)
+  // Pure rAF Parallax on Scroll (Desktop 120 FPS Compositor-Linked, disabled on touch to avoid mobile layout thrashing)
   React.useEffect(() => {
+    if (typeof window === 'undefined' || window.matchMedia('(pointer: coarse)').matches) {
+      return;
+    }
+
     let rafId: number;
+    const heroArt = document.querySelector('.anim-illustration') as HTMLElement | null;
+    const aboutArt = document.querySelector('.about-art-parallax') as HTMLElement | null;
 
     const handleParallax = () => {
       const scroll = window.scrollY;
 
       // 1. Hero illustration subtle depth parallax
-      const heroArt = document.querySelector('.anim-illustration') as HTMLElement;
       if (heroArt && scroll < 1200) {
-        heroArt.style.transform = `translate3d(0, ${scroll * 0.12}px, 0)`;
+        heroArt.style.transform = `translate3d(0, ${scroll * 0.1}px, 0)`;
       }
 
       // 2. About section illustration parallax
-      const aboutArt = document.querySelector('.about-art-parallax') as HTMLElement;
       if (aboutArt) {
         const rect = aboutArt.getBoundingClientRect();
         if (rect.top < window.innerHeight && rect.bottom > 0) {
-          const offset = (window.innerHeight - rect.top) * 0.07;
+          const offset = (window.innerHeight - rect.top) * 0.06;
           aboutArt.style.transform = `translate3d(0, ${-offset}px, 0)`;
         }
       }

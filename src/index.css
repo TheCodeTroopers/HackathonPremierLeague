@@ -4,9 +4,11 @@
 
 @layer base {
   html {
+    scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
   }
 
   body {
@@ -15,10 +17,25 @@
     color: #1E1B4B;
     font-family: 'Plus Jakarta Sans', sans-serif;
     overflow-x: clip;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
   }
 
   h1, h2, h3, h4, .font-display {
     font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* GPU Compositor Acceleration for Smooth Rendering Across Mobile and High-Refresh Displays */
+  img, svg, canvas, video, header {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Eliminate 300ms mobile tap delay and tap highlights for app-like responsiveness */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -90,18 +107,30 @@
 
 .animate-comic-wiggle {
   animation: comicWiggle 4s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .animate-float {
   animation: floatSlow 4s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .animate-float-reverse {
   animation: floatReverse 5s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .animate-sparkle {
   animation: sparkleSpin 3s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .animate-glow-orange {

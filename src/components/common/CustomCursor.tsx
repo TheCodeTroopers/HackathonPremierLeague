@@ -30,12 +30,16 @@ export const CustomCursor: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [particles, setParticles] = useState<StardustParticle[]>([]);
   const [bursts, setBursts] = useState<ComicBurst[]>([]);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
 
   const cursorRef = useRef<HTMLDivElement>(null);
+  const progressTextRef = useRef<HTMLSpanElement>(null);
   const lastPosRef = useRef({ x: -100, y: -100 });
   const mousePosRef = useRef({ x: -100, y: -100 });
+  const isHoveringRef = useRef(false);
+  const hoverTagRef = useRef('CLICK! ✦');
+  const lastProgressRef = useRef(-1);
+  const isScrolledDownRef = useRef(false);
   const particleIdRef = useRef(0);
   const burstIdRef = useRef(0);
   const rafRef = useRef<number | null>(null);
@@ -49,10 +53,11 @@ export const CustomCursor: React.FC = () => {
       rafRef.current = null;
     };
 
+    const isPointerFine = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+
     const handleMouseMove = (e: MouseEvent) => {
       mousePosRef.current = { x: e.clientX, y: e.clientY };
 
-      // Immediate hardware position sync
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY}px, 0)`;
       }
@@ -63,12 +68,12 @@ export const CustomCursor: React.FC = () => {
         rafRef.current = requestAnimationFrame(updateCursorPosition);
       }
 
-      // Distance check for trailing sparkles (throttled to > 28px movement)
+      // Distance check for trailing sparkles (throttled to > 32px movement)
       const dx = e.clientX - lastPosRef.current.x;
       const dy = e.clientY - lastPosRef.current.y;
       const dist = dx * dx + dy * dy;
 
-      if (dist > 784) { // 28 * 28
+      if (dist > 1024) { // 32 * 32
         lastPosRef.current = { x: e.clientX, y: e.clientY };
         const pId = ++particleIdRef.current;
         const colors = ['#F59E0B', '#E11D48', '#7C3AED', '#2563EB', '#10B981'];
@@ -77,7 +82,7 @@ export const CustomCursor: React.FC = () => {
         const char = chars[Math.floor(Math.random() * chars.length)];
 
         setParticles((prev) => [
-          ...prev.slice(-6),
+          ...prev.slice(-4),
           {
             id: pId,
             x: e.clientX + (Math.random() * 8 - 4),
@@ -91,26 +96,34 @@ export const CustomCursor: React.FC = () => {
 
         setTimeout(() => {
           setParticles((prev) => prev.filter((p) => p.id !== pId));
-        }, 450);
+        }, 400);
       }
 
-      // Interactive hover detector
+      // Interactive hover detector with state change deduplication
       const target = e.target as HTMLElement | null;
       if (target) {
         const clickable = target.closest('button, a, input, select, textarea, [role="button"], .cursor-pointer');
         if (clickable) {
-          setIsHovering(true);
+          let newTag = 'CLICK! ⚡';
           const text = (clickable.textContent || '').toLowerCase();
           if (text.includes('register') || text.includes('join') || text.includes('squad')) {
-            setHoverTag("LET'S GO! 🚀");
+            newTag = "LET'S GO! 🚀";
           } else if (text.includes('faq') || text.includes('rule')) {
-            setHoverTag('READ INTEL 💡');
+            newTag = 'READ INTEL 💡';
           } else if (text.includes('explore') || text.includes('journey') || text.includes('timeline')) {
-            setHoverTag('EXPLORE ✦');
-          } else {
-            setHoverTag('CLICK! ⚡');
+            newTag = 'EXPLORE ✦';
           }
-        } else {
+
+          if (!isHoveringRef.current) {
+            isHoveringRef.current = true;
+            setIsHovering(true);
+          }
+          if (hoverTagRef.current !== newTag) {
+            hoverTagRef.current = newTag;
+            setHoverTag(newTag);
+          }
+        } else if (isHoveringRef.current) {
+          isHoveringRef.current = false;
           setIsHovering(false);
         }
       }
@@ -130,48 +143,25 @@ export const CustomCursor: React.FC = () => {
 
       setTimeout(() => {
         setBursts((prev) => prev.filter((b) => b.id !== bId));
-      }, 450);
+      }, 400);
     };
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length > 0) {
         const touch = e.touches[0];
-        const pId = ++particleIdRef.current;
-        const colors = ['#F59E0B', '#E11D48', '#7C3AED', '#2563EB', '#10B981'];
-        const chars = ['✦', '★', '✧', '•'];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        const char = chars[Math.floor(Math.random() * chars.length)];
-
-        setParticles((prev) => [
-          ...prev.slice(-6),
-          {
-            id: pId,
-            x: touch.clientX + (Math.random() * 12 - 6),
-            y: touch.clientY + (Math.random() * 12 - 6),
-            size: Math.random() * 4 + 8,
-            color,
-            char,
-            rotation: Math.random() * 90 - 45,
-          },
-        ]);
-
-        setTimeout(() => {
-          setParticles((prev) => prev.filter((p) => p.id !== pId));
-        }, 450);
-
         const bId = ++burstIdRef.current;
         const word = BURST_WORDS[Math.floor(Math.random() * BURST_WORDS.length)];
         const burstColor = BURST_COLORS[Math.floor(Math.random() * BURST_COLORS.length)];
         const rotation = Math.floor(Math.random() * 20 - 10);
 
         setBursts((prev) => [
-          ...prev.slice(-2),
+          ...prev.slice(-1),
           { id: bId, x: touch.clientX, y: touch.clientY, word, color: burstColor, rotation },
         ]);
 
         setTimeout(() => {
           setBursts((prev) => prev.filter((b) => b.id !== bId));
-        }, 450);
+        }, 400);
       }
     };
 
@@ -185,31 +175,48 @@ export const CustomCursor: React.FC = () => {
         requestAnimationFrame(() => {
           const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
           const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-          const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
-          setScrollProgress(Math.round(scrolled));
-          setIsScrolledDown(winScroll > 300);
+          const scrolled = height > 0 ? Math.round((winScroll / height) * 100) : 0;
+          
+          // Direct ref DOM update to eliminate scroll re-renders
+          if (progressTextRef.current && scrolled !== lastProgressRef.current) {
+            lastProgressRef.current = scrolled;
+            progressTextRef.current.textContent = `${scrolled}%`;
+          }
+
+          const scrolledDown = winScroll > 300;
+          if (scrolledDown !== isScrolledDownRef.current) {
+            isScrolledDownRef.current = scrolledDown;
+            setIsScrolledDown(scrolledDown);
+          }
           scrollTicking = false;
         });
         scrollTicking = true;
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    if (isPointerFine) {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+      window.addEventListener('mousedown', handleMouseDown);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mouseleave', handleMouseLeave);
+      document.addEventListener('mouseenter', handleMouseEnter);
+    } else {
+      window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    }
+
     window.addEventListener('scroll', handleScroll, { passive: true });
-    document.addEventListener('mouseleave', handleMouseLeave);
-    document.addEventListener('mouseenter', handleMouseEnter);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchstart', handleTouchStart);
+      if (isPointerFine) {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mousedown', handleMouseDown);
+        window.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mouseleave', handleMouseLeave);
+        document.removeEventListener('mouseenter', handleMouseEnter);
+      } else {
+        window.removeEventListener('touchstart', handleTouchStart);
+      }
       window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      document.removeEventListener('mouseenter', handleMouseEnter);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
@@ -392,8 +399,8 @@ export const CustomCursor: React.FC = () => {
             )}
           </div>
 
-          <span className="text-[9px] font-mono font-black text-[#1E1B4B]/80 mt-0.5">
-            {scrollProgress}%
+          <span ref={progressTextRef} className="text-[9px] font-mono font-black text-[#1E1B4B]/80 mt-0.5">
+            0%
           </span>
         </button>
       </div>

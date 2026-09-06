@@ -21,20 +21,38 @@ export const ParticleCanvas: React.FC<{ className?: string }> = ({ className = '
 
     window.addEventListener('resize', handleResize);
 
+    let isVisible = true;
+    const isMobile = window.innerWidth < 768;
+    const count = isMobile ? 22 : 42;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+      if (isVisible && !animationFrameId) {
+        animationFrameId = requestAnimationFrame(render);
+      }
+    }, { threshold: 0.05 });
+
+    observer.observe(canvas);
+
     // Particle pool
     const symbols = ['</>', '{}', 'fn()', '10', '01', '★', '⚡', 'λ', 'git'];
-    const particles = Array.from({ length: 45 }, () => ({
+    const particles = Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      size: Math.random() * 11 + 9,
-      speedX: (Math.random() - 0.5) * 0.6,
-      speedY: (Math.random() - 0.5) * 0.6,
+      size: Math.random() * 10 + 8,
+      speedX: (Math.random() - 0.5) * 0.5,
+      speedY: (Math.random() - 0.5) * 0.5,
       symbol: symbols[Math.floor(Math.random() * symbols.length)],
       opacity: Math.random() * 0.12 + 0.04,
       color: ['#1E1B4B', '#EA580C', '#4F46E5', '#D97706'][Math.floor(Math.random() * 4)],
     }));
 
     const render = () => {
+      if (!isVisible) {
+        animationFrameId = 0;
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p) => {
@@ -57,11 +75,12 @@ export const ParticleCanvas: React.FC<{ className?: string }> = ({ className = '
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    animationFrameId = requestAnimationFrame(render);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
