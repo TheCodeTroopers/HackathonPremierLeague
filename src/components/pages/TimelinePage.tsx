@@ -171,9 +171,9 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       headerBg: '#059669',
       headerTextColor: '#FFFFFF',
       accentColor: '#059669',
-      day: '08',
+      day: '09',
       month: 'SEP',
-      yearDay: '2026 TUESDAY',
+      yearDay: '2026 WEDNESDAY',
       title: 'Shortlist Release & Inauguration',
       subtitle: 'Qualified squads announced. Official season opening & briefing ceremony!',
       tag: 'INAUGURATION',
@@ -234,38 +234,23 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       day: '23',
       month: 'SEP',
       yearDay: '2026 WED 5:30 PM',
-      title: 'Part 2: Eval 2 + Part 3 Release',
-      subtitle: 'Sprint finals concluded. Top qualifiers advance to Part 3 Playoffs arena!',
-      tag: '5:30 PM & PLAYOFFS',
+      title: 'Week 2: Final Evaluation',
+      subtitle: 'Last evaluation round for Week 2! Final scores tallied & qualified squads advance directly to Grand Finale.',
+      tag: '5:30 PM & FINAL EVAL',
       icon: <BarChart3 className="w-3.5 h-3.5 text-[#E11D48]" />
     },
     {
       id: 'p8',
       platformNumber: 'PLATFORM 08',
       position: 'bottom',
-      headerBg: '#4F46E5',
-      headerTextColor: '#FFFFFF',
-      accentColor: '#6366F1',
-      day: '26',
-      month: 'SEP',
-      yearDay: '2026 SATURDAY',
-      title: 'Head-to-Head Playoff Fixtures',
-      subtitle: 'Top ranked squads battle live to determine the 4 Grand Finalist squads.',
-      tag: 'PLAYOFFS ARENA',
-      icon: <Swords className="w-3.5 h-3.5 text-[#6366F1]" />
-    },
-    {
-      id: 'p9',
-      platformNumber: 'PLATFORM 09',
-      position: 'top',
       headerBg: '#7C3AED',
       headerTextColor: '#FFFFFF',
       accentColor: '#F59E0B',
-      day: '28',
-      month: 'SEP',
-      yearDay: '2026 LATE SEP',
+      day: '01',
+      month: 'OCT',
+      yearDay: '2026 THURSDAY',
       title: 'Auditorium Grand Finale',
-      subtitle: 'Live On-Stage Presentations at SMVITM. ₹30,000+ Prize Pool awarded & Trophy lifted!',
+      subtitle: 'Live On-Stage Presentations at SMVITM. Finalist battles, ₹30,000+ Prize Pool awarded & Trophy lifted!',
       tag: 'GRAND FINALE',
       icon: <Trophy className="w-3.5 h-3.5 text-[#F59E0B]" />
     }
@@ -1277,10 +1262,10 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
               </div>
               <div className="space-y-1">
                 <div className="font-display font-black text-xs uppercase tracking-wide text-[#1E1B4B]">
-                  Grand Inauguration: 8th Sep
+                  Grand Inauguration: 9th Sep
                 </div>
                 <p className="text-xs text-[#1E1B4B]/80 font-medium leading-snug font-sans">
-                  Official inauguration ceremony will take place on 8th September following the shortlist announcement.
+                  Official inauguration ceremony will take place on 9th September following the shortlist announcement.
                 </p>
               </div>
             </div>

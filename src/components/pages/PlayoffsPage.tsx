@@ -32,7 +32,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
           THE PLAYOFFS
         </h1>
         <p className="text-base sm:text-lg text-ink-muted leading-relaxed">
-          The 12 finalist squads (Top 4 from each of the 3 domains) face off in the physical championship arena at SMVITM Bantakal to crown the Season 2026 Champion.
+          Following the final Week 2 evaluation on 23rd September, the 12 finalist squads (Top 4 from each domain) advance directly to the physical championship arena on 1 October 2026 at SMVITM Bantakal.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
             <div className="flex flex-wrap gap-4 text-xs font-mono text-slate-300 pt-1">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-hpl-yellow" />
-                <span>19 – 22 August 2026</span>
+                <span>1 October 2026</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-hpl-coral" />
@@ -79,7 +79,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
             {/* Column 1: Semifinals */}
             <div className="space-y-8">
               <div className="text-xs font-mono font-bold text-hpl-indigo uppercase text-center border-b border-ink/20 pb-2">
-                SEMIFINALS (20 AUG)
+                SEMIFINALS (1 OCT • MORNING)
               </div>
 
               {/* Semifinal 1 Box */}
@@ -116,7 +116,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
             {/* Column 2: 3rd Place Match & Connectors */}
             <div className="space-y-6 text-center">
               <div className="text-xs font-mono font-bold text-amber-800 uppercase border-b border-ink/20 pb-2">
-                3RD PLACE MATCH (21 AUG)
+                3RD PLACE MATCH (1 OCT • AFTERNOON)
               </div>
 
               <div className="bg-amber-50 sketch-border rounded-xl p-4 space-y-2 shadow-sketch">
@@ -136,7 +136,7 @@ export const PlayoffsPage: React.FC<PlayoffsPageProps> = ({ onNavigate }) => {
             {/* Column 3: Grand Finale Championship */}
             <div className="space-y-4 text-center">
               <div className="text-xs font-mono font-bold text-hpl-coral uppercase border-b border-ink/20 pb-2">
-                GRAND FINALE (22 AUG)
+                GRAND FINALE (1 OCT • EVENING)
               </div>
 
               <div className="bg-amber-100 sketch-border-thick rounded-2xl p-6 space-y-4 shadow-sketch-lg border-hpl-yellow">

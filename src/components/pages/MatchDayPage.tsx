@@ -45,13 +45,13 @@ export const MatchDayPage: React.FC<MatchDayPageProps> = ({ onNavigate }) => {
             </h1>
 
             <p className="text-sm sm:text-base text-slate-300 font-sans max-w-xl leading-relaxed">
-              Match Day rounds, live scoring, surprise problem twists, and milestone submissions will go live once shortlisted squads are officially announced on <strong>8 September 2026</strong>.
+              Match Day rounds, live scoring, surprise problem twists, and milestone submissions will go live once shortlisted squads are officially announced on <strong>9 September 2026</strong>.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-slate-300 pt-2">
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-hpl-yellow" />
-                <span>Shortlist Announcement: 8 September 2026</span>
+                <span>Shortlist Announcement: 9 September 2026</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-hpl-coral" />
@@ -62,7 +62,7 @@ export const MatchDayPage: React.FC<MatchDayPageProps> = ({ onNavigate }) => {
 
           {/* Countdown Clock */}
           <div className="lg:col-span-5 flex justify-center lg:justify-end">
-            <CountdownTimer label="MATCH DAY ARENA UNLOCKS IN" targetDate="2026-09-08T10:00:00" />
+            <CountdownTimer label="MATCH DAY ARENA UNLOCKS IN" targetDate="2026-09-09T10:00:00" />
           </div>
         </div>
       </div>
