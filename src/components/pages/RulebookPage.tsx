@@ -164,12 +164,12 @@ export const OFFICIAL_RULES = [
     title: 'Shortlisted Team Fee',
     category: 'Registration Fee',
     icon: CreditCard,
-    summary: 'Applicable only to shortlisted teams (₹150 for IEEE member squads, ₹200 others).',
-    keyTakeaway: 'Fee applies only after shortlisting: ₹150 (IEEE squad) / ₹200 (Non-IEEE squad).',
+    summary: 'Applicable only to shortlisted teams (₹150 for IAHV member squads, ₹200 others).',
+    keyTakeaway: 'Fee applies only after shortlisting: ₹150 (IAHV squad) / ₹200 (Non-IAHV squad).',
     points: [
       'Zero fee at initial registration. The registration fee applies ONLY to teams that are shortlisted.',
-      'Team with at least one active IEEE student member: ₹150 / team.',
-      'Team with no IEEE student member: ₹200 / team.',
+      'Team with at least one active IAHV student member: ₹150 / team.',
+      'Team with no IAHV student member: ₹200 / team.',
       'Payment links and instructions will be sent with the shortlist notification on 10 September 2026.'
     ]
   },
@@ -451,7 +451,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter rules (e.g. video, fee, AI, IEEE)..."
+                placeholder="Filter rules (e.g. video, fee, AI, IAHV)..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-[#1E1B4B] bg-white text-xs font-sans text-[#1E1B4B] focus:outline-none focus:ring-2 focus:ring-[#582A9C] shadow-2xs"
               />
             </div>
@@ -531,12 +531,12 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div className="bg-white p-3 rounded-lg border border-emerald-200">
-                              <span className="text-[11px] font-mono text-slate-500 font-bold block">IEEE MEMBER</span>
+                              <span className="text-[11px] font-mono text-slate-500 font-bold block">IAHV MEMBER</span>
                               <span className="font-display font-black text-2xl text-emerald-700">₹150</span>
                               <span className="text-[10px] text-slate-500 block">per squad</span>
                             </div>
                             <div className="bg-white p-3 rounded-lg border border-emerald-200">
-                              <span className="text-[11px] font-mono text-slate-500 font-bold block">NON-IEEE</span>
+                              <span className="text-[11px] font-mono text-slate-500 font-bold block">NON-IAHV</span>
                               <span className="font-display font-black text-2xl text-[#1E1B4B]">₹200</span>
                               <span className="text-[10px] text-slate-500 block">per squad</span>
                             </div>
@@ -707,12 +707,12 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-lg border border-emerald-200 text-center">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">At Least 1 IEEE Member</span>
+                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">At Least 1 IAHV Member</span>
                       <span className="font-display font-black text-2xl text-emerald-700">₹150</span>
                       <span className="text-[10px] font-sans text-slate-500 block">per team total</span>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-emerald-200 text-center">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">No IEEE Member</span>
+                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">No IAHV Member</span>
                       <span className="font-display font-black text-2xl text-[#1E1B4B]">₹200</span>
                       <span className="text-[10px] font-sans text-slate-500 block">per team total</span>
                     </div>

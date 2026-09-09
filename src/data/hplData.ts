@@ -550,7 +550,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
     rules: [
       'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 10 September 2026.',
       'A registration fee will apply only to shortlisted teams.',
-      'Team with no IEEE member: ₹200 / team. Team with at least one IEEE member: ₹150 / team.',
+      'Team with no IAHV member: ₹200 / team. Team with at least one IAHV member: ₹150 / team.',
       'Teams may cancel their participation at any time, but must inform an HPL Coordinator.',
       'Once the shortlisted-team registration fee has been paid, it is non-refundable.'
     ]
@@ -619,8 +619,7 @@ export const PARTNERS_DATA = [
   { name: 'CodeTroopers', role: 'Lead Technical Club & Organizer', logoText: 'CODETROOPERS' },
   { name: 'IGNITE', role: 'Innovation & Incubation Cell', logoText: 'IGNITE' },
   { name: 'AIKYA', role: 'Cultural & Student Welfare Forum', logoText: 'AIKYA' },
-  { name: 'IEEE SMVITM Student Chapter', role: 'Technical Partner', logoText: 'IEEE SMVITM' },
-  { name: 'ISTE SMVITM Chapter', role: 'Academic Partner', logoText: 'ISTE SMVITM' },
+  { name: 'IAHV SMVITM Student Chapter', role: 'Technical Partner', logoText: 'IAHV SMVITM' },
 ];
 
 // Convenience Aliases for Clean Component Imports

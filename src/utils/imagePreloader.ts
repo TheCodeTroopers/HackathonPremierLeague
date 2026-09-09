@@ -18,7 +18,7 @@ const CRITICAL_KEYS: (keyof typeof HPL_IMAGES)[] = [
   'smvitmLogo',
   'isteLogo',
   'igniteLogo',
-  'ieeeLogo',
+  'iahvLogo',
   'codeTrooperLogo',
   'aikyaLogo'
 ];

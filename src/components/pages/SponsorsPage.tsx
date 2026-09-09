@@ -568,52 +568,30 @@ export const SponsorsPage: React.FC<SponsorsPageProps> = ({ onNavigate }) => {
                 </p>
               </div>
 
-              {/* 3. TECHNOLOGY PARTNER: IEEE FIRST, THEN ISTE (Prominent & Clear) */}
+              {/* 3. TECHNOLOGY PARTNER: IAHV (Prominent & Clear) */}
               <div className="scroll-primary-col flex flex-col items-center justify-between min-h-[190px] sm:min-h-[210px] py-3 md:py-0 md:px-4 space-y-3.5">
                 <span className="inline-block px-3.5 py-1 rounded-full bg-[#0F766E] text-white font-display font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-2xs">
                   TECHNOLOGY PARTNER
                 </span>
 
-                {/* Technology Partners: IEEE & ISTE */}
+                {/* Technology Partners: IAHV */}
                 <div className="flex flex-col items-center justify-center gap-4 py-1 w-full max-w-sm mx-auto">
                   
-                  {/* 1. IEEE */}
+                  {/* 1. IAHV */}
                   <div className="flex items-center justify-center gap-4 w-full">
                     <div className="h-16 sm:h-14 w-36 sm:w-32 flex items-center justify-center flex-shrink-0 bg-white/90 rounded-2xl p-2 border-2 border-[#00629B]/20 shadow-2xs">
                       <img
-                        src={HPL_IMAGES.ieeeLogo}
-                        alt="IEEE Official Student Branch SMVITM"
+                        src={HPL_IMAGES.iahvLogo}
+                        alt="IAHV Official Logo"
                         className="h-full w-auto object-contain mix-blend-multiply transform hover:scale-105 transition-transform"
                       />
                     </div>
                     <div className="text-left flex-1">
                       <h4 className="font-display font-black text-xl sm:text-2xl text-[#00629B] uppercase tracking-tight leading-none">
-                        IEEE
+                        IAHV
                       </h4>
                       <p className="font-sans text-xs sm:text-sm text-[#1E1B4B]/75 font-semibold leading-tight mt-1">
-                        Student Branch SMVITM
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Divider line */}
-                  <div className="w-40 h-px bg-[#2C2723]/20" />
-
-                  {/* 2. ISTE */}
-                  <div className="flex items-center justify-center gap-4 w-full">
-                    <div className="w-20 h-20 sm:w-20 sm:h-20 rounded-full bg-white/95 border-2 border-[#1E1B4B]/20 p-1.5 flex items-center justify-center flex-shrink-0 shadow-2xs overflow-hidden">
-                      <img
-                        src={HPL_IMAGES.isteLogo}
-                        alt="ISTE Official Crest"
-                        className="w-full h-full object-contain mix-blend-multiply transform scale-[1.45] hover:scale-[1.55] transition-transform"
-                      />
-                    </div>
-                    <div className="text-left flex-1">
-                      <h4 className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B] uppercase tracking-tight leading-none">
-                        ISTE
-                      </h4>
-                      <p className="font-sans text-xs sm:text-sm text-[#1E1B4B]/75 font-semibold leading-tight mt-1">
-                        Student Chapter SMVITM
+                        International Association for Human Values
                       </p>
                     </div>
                   </div>

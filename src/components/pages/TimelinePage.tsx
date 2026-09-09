@@ -1612,11 +1612,7 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
                 </span>
                 <span className="text-white/40">•</span>
                 <span className="font-display font-bold text-[10px] uppercase tracking-wider hover:text-white transition-colors">
-                  IEEE SMVITM
-                </span>
-                <span className="text-white/40">•</span>
-                <span className="font-display font-bold text-[10px] uppercase tracking-wider hover:text-white transition-colors">
-                  ISTE Chapter
+                  IAHV SMVITM
                 </span>
               </div>
             </div>

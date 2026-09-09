@@ -13,18 +13,18 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
 }) => {
   const marqueeItems = [
     {
-      icon: <ShieldAlert className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 animate-pulse" />,
-      text: 'DEADLINE EXTENDED: REGISTRATION WINDOW EXTENDED TILL 9TH SEPTEMBER 2026, 7:00 PM IST',
+      icon: <ShieldAlert className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />,
+      text: 'REGISTRATION OFFICIALLY CLOSED',
       highlight: true
     },
     {
       icon: <Clock className="w-3.5 h-3.5 text-white flex-shrink-0" />,
-      text: 'FINAL CALL: +48 HOURS GRANTED FOR REGISTRATION',
+      text: 'THANK YOU TO ALL PARTICIPATING SQUADS',
       highlight: false
     },
     {
       icon: <Sparkles className="w-3.5 h-3.5 text-yellow-300 flex-shrink-0" />,
-      text: 'PORTAL STRICTLY CLOSES 9TH SEP @ 7:00 PM SHARP • REGISTER YOUR SQUAD TODAY',
+      text: 'STAY TUNED FOR MATCH DAY SCHEDULES & UPDATES',
       highlight: true
     }
   ];
@@ -58,18 +58,12 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
         
         {/* Left Sticky/Fixed Alert Badge */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 z-10 pr-2 sm:pr-3 border-r-2 border-[#1E1B4B]/30 mr-1 sm:mr-3">
-          <button
-            onClick={onOpenNotice}
-            title="Click to view full official notice"
-            className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#1E1B4B] text-white border border-amber-400/40 text-[10px] sm:text-[11px] font-mono font-black uppercase tracking-wider shadow-sm hover:bg-[#2A2468] hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          <div
+            className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#1E1B4B] text-white border border-amber-400/40 text-[10px] sm:text-[11px] font-mono font-black uppercase tracking-wider shadow-sm"
           >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-80" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
-            </span>
-            <span className="text-amber-300 font-display">NOTICE</span>
-            <span className="hidden xs:inline text-white/90">9TH SEP 7 PM</span>
-          </button>
+            <span className="text-amber-300 font-display">STATUS</span>
+            <span className="hidden xs:inline text-white/90">CLOSED</span>
+          </div>
         </div>
 
         {/* Continuous Animated Marquee Ticker Loop */}
@@ -86,16 +80,7 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
           </div>
         </div>
 
-        {/* Right Sticky CTA Button */}
-        <div className="flex items-center gap-2 flex-shrink-0 z-10 pl-2 sm:pl-3 border-l-2 border-[#1E1B4B]/30 ml-1 sm:ml-3">
-          <button
-            onClick={() => onNavigate('register')}
-            className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full bg-[#FBBF24] hover:bg-[#F59E0B] text-[#1E1B4B] font-display font-black text-[11px] sm:text-xs uppercase tracking-wider border border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] hover:shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer whitespace-nowrap"
-          >
-            <span>REGISTER</span>
-            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </div>
+
 
       </div>
     </aside>
