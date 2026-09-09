@@ -156,10 +156,10 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       headerBg: '#991B1B',
       headerTextColor: '#FFFFFF',
       accentColor: '#EF4444',
-      day: '08',
+      day: '09',
       month: 'SEP',
-      yearDay: '2026 TUE 5:00 PM',
-      title: 'Registration Close (5:00 PM)',
+      yearDay: '2026 WED 7:00 PM',
+      title: 'Registration Close (7:00 PM)',
       subtitle: 'Extended deadline! Idea and video submission portal locks for initial jury screening.',
       tag: 'EXTENDED DEADLINE',
       icon: <AlertCircle className="w-3.5 h-3.5 text-[#EF4444]" />
@@ -171,9 +171,9 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       headerBg: '#059669',
       headerTextColor: '#FFFFFF',
       accentColor: '#059669',
-      day: '09',
+      day: '10',
       month: 'SEP',
-      yearDay: '2026 WEDNESDAY',
+      yearDay: '2026 THURSDAY',
       title: 'Shortlist Release & Inauguration',
       subtitle: 'Qualified squads announced. Official season opening & briefing ceremony!',
       tag: 'INAUGURATION',
@@ -1262,10 +1262,10 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
               </div>
               <div className="space-y-1">
                 <div className="font-display font-black text-xs uppercase tracking-wide text-[#1E1B4B]">
-                  Grand Inauguration: 9th Sep
+                  Grand Inauguration: 10th Sep (10:30 AM)
                 </div>
                 <p className="text-xs text-[#1E1B4B]/80 font-medium leading-snug font-sans">
-                  Official inauguration ceremony will take place on 9th September following the shortlist announcement.
+                  Official inauguration ceremony will take place on 10th September following the shortlist announcement.
                 </p>
               </div>
             </div>

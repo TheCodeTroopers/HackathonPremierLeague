@@ -14,7 +14,7 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
   const marqueeItems = [
     {
       icon: <ShieldAlert className="w-3.5 h-3.5 text-amber-300 flex-shrink-0 animate-pulse" />,
-      text: 'DEADLINE EXTENDED: REGISTRATION WINDOW EXTENDED TILL 8TH SEPTEMBER 2026, 5:00 PM IST',
+      text: 'DEADLINE EXTENDED: REGISTRATION WINDOW EXTENDED TILL 9TH SEPTEMBER 2026, 7:00 PM IST',
       highlight: true
     },
     {
@@ -24,7 +24,7 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
     },
     {
       icon: <Sparkles className="w-3.5 h-3.5 text-yellow-300 flex-shrink-0" />,
-      text: 'PORTAL STRICTLY CLOSES 8TH SEP @ 5:00 PM SHARP • REGISTER YOUR SQUAD TODAY',
+      text: 'PORTAL STRICTLY CLOSES 9TH SEP @ 7:00 PM SHARP • REGISTER YOUR SQUAD TODAY',
       highlight: true
     }
   ];
@@ -68,7 +68,7 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400" />
             </span>
             <span className="text-amber-300 font-display">NOTICE</span>
-            <span className="hidden xs:inline text-white/90">8TH SEP 5 PM</span>
+            <span className="hidden xs:inline text-white/90">9TH SEP 7 PM</span>
           </button>
         </div>
 

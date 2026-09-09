@@ -138,10 +138,10 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
                 </div>
                 <div>
                   <div className="font-display font-black text-lg sm:text-xl text-[#1E1B4B] leading-tight">
-                    8TH SEPTEMBER 2026
+                    9TH SEPTEMBER 2026
                   </div>
                   <div className="font-mono text-xs font-bold text-[#DC2626] flex items-center gap-1">
-                    <span>CLOSES AT 5:00 PM IST SHARP</span>
+                    <span>CLOSES AT 7:00 PM IST SHARP</span>
                   </div>
                 </div>
               </div>
@@ -162,7 +162,7 @@ export const DeadlineExtensionModal: React.FC<DeadlineExtensionModalProps> = ({
               className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-[#DC2626] hover:bg-[#B91C1C] text-white font-display font-black text-sm uppercase tracking-wider text-center border-2 border-[#1E1B4B] shadow-[4px_4px_0px_#1E1B4B] hover:shadow-[6px_6px_0px_#1E1B4B] hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2 group"
             >
               <Trophy className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform" />
-              <span>REGISTER SQUAD BEFORE 8TH SEP 5 PM</span>
+              <span>REGISTER SQUAD BEFORE 9TH SEP 7 PM</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
 

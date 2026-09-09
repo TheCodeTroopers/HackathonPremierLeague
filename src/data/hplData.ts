@@ -499,7 +499,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
       'Each team must consist of exactly 5 members.',
       'A participant can be part of only one team.',
       'The team composition cannot be changed once the registration form is submitted.',
-      'Registration strictly closes at 5:00 PM on 8 September 2026 (Extended).',
+      'Registration strictly closes at 7:00 PM on 9 September 2026 (Extended).',
       'Teams must select one of the three official problem statements during registration.',
       'The selected problem statement cannot be changed after the registration form is submitted.',
       'Any correction or issue regarding registration details must be communicated to an HPL Coordinator.'
@@ -548,7 +548,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
     icon: 'Code',
     summary: 'Information about shortlisting, registration fees, and refund policy.',
     rules: [
-      'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 9 September 2026.',
+      'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 10 September 2026.',
       'A registration fee will apply only to shortlisted teams.',
       'Team with no IEEE member: ₹200 / team. Team with at least one IEEE member: ₹150 / team.',
       'Teams may cancel their participation at any time, but must inform an HPL Coordinator.',

@@ -141,14 +141,12 @@ export function App() {
       <CustomCursor />
 
       {/* Top Sticky Header & Red Marquee Alert Section Just Below Header */}
+      <Navbar activePage={activePage} onNavigate={handleNavigate} />
       {activePage !== 'admin' && (
-        <>
-          <Navbar activePage={activePage} onNavigate={handleNavigate} />
-          <DeadlineMarquee 
-            onNavigate={handleNavigate} 
-            onOpenNotice={() => setIsDeadlineModalOpen(true)} 
-          />
-        </>
+        <DeadlineMarquee 
+          onNavigate={handleNavigate} 
+          onOpenNotice={() => setIsDeadlineModalOpen(true)} 
+        />
       )}
 
       {/* Main Multi-Page Container */}

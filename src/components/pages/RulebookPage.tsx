@@ -137,12 +137,12 @@ export const OFFICIAL_RULES = [
     title: 'Shortlisting',
     category: 'Evaluation Phase',
     icon: Award,
-    summary: 'Shortlisted teams announced on the HPL website on 9 September 2026.',
-    keyTakeaway: 'Results published on 9 Sept 2026 followed by HPL Inauguration.',
+    summary: 'Shortlisted teams announced on the HPL website on 10 September 2026.',
+    keyTakeaway: 'Results published on 10 Sept 2026 (10:30 AM) followed by HPL Inauguration.',
     points: [
       'All registered teams will undergo a rigorous shortlisting review by evaluation panels.',
-      'The shortlisted teams will be officially announced on the HPL website on 9 September 2026.',
-      'Further tournament stages, weekly match schedules, and milestones will be revealed during the HPL Inauguration ceremony on 9 September 2026.'
+      'The shortlisted teams will be officially announced on the HPL website on 10 September 2026.',
+      'Further tournament stages, weekly match schedules, and milestones will be revealed during the HPL Inauguration ceremony on 10 September 2026.'
     ]
   },
   {
@@ -170,7 +170,7 @@ export const OFFICIAL_RULES = [
       'Zero fee at initial registration. The registration fee applies ONLY to teams that are shortlisted.',
       'Team with at least one active IEEE student member: ₹150 / team.',
       'Team with no IEEE student member: ₹200 / team.',
-      'Payment links and instructions will be sent with the shortlist notification on 9 September 2026.'
+      'Payment links and instructions will be sent with the shortlist notification on 10 September 2026.'
     ]
   },
   {
@@ -210,12 +210,12 @@ export const OFFICIAL_RULES = [
     title: 'Important Dates',
     category: 'Schedule',
     icon: Calendar,
-    summary: 'Registration: Till 8 Sept | Inauguration: 9 Sept | Week 2 Final Eval: 23 Sept | Grand Finale: 1 Oct 2026.',
-    keyTakeaway: 'Inauguration 9 Sept, Week 2 final eval 23 Sept, followed directly by 1 Oct Grand Finale.',
+    summary: 'Registration: Till 9 Sept | Inauguration: 10 Sept (10:30 AM) | Week 2 Final Eval: 23 Sept | Grand Finale: 1 Oct 2026.',
+    keyTakeaway: 'Inauguration 10 Sept (10:30 AM), Week 2 final eval 23 Sept, followed directly by 1 Oct Grand Finale.',
     points: [
       '2 September 2026: Official Registrations Open.',
-      '8 September 2026 (5:00 PM): Extended Registrations Strictly Close.',
-      '9 September 2026: Shortlisted Teams Announced & Official Inauguration Ceremony.',
+      '9 September 2026 (7:00 PM): Extended Registrations Strictly Close.',
+      '10 September 2026: Shortlisted Teams Announced & Official Inauguration Ceremony.',
       '23 September 2026: Week 2 Final Evaluation Round & Grand Finalists Selection.',
       '1 October 2026: Auditorium Grand Finale at SMVITM Bantakal.'
     ]
@@ -361,7 +361,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
               <span>•</span>
               <span className="flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-[#EA580C]" />
-                Inauguration: 9 Sept 2026
+                Inauguration: 10 Sept 2026 (10:30 AM)
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
@@ -718,7 +718,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                     </div>
                   </div>
                   <p className="text-[11px] font-sans text-emerald-900/80 italic text-center">
-                    Note: Zero fee at initial registration. The fee applies only to teams shortlisted on 9 September 2026.
+                    Note: Zero fee at initial registration. The fee applies only to teams shortlisted on 10 September 2026.
                   </p>
                 </div>
               )}
@@ -734,11 +734,11 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                       <span className="font-mono text-[#582A9C] font-bold">Registration Opens</span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-purple-100">
-                      <span className="font-bold text-[#1E1B4B]">8 September 2026 (5:00 PM)</span>
+                      <span className="font-bold text-[#1E1B4B]">9 September 2026 (7:00 PM)</span>
                       <span className="font-mono text-rose-600 font-bold">Registration Closes</span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-purple-100">
-                      <span className="font-bold text-[#1E1B4B]">9 September 2026</span>
+                      <span className="font-bold text-[#1E1B4B]">10 September 2026</span>
                       <span className="font-mono text-emerald-600 font-bold">Shortlist & Inauguration</span>
                     </div>
                   </div>
@@ -935,7 +935,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                   Shri Madhwa Vadiraja Institute of Technology and Management, Bantakal
                 </p>
                 <p className="text-[11px] font-mono text-amber-800">
-                  Registration: 2 – 8 September 2026 • Shortlist & Inauguration: 9 September 2026 • Grand Finale: 1 October 2026
+                  Registration: 2 – 9 September 2026 • Shortlist & Inauguration: 10 September 2026 • Grand Finale: 1 October 2026
                 </p>
               </div>
 
