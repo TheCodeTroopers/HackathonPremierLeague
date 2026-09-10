@@ -26,7 +26,9 @@ import {
   TeamRegistration,
   getActiveTeamSession,
   saveActiveTeamSession,
-  clearActiveTeamSession
+  clearActiveTeamSession,
+  findQualifiedTeamByEmail,
+  OFFICIAL_QUALIFIED_TEAMS
 } from '../../services/teamPortalService';
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
 import { SparkleDoodle } from '../illustrations/MicroDoodles';
@@ -55,6 +57,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   // Authentication inputs: Email and Password only (Team name is fetched automatically!)
   const [emailInput, setEmailInput] = useState<string>('');
   const [passwordInput, setPasswordInput] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
@@ -95,20 +98,33 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       });
       // Fetch fresh record from Supabase
       findTeamRegistrationByEmail(session.leaderEmail).then((record) => {
-        if (record) {
-          setRegistration(record);
-          setLeaderPhone(record.leader_phone || '');
-          setCollegeName(record.college || '');
-          setMember2Name(record.member2_name || '');
-          setMember2Email(record.member2_email || '');
-          setMember3Name(record.member3_name || '');
-          setMember3Email(record.member3_email || '');
-          setMember4Name(record.member4_name || '');
-          setMember4Email(record.member4_email || '');
-          setMember5Name(record.member5_name || '');
-          setMember5Email(record.member5_email || '');
-          setCurrentStep(2);
-        }
+        const effective = record || {
+          id: `reg-${session.squadId}`,
+          team_name: session.teamName,
+          team_leader_name: 'Team Leader',
+          leader_email: session.leaderEmail,
+          leader_phone: '',
+          college: 'SMVITM / Associated Institution',
+          team_size: 4,
+          member2_name: 'Member 2',
+          member2_email: '',
+          member3_name: 'Member 3',
+          member3_email: '',
+          member4_name: 'Member 4',
+          member4_email: ''
+        };
+        setRegistration(effective);
+        setLeaderPhone(effective.leader_phone || '');
+        setCollegeName(effective.college || '');
+        setMember2Name(effective.member2_name || '');
+        setMember2Email(effective.member2_email || '');
+        setMember3Name(effective.member3_name || '');
+        setMember3Email(effective.member3_email || '');
+        setMember4Name(effective.member4_name || '');
+        setMember4Email(effective.member4_email || '');
+        setMember5Name(effective.member5_name || '');
+        setMember5Email(effective.member5_email || '');
+        setCurrentStep(2);
       }).catch(console.error);
     }
   }, [onNavigate]);
@@ -171,69 +187,94 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     try {
       const cleanEmail = emailInput.trim().toLowerCase();
 
-      // 1. Fetch team registration record by leader email from Supabase
-      const record = await findTeamRegistrationByEmail(cleanEmail);
-      if (!record) {
-        setAuthError('No registered team found with this team leader email. Please check your email.');
+      // 1. First check official 40 shortlisted list directly
+      const qualified = findQualifiedTeamByEmail(cleanEmail);
+      let officialName = qualified ? qualified.teamName : '';
+      let rank = qualified ? qualified.rank : 1;
+      let squadId = qualified ? qualified.squadId : `HPL-R2-${String(rank).padStart(2, '0')}`;
+
+      // 2. Fetch team registration record by leader email from Supabase if available
+      let record = await findTeamRegistrationByEmail(cleanEmail);
+      if (!record && qualified) {
+        record = await findTeamRegistration(qualified.teamName);
+      }
+
+      if (!qualified && !record) {
+        setAuthError('No registered team found with this team leader email. Only qualified team leaders can sign in.');
         setIsVerifying(false);
         return;
       }
 
-      // 2. Match with official 40 shortlisted squads
-      const teamIndex = SHORTLISTED_TEAMS_DATA.findIndex(
-        name => name.toLowerCase() === record.team_name.trim().toLowerCase()
-      );
+      if (!officialName && record) {
+        officialName = record.team_name;
+        const idx = SHORTLISTED_TEAMS_DATA.findIndex(
+          name => name.toLowerCase() === record!.team_name.trim().toLowerCase()
+        );
+        if (idx !== -1) {
+          rank = idx + 1;
+          squadId = `HPL-R2-${String(rank).padStart(2, '0')}`;
+        }
+      }
 
-      const resolvedIndex = teamIndex !== -1 
-        ? teamIndex 
-        : SHORTLISTED_TEAMS_DATA.findIndex(name => 
-            record.team_name.toLowerCase().includes(name.toLowerCase()) || 
-            name.toLowerCase().includes(record.team_name.toLowerCase())
-          );
-
-      const rank = resolvedIndex !== -1 ? resolvedIndex + 1 : 1;
-      const officialName = resolvedIndex !== -1 ? SHORTLISTED_TEAMS_DATA[resolvedIndex] : record.team_name;
-      const squadId = `HPL-R2-${String(rank).padStart(2, '0')}`;
-
-      // 3. Verify password
+      // 3. Verify password with whitespace trimming
       const expectedPassword = getTeamPassword(squadId, officialName);
-      if (passwordInput !== expectedPassword) {
+      const cleanInputPassword = passwordInput.trim();
+      const cleanExpectedPassword = (expectedPassword || '').trim();
+
+      if (cleanInputPassword !== cleanExpectedPassword) {
         setAuthError('Invalid team password. Please enter the team password provided to your team leader.');
         setIsVerifying(false);
         return;
       }
 
+      // If no supabase record exists, construct a fallback record from the official 40 list
+      const effectiveRecord: TeamRegistration = record || {
+        id: `reg-${squadId}`,
+        team_name: officialName,
+        team_leader_name: qualified ? qualified.teamName + ' Leader' : 'Team Leader',
+        leader_email: cleanEmail,
+        leader_phone: '',
+        college: 'SMVITM / Associated Institution',
+        team_size: 4,
+        member2_name: 'Member 2',
+        member2_email: '',
+        member3_name: 'Member 3',
+        member3_email: '',
+        member4_name: 'Member 4',
+        member4_email: ''
+      };
+
       // Successful authentication!
       setMatchedTeam({ rank, name: officialName, squadId });
-      setRegistration(record);
+      setRegistration(effectiveRecord);
 
       // Save persistent session so team stays signed in across refreshes
       saveActiveTeamSession({
         squadId,
         teamName: officialName,
-        leaderEmail: record.leader_email,
+        leaderEmail: cleanEmail,
         rank
       });
 
       // If this team has already selected and locked their Problem Statement,
       // redirect them straight to their Team Profile!
       const currentSelections = readSelections();
-      if (currentSelections[squadId]) {
+      if (currentSelections[squadId] || currentSelections[officialName] || currentSelections[`squad-${rank}`]) {
         onNavigate('team-profile');
         return;
       }
 
-      // Populate editable fields with live data from Supabase
-      setLeaderPhone(record.leader_phone || '');
-      setCollegeName(record.college || '');
-      setMember2Name(record.member2_name || '');
-      setMember2Email(record.member2_email || '');
-      setMember3Name(record.member3_name || '');
-      setMember3Email(record.member3_email || '');
-      setMember4Name(record.member4_name || '');
-      setMember4Email(record.member4_email || '');
-      setMember5Name(record.member5_name || '');
-      setMember5Email(record.member5_email || '');
+      // Populate editable fields with live data from Supabase or fallback
+      setLeaderPhone(effectiveRecord.leader_phone || '');
+      setCollegeName(effectiveRecord.college || '');
+      setMember2Name(effectiveRecord.member2_name || '');
+      setMember2Email(effectiveRecord.member2_email || '');
+      setMember3Name(effectiveRecord.member3_name || '');
+      setMember3Email(effectiveRecord.member3_email || '');
+      setMember4Name(effectiveRecord.member4_name || '');
+      setMember4Email(effectiveRecord.member4_email || '');
+      setMember5Name(effectiveRecord.member5_name || '');
+      setMember5Email(effectiveRecord.member5_email || '');
 
       // Advance directly to Step 2 (Team Profile & Details)
       setCurrentStep(2);
@@ -415,14 +456,23 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
                       Team Access Password *
                     </label>
-                    <input
-                      required
-                      type="password"
-                      value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
-                      placeholder="Enter team access password"
-                      className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink text-sm font-medium focus:outline-none focus:ring-2 focus:ring-hpl-purple"
-                    />
+                    <div className="relative">
+                      <input
+                        required
+                        type={showPassword ? "text" : "password"}
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder="Enter team access password"
+                        className="w-full px-4 pr-12 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink text-sm font-medium focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-ink text-xs font-mono font-bold cursor-pointer"
+                      >
+                        {showPassword ? 'HIDE' : 'SHOW'}
+                      </button>
+                    </div>
                   </div>
 
                   {authError && (
