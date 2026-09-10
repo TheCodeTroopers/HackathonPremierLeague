@@ -43,6 +43,7 @@ import {
     findTeamRegistrationByEmail,
     getTeamPassword, 
     TeamRegistration,
+    TeamSession,
     getActiveTeamSession,
     saveActiveTeamSession,
     clearActiveTeamSession,
@@ -122,6 +123,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [currentSession, setCurrentSession] = useState<TeamSession | null>(() => getActiveTeamSession());
+    const activeSession = currentSession;
     const team = useMemo(() => getResolvedTeam(resolvedSquadId || currentSession?.squadId || null), [resolvedSquadId, currentSession]);
 
     // Sign in state — reactive to session changes
