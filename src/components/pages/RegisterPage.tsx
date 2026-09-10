@@ -28,6 +28,8 @@ import {
   saveActiveTeamSession,
   clearActiveTeamSession,
   findQualifiedTeamByEmail,
+  findQualifiedTeamBySquadId,
+  findQualifiedTeamByName,
   OFFICIAL_QUALIFIED_TEAMS
 } from '../../services/teamPortalService';
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
@@ -152,11 +154,24 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
   }, [matchedTeam, selections]);
 
-  // Problem statement live counts (10 capacity max)
-  const counts = useMemo(() => ROUND2_PROBLEM_STATEMENTS.reduce<Record<string, number>>((result, ps) => {
-    result[ps.id] = Object.values(selections).filter((selection) => selection === ps.id).length;
-    return result;
-  }, {}), [selections]);
+  // Problem statement live counts (10 capacity max, deduplicated across team key aliases)
+  const counts = useMemo(() => {
+    const tally: Record<string, number> = {};
+    const teamRankToPs: Record<number, string> = {};
+
+    Object.entries(selections).forEach(([key, psId]) => {
+      const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
+      if (q) {
+        teamRankToPs[q.rank] = psId;
+      }
+    });
+
+    Object.values(teamRankToPs).forEach((psId) => {
+      tally[psId] = (tally[psId] || 0) + 1;
+    });
+
+    return tally;
+  }, [selections]);
 
   // Member list for display in Step 2 (matching Mithul's format)
   const teamMembers = useMemo(() => {
@@ -337,16 +352,33 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     if (!matchedTeam || !selectedPs) return;
 
     const latestSelections = readSelections();
-    const currentSelection = latestSelections[matchedTeam.squadId];
-    const countForSelection = Object.values(latestSelections).filter(s => s === selectedPs).length;
+    
+    // Calculate count of unique qualified teams for this PS (excluding current team)
+    const teamRankToPs: Record<number, string> = {};
+    Object.entries(latestSelections).forEach(([key, psId]) => {
+      const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
+      if (q) teamRankToPs[q.rank] = psId;
+    });
 
-    if (countForSelection >= 10 && currentSelection !== selectedPs) {
+    let countForSelection = 0;
+    Object.entries(teamRankToPs).forEach(([rank, psId]) => {
+      if (Number(rank) !== matchedTeam.rank && psId === selectedPs) {
+        countForSelection++;
+      }
+    });
+
+    if (countForSelection >= 10) {
       setSelections(latestSelections);
       setPsError('This problem statement has reached its 10-team limit. Please choose another one.');
       return;
     }
 
-    const nextSelections = { ...latestSelections, [matchedTeam.squadId]: selectedPs };
+    const nextSelections = { 
+      ...latestSelections, 
+      [matchedTeam.squadId]: selectedPs,
+      [matchedTeam.name]: selectedPs,
+      [`squad-${matchedTeam.rank}`]: selectedPs
+    };
     window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(nextSelections));
     window.dispatchEvent(new Event('hpl-selection-update'));
     setSelections(nextSelections);
@@ -437,7 +469,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                   </p>
                 </div>
 
-                <form onSubmit={handleSignIn} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4" autoComplete="off">
                   <div>
                     <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
                       Team Leader Registered Email *
@@ -445,6 +477,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                     <input
                       required
                       type="email"
+                      name="hpl_team_email"
+                      autoComplete="off"
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
                       placeholder="e.g. sridevi.25ad043@sode-edu.in"
@@ -460,6 +494,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       <input
                         required
                         type={showPassword ? "text" : "password"}
+                        name="hpl_team_secret_pass"
+                        autoComplete="new-password"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
                         placeholder="Enter team access password"

@@ -484,7 +484,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                     </p>
                                 </div>
 
-                                <form onSubmit={handleLogin} className="space-y-4">
+                                <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
                                     <div>
                                         <label className="block text-xs font-display font-black uppercase tracking-wider mb-1 text-slate-700">
                                             Team Leader Email
@@ -492,6 +492,8 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                         <input 
                                             required 
                                             type="email" 
+                                            name="hpl_participant_email"
+                                            autoComplete="off"
                                             value={loginEmail} 
                                             onChange={(e) => setLoginEmail(e.target.value)} 
                                             placeholder="e.g. leader@college.edu" 
@@ -507,6 +509,8 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                             <input 
                                                 required 
                                                 type={showPassword ? "text" : "password"} 
+                                                name="hpl_participant_password"
+                                                autoComplete="new-password"
                                                 value={loginPassword} 
                                                 onChange={(e) => setLoginPassword(e.target.value)} 
                                                 placeholder="Enter team password (e.g. HPL01-APEX!)" 

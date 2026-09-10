@@ -860,21 +860,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <Lock className="w-5 h-5" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight">
                     Round 2 Problem Statement Allocation
                   </h2>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-black uppercase border border-emerald-300">
+                    {Object.keys(round2TeamLockMap).length} of 40 Teams Locked
+                  </span>
                   <span className="px-2 py-0.5 rounded-md bg-purple-100 text-[#4F46E5] font-mono text-[10px] font-bold uppercase">
                     Cap: 10 / Track
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 font-sans">
-                  Live monitoring of track choices locked by the 40 qualified teams. Only Admin can reset locks.
+                  Total teams locked: <strong className="text-[#1E1B4B] font-mono">{Object.keys(round2TeamLockMap).length} / 40</strong> ({40 - Object.keys(round2TeamLockMap).length} remaining). Each track has a strict 10-team cap.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-2 bg-[#F8F7FF] border border-purple-200 px-3.5 py-2 rounded-xl text-right">
+                <div>
+                  <div className="font-mono text-[10px] uppercase font-bold text-slate-500">Overall Progress</div>
+                  <div className="font-display font-black text-sm text-[#4F46E5]">
+                    {Math.round((Object.keys(round2TeamLockMap).length / 40) * 100)}% Locked
+                  </div>
+                </div>
+              </div>
+
               <button
                 type="button"
                 onClick={handleResetAllRound2Locks}
