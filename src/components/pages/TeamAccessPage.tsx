@@ -121,13 +121,35 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const [resolvedSquadId, setResolvedSquadId] = useState<string | null>(squadId);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-    const activeSession = getActiveTeamSession();
-    const team = useMemo(() => getResolvedTeam(resolvedSquadId || activeSession?.squadId || null), [resolvedSquadId, activeSession]);
+    const [currentSession, setCurrentSession] = useState<TeamSession | null>(() => getActiveTeamSession());
+    const team = useMemo(() => getResolvedTeam(resolvedSquadId || currentSession?.squadId || null), [resolvedSquadId, currentSession]);
 
-    // Sign in state
+    // Sign in state — reactive to session changes
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-        return !!activeSession && (!squadId || activeSession.squadId === squadId);
+        return !!currentSession && (!squadId || currentSession.squadId === squadId);
     });
+
+    // Auto logout listener when Admin resets or session is cleared
+    useEffect(() => {
+        const handleSessionSync = () => {
+            const sess = getActiveTeamSession();
+            setCurrentSession(sess);
+            if (!sess) {
+                setIsAuthenticated(false);
+                setRegistration(null);
+                setSelectedPs('');
+            } else if (!squadId || sess.squadId === squadId) {
+                setIsAuthenticated(true);
+            }
+        };
+
+        window.addEventListener('storage', handleSessionSync);
+        window.addEventListener('hpl-team-session-update', handleSessionSync);
+        return () => {
+            window.removeEventListener('storage', handleSessionSync);
+            window.removeEventListener('hpl-team-session-update', handleSessionSync);
+        };
+    }, [squadId]);
 
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');

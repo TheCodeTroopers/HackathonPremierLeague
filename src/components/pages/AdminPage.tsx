@@ -192,28 +192,35 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }
   };
 
-  // Admin action: Reset ALL Round 2 locks
+  // Admin action: Reset ALL Round 2 locks & Team Details (Full Fresh Start)
   const handleResetAllRound2Locks = async () => {
     const confirmed = window.confirm(
-      'Are you sure you want to RESET ALL Round 2 Problem Statement Locks?\n\nThis will delete all selections from the database, allowing all 40 teams to pick freshly. This action cannot be undone!'
+      '⚠️ COMPLETE FRESH START FOR ROUND 2\n\nAre you sure you want to RESET ALL Round 2 Problem Statement Locks and Team Details?\n\nThis will:\n1. Delete all Round 2 PS selections from Supabase (`round2_ps_selections`)\n2. Reset all team passwords to default\n3. Clear local test sessions so teams can log in and select freshly.\n\nThis action cannot be undone!'
     );
     if (!confirmed) return;
 
     try {
       const { resetAllRound2Selections } = await import('../../services/round2AllocationService');
       const ok = await resetAllRound2Selections();
+
+      // Clear all local selection, credential, and session keys
       localStorage.removeItem('hpl-round2-ps-selections');
       localStorage.removeItem('hpl-round2-overflow-teams');
+      localStorage.removeItem('hpl-round2-team-credentials');
+      localStorage.removeItem('hpl-active-team-session');
+
       window.dispatchEvent(new Event('hpl-selection-update'));
+      window.dispatchEvent(new Event('hpl-team-session-update'));
       await refreshRound2Locks();
+      await fetchSubmissions(true);
 
       setResetFeedbackMsg(ok
-        ? 'All Round 2 Problem Statement locks have been completely reset!'
-        : 'Reset may have partially failed — check Supabase.');
-      setTimeout(() => setResetFeedbackMsg(''), 4000);
+        ? '✅ Complete Fresh Start: All Round 2 PS selections & test data have been wiped!'
+        : 'Reset partially completed — check Supabase table.');
+      setTimeout(() => setResetFeedbackMsg(''), 5000);
     } catch (e) {
       console.error(e);
-      setResetFeedbackMsg('Error resetting Round 2 locks.');
+      setResetFeedbackMsg('Error performing fresh reset.');
     }
   };
 
@@ -418,9 +425,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     fetchSubmissions(false);
   }, [fetchSubmissions]);
 
-  // Combined records with status overrides
+  // Combined records with status overrides, strictly deduplicated to exactly the 40 shortlisted qualified teams!
+  // Shows ONLY the 40 shortlisted teams (1 entry per team) and their newly selected Round 2 problem statement!
   const enrichedSubmissions = useMemo(() => {
-    return submissions.map((sub, index) => {
+    // 1. Group submissions by squadId and keep only the latest submission per team
+    const seenSquads = new Set<string>();
+    const deduplicatedSubmissions: RegistrationRecord[] = [];
+
+    // Sort submissions by created_at descending so we pick the newest if there are duplicates
+    const sortedSubmissions = [...submissions].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    for (const sub of sortedSubmissions) {
+      const qualified = findQualifiedTeamByEmail(sub.leader_email || '') ||
+                        findQualifiedTeamByName(sub.team_name || '');
+      if (qualified && !seenSquads.has(qualified.squadId)) {
+        seenSquads.add(qualified.squadId);
+        deduplicatedSubmissions.push(sub);
+      }
+    }
+
+    return deduplicatedSubmissions.map((sub) => {
       const override = statusOverrides[sub.id];
       // Default strictly to Pending Review for all submissions
       let status: 'Pending Review' | 'Reviewed' | 'Rejected' = 'Pending Review';
@@ -432,13 +458,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         status = 'Pending Review';
       }
 
+      // Check if this team has locked a fresh Round 2 PS
+      const qualified = findQualifiedTeamByEmail(sub.leader_email || '') ||
+                        findQualifiedTeamByName(sub.team_name || '');
+      const round2Lock = qualified ? round2TeamLockMap[qualified.squadId] : null;
+
+      // Use ONLY the Round 2 locked PS if chosen; otherwise display empty / not chosen yet
+      const round2Track = round2Lock ? `${round2Lock.psCode}: ${round2Lock.psTitle}` : '';
+
       return {
         ...sub,
+        track: round2Track,
+        created_at: round2Lock?.lockedAt || sub.created_at,
         status,
         reviewer_notes: override?.notes || sub.reviewer_notes || ''
       };
     });
-  }, [submissions, statusOverrides]);
+  }, [submissions, statusOverrides, round2TeamLockMap]);
 
   // Update status action handler
   const handleUpdateStatus = (id: string, newStatus: 'Pending Review' | 'Reviewed' | 'Rejected', notes?: string) => {
@@ -474,11 +510,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         item.leader_email.toLowerCase().includes(q) ||
         (item.project_idea && item.project_idea.toLowerCase().includes(q));
 
-      // Track / PS filter
+      // Track / PS filter (Round 2 problem statements)
+      const tLow = (item.track || '').toLowerCase();
       const matchTrack = selectedTrack === 'all' || 
-        (selectedTrack === 'ps1' && item.track.includes('PS 01')) ||
-        (selectedTrack === 'ps2' && item.track.includes('PS 02')) ||
-        (selectedTrack === 'ps3' && item.track.includes('PS 03'));
+        (selectedTrack === 'ps1' && (tLow.includes('ps-01') || tLow.includes('ayuressence'))) ||
+        (selectedTrack === 'ps2' && (tLow.includes('ps-02') || tLow.includes('smartbus'))) ||
+        (selectedTrack === 'ps3' && (tLow.includes('ps-03') || tLow.includes('sahayak'))) ||
+        (selectedTrack === 'ps4' && (tLow.includes('ps-04') || tLow.includes('swms')));
 
       // Status filter
       const matchStatus = selectedStatus === 'all' || item.status === selectedStatus;
@@ -537,14 +575,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   };
 
   const getTrackBadge = (track: string) => {
-    if (track.includes('PS 01') || track.includes('WeatherGPT')) {
-      return { code: 'PS 01', short: 'WeatherGPT: Conversational AI for Weather Forecasting', color: 'bg-[#4F46E5] text-white' };
+    if (!track) {
+      return { code: 'PENDING', short: 'Not Selected Yet', color: 'bg-slate-100 text-slate-600 border border-slate-300' };
     }
-    if (track.includes('PS 02') || track.includes('Rural Market')) {
-      return { code: 'PS 02', short: 'Rural Market Intelligence', color: 'bg-[#F59E0B] text-white' };
+    const clean = track.toLowerCase();
+    if (clean.includes('ps-01') || clean.includes('ayuressence')) {
+      return { code: 'PS 01', short: 'AyurEssence - Ayurvedic Medicine Identification', color: 'bg-[#4F46E5] text-white' };
     }
-    if (track.includes('PS 03') || track.includes('Internship') || track.includes('Opportunity Aggregator')) {
-      return { code: 'PS 03', short: 'Internship & Opportunity Aggregator', color: 'bg-[#059669] text-white' };
+    if (clean.includes('ps-02') || clean.includes('smartbus')) {
+      return { code: 'PS 02', short: 'SMARTBUS - Intelligent Campus Transit System', color: 'bg-[#F59E0B] text-white' };
+    }
+    if (clean.includes('ps-03') || clean.includes('sahayak')) {
+      return { code: 'PS 03', short: 'Sahayak - Rural Support & Resource Platform', color: 'bg-[#059669] text-white' };
+    }
+    if (clean.includes('ps-04') || clean.includes('swms')) {
+      return { code: 'PS 04', short: 'SWMS - Smart Solid Waste Management', color: 'bg-[#0284C7] text-white' };
     }
     return { code: 'PS', short: track.slice(0, 35) + '...', color: 'bg-purple-600 text-white' };
   };
@@ -927,10 +972,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 type="button"
                 onClick={handleResetAllRound2Locks}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-98"
-                title="Reset all problem statement locks so teams can choose again"
+                title="Wipe all Round 2 PS selections from database and clear test sessions so all 40 teams start completely fresh"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
-                <span>Reset All PS Locks</span>
+                <span>Reset Round 2 (Fresh Start)</span>
               </button>
             </div>
           </div>
@@ -1195,9 +1240,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 className="appearance-none bg-[#FDFBF7] border border-[#1E1B4B]/20 rounded-xl px-3.5 py-2 pr-9 text-xs font-display font-bold text-[#1E1B4B] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
               >
                 <option value="all">All Problem Statements</option>
-                <option value="ps1">PS 01: WeatherGPT</option>
-                <option value="ps2">PS 02: Rural Market</option>
-                <option value="ps3">PS 03: Opportunity Aggregator</option>
+                <option value="ps1">PS 01: AyurEssence</option>
+                <option value="ps2">PS 02: SMARTBUS</option>
+                <option value="ps3">PS 03: Sahayak</option>
+                <option value="ps4">PS 04: SWMS</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>

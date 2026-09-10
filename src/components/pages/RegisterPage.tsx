@@ -145,6 +145,28 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
   }, [onNavigate]);
 
+  // Real-time auto-logout listener when Admin resets locks/sessions
+  useEffect(() => {
+    const handleSessionSync = () => {
+      const sess = getActiveTeamSession();
+      if (!sess) {
+        setMatchedTeam(null);
+        setRegistration(null);
+        setCurrentStep(1);
+        setEmailInput('');
+        setPasswordInput('');
+        setSelectedPs('');
+      }
+    };
+
+    window.addEventListener('storage', handleSessionSync);
+    window.addEventListener('hpl-team-session-update', handleSessionSync);
+    return () => {
+      window.removeEventListener('storage', handleSessionSync);
+      window.removeEventListener('hpl-team-session-update', handleSessionSync);
+    };
+  }, []);
+
   // Round 2 Problem Statement selection state
   const [selections, setSelections] = useState<Selections>(() => readSelections());
   const [selectedPs, setSelectedPs] = useState<string>('');
