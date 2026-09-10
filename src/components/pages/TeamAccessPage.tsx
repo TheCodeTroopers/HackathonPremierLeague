@@ -52,6 +52,17 @@ import {
 } from '../../services/teamPortalService';
 import { ProfileIllustration } from '../illustrations/ProfileIllustration';
 import { supabase } from '../../client_config';
+import { 
+    calculateStrictAllocations, 
+    getPendingProblemStatements, 
+    lockProblemStatementSelection, 
+    readOverflowRecords, 
+    readRawSelections,
+    fetchRound2PsSelectionsFromDB,
+    fetchMyRound2PsSelection,
+    saveRound2TeamRoster,
+    STRICT_CAP_PER_TRACK 
+} from '../../services/round2AllocationService';
 
 interface TeamAccessPageProps {
     view?: 'login' | 'profile' | 'select' | 'portal';
@@ -69,14 +80,16 @@ const getResolvedTeam = (squadId: string | null) => {
     const effectiveSquadId = squadId || activeSession?.squadId || null;
     if (!effectiveSquadId) return null;
 
-    const record = findQualifiedTeamBySquadId(effectiveSquadId) || (activeSession?.teamName ? findQualifiedTeamByName(activeSession.teamName) : null);
+    const record = findQualifiedTeamBySquadId(effectiveSquadId) || 
+                   (activeSession?.leaderEmail ? findQualifiedTeamByEmail(activeSession.leaderEmail) : null) ||
+                   (activeSession?.teamName ? findQualifiedTeamByName(activeSession.teamName) : null);
     if (record) {
-        return { rank: record.rank, name: record.teamName, squadId: record.squadId };
+        return { rank: record.rank, name: record.teamName, squadId: record.squadId, leaderEmail: record.leaderEmail };
     }
 
     const rank = Number(effectiveSquadId?.split('-').pop() || 0);
     return rank >= 1 && rank <= SHORTLISTED_TEAMS_DATA.length
-        ? { rank, name: SHORTLISTED_TEAMS_DATA[rank - 1], squadId: `HPL-R2-${String(rank).padStart(2, '0')}` }
+        ? { rank, name: SHORTLISTED_TEAMS_DATA[rank - 1], squadId: `HPL-R2-${String(rank).padStart(2, '0')}`, leaderEmail: activeSession?.leaderEmail || '' }
         : null;
 };
 
@@ -160,11 +173,45 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                 return;
             }
             try {
-                const reg = await findTeamRegistration(team.name);
+                const effectiveEmail = team.leaderEmail || activeSession?.leaderEmail || '';
+                let reg = await findTeamRegistration(team.name, effectiveEmail);
+                if (!reg && effectiveEmail) {
+                    reg = await findTeamRegistrationByEmail(effectiveEmail);
+                }
                 if (isMounted) {
-                    setRegistration(reg);
-                    if (reg?.college) setCollegeName(reg.college);
-                    if (reg?.leader_phone) setLeaderPhone(reg.leader_phone);
+                    if (reg) {
+                        setRegistration(reg);
+                        setCollegeName(reg.college || '');
+                        setLeaderPhone(reg.leader_phone || '');
+                        setMember2Name(reg.member2_name || '');
+                        setMember2Email(reg.member2_email || '');
+                        setMember3Name(reg.member3_name || '');
+                        setMember3Email(reg.member3_email || '');
+                        setMember4Name(reg.member4_name || '');
+                        setMember4Email(reg.member4_email || '');
+                        setMember5Name(reg.member5_name || '');
+                        setMember5Email(reg.member5_email || '');
+                    } else {
+                        // Fallback so it NEVER displays "0 team members" and editing is immediately functional
+                        const fallbackReg: TeamRegistration = {
+                            id: `fallback-${team.squadId}`,
+                            team_name: team.name,
+                            team_leader_name: 'Team Leader',
+                            leader_email: effectiveEmail,
+                            leader_phone: '',
+                            college: 'SMVITM / Associated Institution',
+                            team_size: 4,
+                            member2_name: '',
+                            member2_email: '',
+                            member3_name: '',
+                            member3_email: '',
+                            member4_name: '',
+                            member4_email: '',
+                            member5_name: '',
+                            member5_email: ''
+                        };
+                        setRegistration(fallbackReg);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
@@ -174,26 +221,64 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
         };
         loadRegistration();
         return () => { isMounted = false; };
-    }, [team?.name]);
+    }, [team?.name, team?.squadId, team?.leaderEmail, activeSession?.leaderEmail]);
 
-    // Keep selections synced across tabs
+    // Keep selections synced across tabs and fetch from Supabase registrations
     useEffect(() => {
-        const handleSync = () => {
-            setSelections(readSelections());
-        };
-        window.addEventListener('storage', handleSync);
-        window.addEventListener('hpl-selection-update', handleSync);
-        return () => {
-            window.removeEventListener('storage', handleSync);
-            window.removeEventListener('hpl-selection-update', handleSync);
-        };
-    }, []);
+        // Sync selections state
+    const handleSync = () => {
+        setSelections(readRawSelections());
+    };
+    window.addEventListener('storage', handleSync);
+    window.addEventListener('hpl-selection-update', handleSync);
 
-    // The single locked problem statement for THIS team
+    // Fetch REAL Round 2 PS selections from the dedicated Supabase table
+    (async () => {
+        try {
+            const dbRows = await fetchRound2PsSelectionsFromDB();
+            if (dbRows.length > 0) {
+                const strictAlloc = calculateStrictAllocations(dbRows, {});
+                const clean: Record<string, string> = {};
+                Object.values(strictAlloc.lockedMap).forEach(item => {
+                    clean[item.squadId] = item.psId;
+                    clean[item.teamName] = item.psId;
+                    clean[`squad-${item.rank}`] = item.psId;
+                });
+                window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(clean));
+                setSelections(clean);
+            }
+        } catch (e) {
+            console.warn('[HPL] Could not sync round2_ps_selections:', e);
+        }
+    })();
+
+    return () => {
+        window.removeEventListener('storage', handleSync);
+        window.removeEventListener('hpl-selection-update', handleSync);
+    };
+}, []);
+
+// Strict allocation calculation — uses DB rows fetched above
+const allocationState = useMemo(() => {
+    return calculateStrictAllocations([], selections);
+    }, [selections]);
+
+    const counts = allocationState.trackCounts;
+
+    // Check if THIS team is an overflow team granted one-time re-selection
+    const isOverflowTeam = useMemo(() => {
+        if (!team) return false;
+        const overflowRecords = readOverflowRecords();
+        return !!overflowRecords[team.squadId] && !overflowRecords[team.squadId].reSelectionUsed;
+    }, [team]);
+
+    // The single locked problem statement for THIS team (only if confirmed in lockedMap)
     const lockedPsId = useMemo(() => {
         if (!team) return null;
-        return selections[team.squadId] || selections[team.name] || selections[`squad-${team.rank}`] || null;
-    }, [team, selections]);
+        if (isOverflowTeam) return null; // Overflow teams must re-select!
+        const lockedRecord = allocationState.lockedMap[team.squadId];
+        return lockedRecord ? lockedRecord.psId : null;
+    }, [team, isOverflowTeam, allocationState.lockedMap]);
 
     const activeLockedPs = useMemo(() => {
         if (!lockedPsId) return null;
@@ -206,25 +291,6 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
             setSelectedPs(lockedPsId);
         }
     }, [lockedPsId]);
-
-    // Live capacity counts (Max 10 teams per Problem Statement)
-    const counts = useMemo(() => {
-        const tally: Record<string, number> = {};
-        const teamRankToPs: Record<number, string> = {};
-
-        Object.entries(selections).forEach(([key, psId]) => {
-            const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-            if (q) {
-                teamRankToPs[q.rank] = psId;
-            }
-        });
-
-        Object.values(teamRankToPs).forEach((psId) => {
-            tally[psId] = (tally[psId] || 0) + 1;
-        });
-
-        return tally;
-    }, [selections]);
 
     // Handle Login
     const handleLogin = async (e: React.FormEvent) => {
@@ -266,11 +332,19 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
 
             // Fetch registration data from Supabase if available
             try {
-                const found = await findTeamRegistration(qualified.teamName) || await findTeamRegistrationByEmail(cleanEmail);
+                const found = await findTeamRegistration(qualified.teamName, cleanEmail) || await findTeamRegistrationByEmail(cleanEmail);
                 if (found) {
                     setRegistration(found);
                     if (found.college) setCollegeName(found.college);
                     if (found.leader_phone) setLeaderPhone(found.leader_phone);
+                    if (found.member2_name) setMember2Name(found.member2_name);
+                    if (found.member2_email) setMember2Email(found.member2_email);
+                    if (found.member3_name) setMember3Name(found.member3_name);
+                    if (found.member3_email) setMember3Email(found.member3_email);
+                    if (found.member4_name) setMember4Name(found.member4_name);
+                    if (found.member4_email) setMember4Email(found.member4_email);
+                    if (found.member5_name) setMember5Name(found.member5_name);
+                    if (found.member5_email) setMember5Email(found.member5_email);
                 }
             } catch (err) {
                 console.warn('Could not fetch external registration:', err);
@@ -333,38 +407,24 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     };
 
     // Save Selected Problem Statement
-    const handleSaveSelection = () => {
+    const handleSaveSelection = async () => {
         if (!team || !selectedPs) return;
-        const latestSelections = readSelections();
 
-        // Calculate count of unique qualified teams for this PS (excluding current team)
-        const teamRankToPs: Record<number, string> = {};
-        Object.entries(latestSelections).forEach(([key, psId]) => {
-            const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-            if (q) teamRankToPs[q.rank] = psId;
-        });
+        const qualified = findQualifiedTeamBySquadId(team.squadId) || findQualifiedTeamByName(team.name);
+        if (!qualified) return;
 
-        let countForSelection = 0;
-        Object.entries(teamRankToPs).forEach(([rank, psId]) => {
-            if (Number(rank) !== team.rank && psId === selectedPs) {
-                countForSelection++;
-            }
-        });
+        const result = await lockProblemStatementSelection(
+            qualified,
+            selectedPs,
+            counts,
+            allocationState.lockedMap
+        );
 
-        if (countForSelection >= 10) {
-            setPsError('This problem statement has reached its maximum limit of 10 teams. Please select an available track.');
+        if (!result.success) {
+            setPsError(result.error || 'This problem statement is full. Please select an available track.');
             return;
         }
 
-        const nextSelections = { 
-            ...latestSelections, 
-            [team.squadId]: selectedPs,
-            [team.name]: selectedPs,
-            [`squad-${team.rank}`]: selectedPs
-        };
-        window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(nextSelections));
-        window.dispatchEvent(new Event('hpl-selection-update'));
-        setSelections(nextSelections);
         setPsError('');
         setLockSuccessMessage('Problem statement successfully locked! Redirecting to your dashboard overview...');
 
@@ -378,32 +438,105 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     // Save Edited Roster to Supabase
     const handleSaveRoster = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!registration) return;
+        if (!team) return;
 
         setIsSavingRoster(true);
         setRosterSaveMessage('');
 
         try {
-            const { error } = await supabase
-                .from('registrations')
-                .update({
-                    leader_phone: leaderPhone.trim(),
-                    college: collegeName.trim(),
-                    member2_name: member2Name.trim(),
-                    member2_email: member2Email.trim().toLowerCase(),
-                    member3_name: member3Name.trim(),
-                    member3_email: member3Email.trim().toLowerCase(),
-                    member4_name: member4Name.trim(),
-                    member4_email: member4Email.trim().toLowerCase(),
-                    member5_name: member5Name.trim() || null,
-                    member5_email: member5Email.trim().toLowerCase() || null,
-                })
-                .eq('id', registration.id);
+            const leaderEmail = registration?.leader_email || team.leaderEmail || activeSession?.leaderEmail || '';
+            const updatedPayload = {
+                team_name: registration?.team_name || team.name,
+                team_leader_name: registration?.team_leader_name || 'Team Leader',
+                leader_email: leaderEmail,
+                leader_phone: leaderPhone.trim(),
+                college: collegeName.trim(),
+                team_size: (member5Name.trim() ? 5 : 4),
+                member2_name: member2Name.trim(),
+                member2_email: member2Email.trim().toLowerCase(),
+                member3_name: member3Name.trim(),
+                member3_email: member3Email.trim().toLowerCase(),
+                member4_name: member4Name.trim(),
+                member4_email: member4Email.trim().toLowerCase(),
+                member5_name: member5Name.trim() || null,
+                member5_email: member5Email.trim().toLowerCase() || null,
+            };
 
-            if (error) {
-                console.error('Failed to update roster:', error);
+            let saveError = null;
+            if (registration?.id && !registration.id.startsWith('fallback-') && !registration.id.startsWith('reg-')) {
+                const { error } = await supabase
+                    .from('registrations')
+                    .update(updatedPayload)
+                    .eq('id', registration.id);
+                saveError = error;
+            } else if (leaderEmail) {
+                const { data: existing } = await supabase
+                    .from('registrations')
+                    .select('id')
+                    .ilike('leader_email', leaderEmail)
+                    .maybeSingle();
+
+                if (existing?.id) {
+                    const { error } = await supabase
+                        .from('registrations')
+                        .update(updatedPayload)
+                        .eq('id', existing.id);
+                    saveError = error;
+                } else {
+                    const { error } = await supabase
+                        .from('registrations')
+                        .insert([updatedPayload]);
+                    saveError = error;
+                }
+            }
+
+            if (saveError) {
+                console.warn('Registrations table update notice:', saveError);
+            }
+
+            // Also persist directly into the new round2_ps_selections schema!
+            const rosterRes = await saveRound2TeamRoster({
+                squad_id: team.squadId,
+                team_name: updatedPayload.team_name,
+                leader_name: updatedPayload.team_leader_name,
+                leader_email: updatedPayload.leader_email,
+                leader_phone: updatedPayload.leader_phone,
+                college: updatedPayload.college,
+                team_size: updatedPayload.team_size,
+                member2_name: updatedPayload.member2_name,
+                member2_email: updatedPayload.member2_email,
+                member3_name: updatedPayload.member3_name,
+                member3_email: updatedPayload.member3_email,
+                member4_name: updatedPayload.member4_name,
+                member4_email: updatedPayload.member4_email,
+                member5_name: updatedPayload.member5_name || undefined,
+                member5_email: updatedPayload.member5_email || undefined,
+                rank: team.rank,
+            });
+
+            if (!rosterRes.success && saveError) {
+                console.error('Failed to update roster in both tables:', rosterRes.error);
                 setRosterSaveMessage('Failed to update database record. Please try again.');
             } else {
+                setRegistration(prev => ({
+                    ...(prev || {}),
+                    id: prev?.id || `saved-${team.squadId}`,
+                    team_name: updatedPayload.team_name,
+                    team_leader_name: updatedPayload.team_leader_name,
+                    leader_email: updatedPayload.leader_email,
+                    leader_phone: updatedPayload.leader_phone,
+                    college: updatedPayload.college,
+                    team_size: updatedPayload.team_size,
+                    member2_name: updatedPayload.member2_name,
+                    member2_email: updatedPayload.member2_email,
+                    member3_name: updatedPayload.member3_name,
+                    member3_email: updatedPayload.member3_email,
+                    member4_name: updatedPayload.member4_name,
+                    member4_email: updatedPayload.member4_email,
+                    member5_name: updatedPayload.member5_name,
+                    member5_email: updatedPayload.member5_email,
+                } as TeamRegistration));
+
                 setRosterSaveMessage('Team member details updated successfully!');
                 setIsEditingRoster(false);
                 setTimeout(() => setRosterSaveMessage(''), 4000);
@@ -425,23 +558,35 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
 
     // Formatted members list (strictly for THIS team)
     const teamMembersList = useMemo(() => {
-        if (!registration) return [];
+        const leaderName = registration?.team_leader_name || 'Team Leader';
+        const leaderMail = registration?.leader_email || team?.leaderEmail || activeSession?.leaderEmail || '';
+        const phone = leaderPhone || registration?.leader_phone || '';
+
+        const m2Name = member2Name || registration?.member2_name || '';
+        const m2Mail = member2Email || registration?.member2_email || '';
+        const m3Name = member3Name || registration?.member3_name || '';
+        const m3Mail = member3Email || registration?.member3_email || '';
+        const m4Name = member4Name || registration?.member4_name || '';
+        const m4Mail = member4Email || registration?.member4_email || '';
+        const m5Name = member5Name || registration?.member5_name || '';
+        const m5Mail = member5Email || registration?.member5_email || '';
+
         const list = [
-            { role: 'Team Leader', name: registration.team_leader_name, email: registration.leader_email, phone: leaderPhone || registration.leader_phone },
-            { role: 'Member 2', name: member2Name || registration.member2_name, email: member2Email || registration.member2_email, phone: null },
-            { role: 'Member 3', name: member3Name || registration.member3_name, email: member3Email || registration.member3_email, phone: null },
-            { role: 'Member 4', name: member4Name || registration.member4_name, email: member4Email || registration.member4_email, phone: null },
+            { role: 'Team Leader', name: leaderName, email: leaderMail, phone: phone || null },
+            { role: 'Member 2', name: m2Name || 'Member 2', email: m2Mail || null, phone: null },
+            { role: 'Member 3', name: m3Name || 'Member 3', email: m3Mail || null, phone: null },
+            { role: 'Member 4', name: m4Name || 'Member 4', email: m4Mail || null, phone: null },
         ];
-        if (member5Name || (registration.member5_name && registration.member5_name.trim())) {
+        if (m5Name || m5Mail) {
             list.push({ 
                 role: 'Member 5', 
-                name: member5Name || registration.member5_name || '', 
-                email: member5Email || registration.member5_email || '', 
+                name: m5Name || 'Member 5', 
+                email: m5Mail || null, 
                 phone: null 
             });
         }
         return list;
-    }, [registration, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
+    }, [registration, team, activeSession, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
 
     // Navigation items definitions
     const navItems = [
@@ -1473,23 +1618,51 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
 
                                         </div>
                                     ) : (
-                                        /* CASE 2: TEAM HAS NOT SELECTED YET -> SHOW SELECTION CHOICES TO PICK FROM */
+                                        /* CASE 2: TEAM HAS NOT SELECTED YET OR OVERFLOW RE-SELECTION -> SHOW SELECTION CHOICES TO PICK FROM */
                                         <div className="space-y-4">
-                                            <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase">
-                                                Select Your Round 2 Challenge (Max 10 Teams per Track)
-                                            </h3>
+                                            {/* Overflow Team Banner */}
+                                            {isOverflowTeam && (() => {
+                                                const overflowRecords = readOverflowRecords();
+                                                const originalTrack = overflowRecords[team.squadId];
+                                                return (
+                                                    <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-2xl flex items-start gap-3 shadow-xs">
+                                                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <h4 className="font-display font-black text-amber-900 text-sm uppercase tracking-wide">
+                                                                One-Time Challenge Re-Selection Granted
+                                                            </h4>
+                                                            <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                                                                Your team had selected <strong>{originalTrack ? `${originalTrack.originalPsCode}: ${originalTrack.originalPsTitle}` : 'a full track'}</strong>, but this track reached the strict 10-team cap. The first 10 teams were retained. You have been granted a <strong>one-time opportunity</strong> to select from the available problem statements below. Full tracks have been removed.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                                                <div>
+                                                    <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase">
+                                                        Select Your Round 2 Challenge (Max 10 Teams per Track)
+                                                    </h3>
+                                                    <p className="text-xs text-slate-500">
+                                                        Tracks that reach 10 teams are automatically removed from the list.
+                                                    </p>
+                                                </div>
+                                                <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1 rounded-full shrink-0">
+                                                    {getPendingProblemStatements(counts).length} Tracks Available
+                                                </span>
+                                            </div>
 
                                             <div className="grid gap-4 md:grid-cols-2">
-                                                {ROUND2_PROBLEM_STATEMENTS.map((ps) => {
+                                                {getPendingProblemStatements(counts).map((ps) => {
                                                     const count = counts[ps.id] || 0;
-                                                    const isFull = count >= 10 && selections[team.squadId] !== ps.id;
+                                                    const remainingSlots = STRICT_CAP_PER_TRACK - count;
                                                     const isSelected = selectedPs === ps.id;
 
                                                     return (
                                                         <button 
                                                             type="button" 
                                                             key={ps.id} 
-                                                            disabled={isFull} 
                                                             onClick={() => { 
                                                                 setSelectedPs(ps.id); 
                                                                 setPsError(''); 
@@ -1498,13 +1671,18 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                                                 isSelected 
                                                                     ? 'border-amber-500 bg-amber-50 shadow-[3px_3px_0px_#F59E0B]' 
                                                                     : 'border-[#1E1B4B]/20 bg-white hover:border-[#1E1B4B]'
-                                                            } ${isFull ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                            }`}
                                                         >
                                                             <div className="flex items-start justify-between gap-3">
                                                                 <div>
-                                                                    <span className="font-mono text-xs font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                                                                        {ps.psCode}
-                                                                    </span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-mono text-xs font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                                                            {ps.psCode}
+                                                                        </span>
+                                                                        <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                                                            {remainingSlots} SLOTS AVAILABLE
+                                                                        </span>
+                                                                    </div>
                                                                     <h4 className="font-display font-black text-lg mt-2 text-[#1E1B4B]">
                                                                         {ps.title}
                                                                     </h4>
@@ -1512,15 +1690,23 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                                                         {ps.subtitle}
                                                                     </p>
                                                                 </div>
-                                                                <span className={`rounded-full px-2.5 py-1 text-[10px] font-mono font-bold shrink-0 ${
-                                                                    isFull ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-                                                                }`}>
-                                                                    {count}/10 {isFull ? 'FULL' : 'SLOTS'}
+                                                                <span className="rounded-full px-2.5 py-1 text-[10px] font-mono font-bold shrink-0 bg-emerald-100 text-emerald-800">
+                                                                    {count}/10 LOCKED
                                                                 </span>
                                                             </div>
                                                         </button>
                                                     );
                                                 })}
+                                                {getPendingProblemStatements(counts).length === 0 && (
+                                                    <div className="col-span-2 p-8 text-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 space-y-2">
+                                                        <p className="text-base font-display font-black text-slate-700 uppercase">
+                                                            All Problem Statement Tracks Are Full (10/10)
+                                                        </p>
+                                                        <p className="text-xs text-slate-500">
+                                                            Please contact the hackathon committee for assistance.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {psError && (
@@ -1532,7 +1718,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                             <div className="pt-2">
                                                 <button 
                                                     onClick={handleSaveSelection} 
-                                                    disabled={!selectedPs} 
+                                                    disabled={!selectedPs || getPendingProblemStatements(counts).length === 0} 
                                                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E1B4B] px-8 py-3.5 text-white font-display font-black text-sm uppercase tracking-wider disabled:opacity-40 hover:bg-amber-400 hover:text-[#1E1B4B] transition-all cursor-pointer shadow-[3px_3px_0px_#1E1B4B]"
                                                 >
                                                     <span>Lock Problem Statement</span>

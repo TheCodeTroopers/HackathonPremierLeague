@@ -35,6 +35,16 @@ import {
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
 import { SparkleDoodle } from '../illustrations/MicroDoodles';
 import { supabase } from '../../client_config';
+import { 
+  calculateStrictAllocations, 
+  getPendingProblemStatements, 
+  lockProblemStatementSelection, 
+  readOverflowRecords, 
+  readRawSelections,
+  fetchRound2PsSelectionsFromDB,
+  saveRound2TeamRoster,
+  STRICT_CAP_PER_TRACK 
+} from '../../services/round2AllocationService';
 
 interface RegisterPageProps {
   onNavigate: (page: PageRoute) => void;
@@ -86,9 +96,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   useEffect(() => {
     const session = getActiveTeamSession();
     if (session) {
-      // If team already has a locked problem statement, redirect straight to their team profile!
+      // If team already has a confirmed locked problem statement (and is not an overflow team), redirect to profile
       const allSelections = readSelections();
-      if (allSelections[session.squadId]) {
+      const overflowRecords = readOverflowRecords();
+      const isPendingOverflow = !!overflowRecords[session.squadId] && !overflowRecords[session.squadId].reSelectionUsed;
+
+      if (allSelections[session.squadId] && !isPendingOverflow) {
         onNavigate('team-profile');
         return;
       }
@@ -99,7 +112,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         squadId: session.squadId
       });
       // Fetch fresh record from Supabase
-      findTeamRegistrationByEmail(session.leaderEmail).then((record) => {
+      findTeamRegistration(session.teamName, session.leaderEmail).then((record) => {
         const effective = record || {
           id: `reg-${session.squadId}`,
           team_name: session.teamName,
@@ -136,16 +149,44 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [selectedPs, setSelectedPs] = useState<string>('');
   const [psError, setPsError] = useState<string>('');
 
-  // Sync selections across windows/tabs
+  // Sync selections across windows/tabs and fetch from Supabase registrations table
   useEffect(() => {
     const sync = () => setSelections(readSelections());
     window.addEventListener('storage', sync);
     window.addEventListener('hpl-selection-update', sync);
+
+    // Fetch live tracks from round2_ps_selections table across all teams
+    (async () => {
+      try {
+        const dbRows = await fetchRound2PsSelectionsFromDB();
+        if (dbRows.length > 0) {
+          const strictAlloc = calculateStrictAllocations(dbRows, {});
+          const clean: Record<string, string> = {};
+          Object.values(strictAlloc.lockedMap).forEach(item => {
+            clean[item.squadId] = item.psId;
+            clean[item.teamName] = item.psId;
+            clean[`squad-${item.rank}`] = item.psId;
+          });
+          window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(clean));
+          setSelections(clean);
+        }
+      } catch (e) {
+        console.warn('Could not sync round2_ps_selections:', e);
+      }
+    })();
+
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('hpl-selection-update', sync);
     };
   }, []);
+
+  // Strict allocation calculation state (Max 10 teams per track)
+  const allocationState = useMemo(() => {
+    return calculateStrictAllocations([], selections);
+  }, [selections]);
+
+  const counts = allocationState.trackCounts;
 
   // Update selected problem statement when team is resolved
   useEffect(() => {
@@ -153,25 +194,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       setSelectedPs(selections[matchedTeam.squadId] || '');
     }
   }, [matchedTeam, selections]);
-
-  // Problem statement live counts (10 capacity max, deduplicated across team key aliases)
-  const counts = useMemo(() => {
-    const tally: Record<string, number> = {};
-    const teamRankToPs: Record<number, string> = {};
-
-    Object.entries(selections).forEach(([key, psId]) => {
-      const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-      if (q) {
-        teamRankToPs[q.rank] = psId;
-      }
-    });
-
-    Object.values(teamRankToPs).forEach((psId) => {
-      tally[psId] = (tally[psId] || 0) + 1;
-    });
-
-    return tally;
-  }, [selections]);
 
   // Member list for display in Step 2 (matching Mithul's format)
   const teamMembers = useMemo(() => {
@@ -311,25 +333,61 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     setSaveMessage('');
 
     try {
-      const { error } = await supabase
-        .from('registrations')
-        .update({
-          leader_phone: leaderPhone.trim(),
-          college: collegeName.trim(),
-          member2_name: member2Name.trim(),
-          member2_email: member2Email.trim().toLowerCase(),
-          member3_name: member3Name.trim(),
-          member3_email: member3Email.trim().toLowerCase(),
-          member4_name: member4Name.trim(),
-          member4_email: member4Email.trim().toLowerCase(),
-          member5_name: member5Name.trim() || null,
-          member5_email: member5Email.trim().toLowerCase() || null,
-        })
-        .eq('id', registration.id);
+      const payload = {
+        leader_phone: leaderPhone.trim(),
+        college: collegeName.trim(),
+        member2_name: member2Name.trim(),
+        member2_email: member2Email.trim().toLowerCase(),
+        member3_name: member3Name.trim(),
+        member3_email: member3Email.trim().toLowerCase(),
+        member4_name: member4Name.trim(),
+        member4_email: member4Email.trim().toLowerCase(),
+        member5_name: member5Name.trim() || null,
+        member5_email: member5Email.trim().toLowerCase() || null,
+      };
 
-      if (error) {
-        console.error('Failed to update team details:', error);
-        setSaveMessage('Failed to save updates to database. Proceeding to challenge selection...');
+      let saveError: any = null;
+      // 1. Update registrations table
+      try {
+        if (registration.id && !registration.id.startsWith('reg-') && !registration.id.startsWith('fallback-')) {
+          const { error } = await supabase.from('registrations').update(payload).eq('id', registration.id);
+          saveError = error;
+        } else if (registration.leader_email) {
+          const { error } = await supabase.from('registrations').update(payload).ilike('leader_email', registration.leader_email);
+          saveError = error;
+        }
+      } catch (e) {
+        console.warn('Registrations table update error:', e);
+      }
+
+      // 2. Also save full details directly into the new round2_ps_selections schema!
+      if (matchedTeam) {
+        const res = await saveRound2TeamRoster({
+          squad_id: matchedTeam.squadId,
+          team_name: matchedTeam.name,
+          leader_name: registration.team_leader_name,
+          leader_email: registration.leader_email || emailInput,
+          leader_phone: payload.leader_phone,
+          college: payload.college,
+          team_size: member5Name.trim() ? 5 : 4,
+          member2_name: payload.member2_name,
+          member2_email: payload.member2_email,
+          member3_name: payload.member3_name,
+          member3_email: payload.member3_email,
+          member4_name: payload.member4_name,
+          member4_email: payload.member4_email,
+          member5_name: payload.member5_name || undefined,
+          member5_email: payload.member5_email || undefined,
+          rank: matchedTeam.rank,
+        });
+        if (!res.success && !saveError) {
+          saveError = { message: res.error };
+        }
+      }
+
+      if (saveError) {
+        console.warn('Team details partial save notice:', saveError);
+        setSaveMessage('Team details recorded! Proceeding to challenge selection...');
       } else {
         setSaveMessage('Team details updated successfully in database!');
       }
@@ -348,40 +406,24 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   };
 
   // Step 3: Lock Round 2 Problem Statement selection & Redirect to Profile Page
-  const handleLockSelection = () => {
+  const handleLockSelection = async () => {
     if (!matchedTeam || !selectedPs) return;
 
-    const latestSelections = readSelections();
-    
-    // Calculate count of unique qualified teams for this PS (excluding current team)
-    const teamRankToPs: Record<number, string> = {};
-    Object.entries(latestSelections).forEach(([key, psId]) => {
-      const q = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-      if (q) teamRankToPs[q.rank] = psId;
-    });
+    const qualified = findQualifiedTeamBySquadId(matchedTeam.squadId) || findQualifiedTeamByName(matchedTeam.name);
+    if (!qualified) return;
 
-    let countForSelection = 0;
-    Object.entries(teamRankToPs).forEach(([rank, psId]) => {
-      if (Number(rank) !== matchedTeam.rank && psId === selectedPs) {
-        countForSelection++;
-      }
-    });
+    const result = await lockProblemStatementSelection(
+      qualified,
+      selectedPs,
+      counts,
+      allocationState.lockedMap
+    );
 
-    if (countForSelection >= 10) {
-      setSelections(latestSelections);
-      setPsError('This problem statement has reached its 10-team limit. Please choose another one.');
+    if (!result.success) {
+      setPsError(result.error || 'Failed to lock problem statement.');
       return;
     }
 
-    const nextSelections = { 
-      ...latestSelections, 
-      [matchedTeam.squadId]: selectedPs,
-      [matchedTeam.name]: selectedPs,
-      [`squad-${matchedTeam.rank}`]: selectedPs
-    };
-    window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(nextSelections));
-    window.dispatchEvent(new Event('hpl-selection-update'));
-    setSelections(nextSelections);
     setPsError('');
 
     // Persist session
@@ -837,53 +879,88 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
                       Select Round 2 Problem Statement
                     </h2>
                     <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                      Each challenge is available to a maximum of 10 teams. Once locked, your squad secures its challenge slot.
+                      Each track has a strict cap of 10 teams. Once a problem statement reaches 10 teams, it is automatically removed from selection.
                     </p>
                   </div>
                   <div className="rounded-xl bg-emerald-50 border border-emerald-300 px-3 py-1.5 text-xs font-mono font-bold text-emerald-900 shrink-0">
-                    40 teams / 4 challenges
+                    {getPendingProblemStatements(counts).length} Tracks Available
                   </div>
                 </div>
 
+                {/* Overflow Team Banner */}
+                {(() => {
+                  const overflowRecords = readOverflowRecords();
+                  const isOverflow = !!overflowRecords[matchedTeam.squadId] && !overflowRecords[matchedTeam.squadId].reSelectionUsed;
+                  if (!isOverflow) return null;
+                  const originalTrack = overflowRecords[matchedTeam.squadId];
+
+                  return (
+                    <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-2xl flex items-start gap-3 shadow-xs">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-display font-black text-amber-900 text-sm uppercase tracking-wide">
+                          One-Time Challenge Re-Selection Granted
+                        </h4>
+                        <p className="text-xs text-amber-800 mt-1 leading-relaxed">
+                          Your team had selected <strong>{originalTrack.originalPsCode}: {originalTrack.originalPsTitle}</strong>, but this track reached the strict 10-team cap. The first 10 teams were retained. You have been granted a <strong>one-time opportunity</strong> to select from the available problem statements below. Full tracks have been removed.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="grid gap-4">
-                  {ROUND2_PROBLEM_STATEMENTS.map((ps) => {
+                  {getPendingProblemStatements(counts).map((ps) => {
                     const count = counts[ps.id] || 0;
-                    const isFull = count >= 10 && selections[matchedTeam.squadId] !== ps.id;
+                    const remainingSlots = STRICT_CAP_PER_TRACK - count;
                     const isSelected = selectedPs === ps.id;
 
                     return (
                       <button
                         type="button"
                         key={ps.id}
-                        disabled={isFull}
                         onClick={() => { setSelectedPs(ps.id); setPsError(''); }}
                         className={`block w-full text-left rounded-2xl border-2 p-4 cursor-pointer transition-all ${
                           isSelected
                             ? 'border-amber-500 bg-amber-50/80 shadow-[3px_3px_0px_#F59E0B]'
                             : 'border-[#1E1B4B]/20 bg-white hover:border-[#1E1B4B]'
-                        } ${isFull ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <span className="font-mono text-xs font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                              {ps.psCode}
-                            </span>
-                            <h3 className="font-display font-black text-lg mt-1 text-[#1E1B4B]">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                {ps.psCode}
+                              </span>
+                              <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                                {remainingSlots} SLOTS AVAILABLE
+                              </span>
+                            </div>
+                            <h3 className="font-display font-black text-lg mt-1.5 text-[#1E1B4B]">
                               {ps.title}
                             </h3>
                             <p className="text-xs text-slate-600 mt-1">
                               {ps.subtitle}
                             </p>
                           </div>
-                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-mono font-bold ${
-                            isFull ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-                          }`}>
-                            {count}/10 {isFull ? 'FULL' : 'SLOTS'}
+                          <span className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-mono font-bold bg-emerald-100 text-emerald-800">
+                            {count}/10 LOCKED
                           </span>
                         </div>
                       </button>
                     );
                   })}
+
+                  {getPendingProblemStatements(counts).length === 0 && (
+                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 space-y-2">
+                      <p className="text-base font-display font-black text-slate-700 uppercase">
+                        All Problem Statement Tracks Are Full (10/10)
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        Please contact the hackathon committee for assistance.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {psError && (
