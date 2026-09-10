@@ -44,25 +44,25 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-hidden flex justify-center items-start sm:items-center p-3 sm:p-6 bg-[#1E1B4B]/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto overflow-x-hidden flex justify-center items-center p-2.5 xs:p-3 sm:p-5 md:p-6 bg-[#1E1B4B]/80 backdrop-blur-sm animate-in fade-in duration-200 overscroll-contain">
       <div
         className="fixed inset-0 -z-10 cursor-pointer"
         onClick={onClose}
         aria-label="Close modal backdrop"
       />
       <div
-        className={`relative w-full ${maxWidthClasses} my-auto bg-[#FFFDF7] sketch-border rounded-2xl p-4 sm:p-7 shadow-sketch-xl z-10 max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto`}
+        className={`relative w-full ${maxWidthClasses} my-auto bg-[#FFFDF7] sketch-border rounded-2xl p-3.5 xs:p-4 sm:p-6 md:p-7 shadow-sketch-xl z-10 max-h-[calc(100dvh-1.25rem)] xs:max-h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain`}
       >
-        <div className="flex items-center justify-between pb-3.5 mb-4 border-b-2 border-[#1E1B4B]">
-          <h3 className="text-base sm:text-xl font-black font-display uppercase text-[#1E1B4B] pr-2">
+        <div className="flex items-center justify-between pb-2.5 sm:pb-3.5 mb-3 sm:mb-4 border-b-2 border-[#1E1B4B] gap-2">
+          <h3 className="text-sm xs:text-base sm:text-lg md:text-xl font-black font-display uppercase text-[#1E1B4B] pr-1 leading-tight break-words">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg border-2 border-[#1E1B4B] bg-[#EFE8D6] hover:bg-[#EA580C] hover:text-white transition-colors cursor-pointer flex-shrink-0"
+            className="p-1 sm:p-1.5 rounded-lg border-2 border-[#1E1B4B] bg-[#EFE8D6] hover:bg-[#EA580C] hover:text-white transition-colors cursor-pointer flex-shrink-0"
             aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
         <div>{children}</div>

@@ -211,7 +211,7 @@ export const MentorsPage: React.FC<MentorsPageProps> = ({ onNavigate }) => {
             {/* Description */}
             <p className="anim-mentor-desc font-sans text-sm sm:text-base text-[#1E1B4B]/80 font-medium leading-relaxed max-w-lg">
               We are curating an exceptional panel of senior system architects, startup founders, and engineering leaders from tier-1 tech firms. The full lineup will be unveiled on{' '}
-              <span className="font-bold text-[#582A9C]">September 8, 2026</span> alongside the squad shortlist!
+              <span className="font-bold text-[#582A9C]">September 10, 2026 (10:30 AM)</span> alongside the Season Inauguration!
             </p>
 
             {/* Hand-drawn curving dashed pointer arrow with continuous gentle hover */}
@@ -266,7 +266,7 @@ export const MentorsPage: React.FC<MentorsPageProps> = ({ onNavigate }) => {
                   OFFICIAL REVEAL DATE
                 </span>
                 <h3 className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B] leading-snug mt-0.5">
-                  September 8, 2026 • Inauguration Day
+                  September 10, 2026 (10:30 AM) • Inauguration Day
                 </h3>
                 <p className="font-sans text-xs sm:text-sm text-[#1E1B4B]/70 font-medium mt-0.5">
                   Profiles, professional track records, and mentorship schedules will unlock concurrently with the Season Inauguration.

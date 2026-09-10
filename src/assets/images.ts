@@ -35,8 +35,9 @@ import smvitmLogo from './smvitm.png';
 import sdmLogo from './sdm.png';
 import iahvLogo from './IAHV-Logo.png';
 import isteLogo from './iste.png';
-import igniteLogo from './ignite.jpeg';
 import ieeeLogo from './ieee.png';
+import igniteLogo from './ignite.jpeg';
+
 import codeTrooperLogo from './code trooper.png';
 import aikyaLogo from './Aikya logo_20260829_133319_0000.png';
 
@@ -78,8 +79,8 @@ export const HPL_IMAGES = {
   sdmLogo,
   iahvLogo,
   isteLogo,
-  igniteLogo,
   ieeeLogo,
+  igniteLogo,
   codeTrooperLogo,
   aikyaLogo,
 };

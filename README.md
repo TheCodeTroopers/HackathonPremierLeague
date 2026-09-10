@@ -62,5 +62,4 @@ npm run build
 * **CodeTroopers** (Lead Technical Club)
 * **IGNITE** (Innovation & Incubation Forum)
 * **AIKYA** (Student Welfare Forum)
-* **IEEE SMVITM Student Chapter**
-* **ISTE SMVITM Chapter**.
+* **IAHV SMVITM Student Chapter**

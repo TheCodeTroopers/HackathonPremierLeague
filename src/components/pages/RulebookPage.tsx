@@ -137,12 +137,12 @@ export const OFFICIAL_RULES = [
     title: 'Shortlisting',
     category: 'Evaluation Phase',
     icon: Award,
-    summary: 'Shortlisted teams announced on the HPL website on 8 September 2026.',
-    keyTakeaway: 'Results published on 8 Sept 2026 followed by HPL Inauguration.',
+    summary: 'Shortlisted teams announced on the HPL website on 10 September 2026.',
+    keyTakeaway: 'Results published on 10 Sept 2026 (10:30 AM) followed by HPL Inauguration.',
     points: [
       'All registered teams will undergo a rigorous shortlisting review by evaluation panels.',
-      'The shortlisted teams will be officially announced on the HPL website on 8 September 2026.',
-      'Further tournament stages, weekly match schedules, and milestones will be revealed during the HPL Inauguration ceremony.'
+      'The shortlisted teams will be officially announced on the HPL website on 10 September 2026.',
+      'Further tournament stages, weekly match schedules, and milestones will be revealed during the HPL Inauguration ceremony on 10 September 2026.'
     ]
   },
   {
@@ -164,13 +164,13 @@ export const OFFICIAL_RULES = [
     title: 'Shortlisted Team Fee',
     category: 'Registration Fee',
     icon: CreditCard,
-    summary: 'Applicable only to shortlisted teams (₹150 for IEEE member squads, ₹200 others).',
-    keyTakeaway: 'Fee applies only after shortlisting: ₹150 (IEEE squad) / ₹200 (Non-IEEE squad).',
+    summary: 'Applicable only to shortlisted teams (₹150 for IAHV member squads, ₹200 others).',
+    keyTakeaway: 'Fee applies only after shortlisting: ₹150 (IAHV squad) / ₹200 (Non-IAHV squad).',
     points: [
       'Zero fee at initial registration. The registration fee applies ONLY to teams that are shortlisted.',
-      'Team with at least one active IEEE student member: ₹150 / team.',
-      'Team with no IEEE student member: ₹200 / team.',
-      'Payment links and instructions will be sent with the shortlist notification on 8 September 2026.'
+      'Team with at least one active IAHV student member: ₹150 / team.',
+      'Team with no IAHV student member: ₹200 / team.',
+      'Payment links and instructions will be sent with the shortlist notification on 10 September 2026.'
     ]
   },
   {
@@ -210,14 +210,14 @@ export const OFFICIAL_RULES = [
     title: 'Important Dates',
     category: 'Schedule',
     icon: Calendar,
-    summary: 'Registration: 2–6 Sept | Shortlist & Inauguration: 8 Sept 2026.',
-    keyTakeaway: 'Mark 6 Sept (11:59 PM) for registration close & 8 Sept for shortlist + kickoff.',
+    summary: 'Registration: Till 9 Sept | Inauguration: 10 Sept (10:30 AM) | Week 2 Final Eval: 23 Sept | Grand Finale: 1 Oct 2026.',
+    keyTakeaway: 'Inauguration 10 Sept (10:30 AM), Week 2 final eval 23 Sept, followed directly by 1 Oct Grand Finale.',
     points: [
       '2 September 2026: Official Registrations Open.',
-      '6 September 2026 (11:59 PM): Registrations Strictly Close.',
-      '8 September 2026: Shortlisted Teams Announced on Portal.',
-      '8 September 2026: Official HPL 2026 Inauguration Ceremony.',
-      'Subsequent Match Days & Grand Finale dates announced at Inauguration.'
+      '9 September 2026 (7:00 PM): Extended Registrations Strictly Close.',
+      '10 September 2026: Shortlisted Teams Announced & Official Inauguration Ceremony.',
+      '23 September 2026: Week 2 Final Evaluation Round & Grand Finalists Selection.',
+      '1 October 2026: Auditorium Grand Finale at SMVITM Bantakal.'
     ]
   },
   {
@@ -356,12 +356,17 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
             <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3 text-xs font-mono text-[#1E1B4B]/70">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-[#582A9C]" />
-                Registration: 2 – 6 Sept 2026
+                Registration: Till 8 Sept 2026
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-[#EA580C]" />
-                Shortlist: 8 Sept 2026
+                Inauguration: 10 Sept 2026 (10:30 AM)
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
+                <TrophyBadge className="w-3.5 h-3.5 text-[#F59E0B]" />
+                Grand Finale: 1 Oct 2026
               </span>
             </div>
 
@@ -446,7 +451,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter rules (e.g. video, fee, AI, IEEE)..."
+                placeholder="Filter rules (e.g. video, fee, AI, IAHV)..."
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-[#1E1B4B] bg-white text-xs font-sans text-[#1E1B4B] focus:outline-none focus:ring-2 focus:ring-[#582A9C] shadow-2xs"
               />
             </div>
@@ -526,12 +531,12 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div className="bg-white p-3 rounded-lg border border-emerald-200">
-                              <span className="text-[11px] font-mono text-slate-500 font-bold block">IEEE MEMBER</span>
+                              <span className="text-[11px] font-mono text-slate-500 font-bold block">IAHV MEMBER</span>
                               <span className="font-display font-black text-2xl text-emerald-700">₹150</span>
                               <span className="text-[10px] text-slate-500 block">per squad</span>
                             </div>
                             <div className="bg-white p-3 rounded-lg border border-emerald-200">
-                              <span className="text-[11px] font-mono text-slate-500 font-bold block">NON-IEEE</span>
+                              <span className="text-[11px] font-mono text-slate-500 font-bold block">NON-IAHV</span>
                               <span className="font-display font-black text-2xl text-[#1E1B4B]">₹200</span>
                               <span className="text-[10px] text-slate-500 block">per squad</span>
                             </div>
@@ -553,12 +558,12 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                               <span className="font-mono text-[#582A9C] font-bold">Registration Opens</span>
                             </div>
                             <div className="flex items-center justify-between p-2.5 rounded bg-white border border-purple-100 font-medium">
-                              <span className="font-bold text-[#1E1B4B]">6 Sept 2026</span>
+                              <span className="font-bold text-[#1E1B4B]">8 Sept 2026 (5 PM)</span>
                               <span className="font-mono text-rose-600 font-bold">Registration Closes</span>
                             </div>
                             <div className="flex items-center justify-between p-2.5 rounded bg-white border border-purple-100 font-medium">
-                              <span className="font-bold text-[#1E1B4B]">8 Sept 2026</span>
-                              <span className="font-mono text-emerald-600 font-bold">Shortlist Kickoff</span>
+                              <span className="font-bold text-[#1E1B4B]">9 Sept 2026</span>
+                              <span className="font-mono text-emerald-600 font-bold">Shortlist & Inauguration</span>
                             </div>
                           </div>
                         </div>
@@ -702,18 +707,18 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="bg-white p-3 rounded-lg border border-emerald-200 text-center">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">At Least 1 IEEE Member</span>
+                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">At Least 1 IAHV Member</span>
                       <span className="font-display font-black text-2xl text-emerald-700">₹150</span>
                       <span className="text-[10px] font-sans text-slate-500 block">per team total</span>
                     </div>
                     <div className="bg-white p-3 rounded-lg border border-emerald-200 text-center">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">No IEEE Member</span>
+                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase block">No IAHV Member</span>
                       <span className="font-display font-black text-2xl text-[#1E1B4B]">₹200</span>
                       <span className="text-[10px] font-sans text-slate-500 block">per team total</span>
                     </div>
                   </div>
                   <p className="text-[11px] font-sans text-emerald-900/80 italic text-center">
-                    Note: Zero fee at initial registration. The fee applies only to teams shortlisted on 8 September 2026.
+                    Note: Zero fee at initial registration. The fee applies only to teams shortlisted on 10 September 2026.
                   </p>
                 </div>
               )}
@@ -729,11 +734,11 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                       <span className="font-mono text-[#582A9C] font-bold">Registration Opens</span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-purple-100">
-                      <span className="font-bold text-[#1E1B4B]">6 September 2026 (11:59 PM)</span>
+                      <span className="font-bold text-[#1E1B4B]">9 September 2026 (7:00 PM)</span>
                       <span className="font-mono text-rose-600 font-bold">Registration Closes</span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded bg-white border border-purple-100">
-                      <span className="font-bold text-[#1E1B4B]">8 September 2026</span>
+                      <span className="font-bold text-[#1E1B4B]">10 September 2026</span>
                       <span className="font-mono text-emerald-600 font-bold">Shortlist & Inauguration</span>
                     </div>
                   </div>
@@ -930,7 +935,7 @@ export const RulebookPage: React.FC<RulebookPageProps> = ({ onNavigate }) => {
                   Shri Madhwa Vadiraja Institute of Technology and Management, Bantakal
                 </p>
                 <p className="text-[11px] font-mono text-amber-800">
-                  Registration: 2 – 6 September 2026 • Shortlist Announcement: 8 September 2026
+                  Registration: 2 – 9 September 2026 • Shortlist & Inauguration: 10 September 2026 • Grand Finale: 1 October 2026
                 </p>
               </div>
 

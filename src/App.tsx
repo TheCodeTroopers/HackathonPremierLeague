@@ -23,6 +23,7 @@ import { ContactPage, ShortlistedPage } from './components/pages/ContactPage';
 import { AdminPage } from './components/pages/AdminPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
+import { DeadlineMarquee } from './components/layout/DeadlineMarquee';
 import { preloadAllImages } from './utils/imagePreloader';
 
 const getInitialPage = (): PageRoute => {
@@ -73,7 +74,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'contact', 'admin'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -117,7 +118,13 @@ export function App() {
 
       {/* Top Sticky Header (Hidden on Admin portal & Presentation mode for clean workspace view) */}
       {activePage !== 'admin' && activePage !== 'presentation' && (
-        <Navbar activePage={activePage} onNavigate={handleNavigate} />
+        <>
+          <Navbar activePage={activePage} onNavigate={handleNavigate} />
+          <DeadlineMarquee 
+            onNavigate={handleNavigate} 
+            onOpenNotice={() => handleNavigate('shortlisted')} 
+          />
+        </>
       )}
 
       {/* Main Multi-Page Container */}

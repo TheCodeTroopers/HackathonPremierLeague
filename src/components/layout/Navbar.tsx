@@ -22,7 +22,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
     { label: 'SPONSORS', page: 'sponsors' },
     { label: 'SHORTLISTED', page: 'shortlisted' },
     { label: 'PROBLEM STATEMENTS', page: 'problem-statements' },
-    { label: 'DECK / PPT', page: 'presentation' },
     { label: 'CONTACT', page: 'contact' },
   ];
 
@@ -127,9 +126,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
         <nav className={`transition-all duration-300 ${
           isScrolled 
             ? 'opacity-0 scale-95 pointer-events-none hidden lg:hidden' 
-            : 'hidden lg:flex items-center gap-6 xl:gap-8 opacity-100 scale-100 pointer-events-auto'
+            : 'hidden lg:flex items-center gap-5 xl:gap-7 opacity-100 scale-100 pointer-events-auto'
         }`}>
-          {navItems.map((item) => {
+          {navItems.filter(item => ['HOME', 'SHORTLISTED', 'PROBLEM STATEMENTS', 'TIMELINE', 'RULE BOOK', 'LEADERBOARD'].includes(item.label)).map((item) => {
             const isActive = (item.label === 'HOME' && activePage === 'home') ||
                              (item.label === 'RULE BOOK' && activePage === 'rulebook') ||
                              (item.label === 'TIMELINE' && (activePage === 'timeline' || activePage === 'journey')) ||
@@ -138,7 +137,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                              (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                              (item.label === 'SHORTLISTED' && activePage === 'shortlisted') ||
                              (item.label === 'PROBLEM STATEMENTS' && (activePage === 'problem-statements' || activePage === 'round2' || activePage === 'reveal')) ||
-                             (item.label === 'DECK / PPT' && activePage === 'presentation') ||
                              (item.label === 'CONTACT' && activePage === 'contact');
 
             return (
@@ -161,15 +159,26 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
           })}
         </nav>
 
-        {/* Right: Floating MENU Pill & Register CTA */}
+        {/* Right: Floating MENU Pill & Shortlisted CTA */}
         <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
+          {/* Shortlisted Capsule (Visible only at top) */}
+          <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
+            <button
+              onClick={() => handleNavClick('shortlisted')}
+              className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-[2.5px_2.5px_0px_#1E1B4B] border-2 border-[#1E1B4B] hover:shadow-[3.5px_3.5px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+              <span>SHORTLISTED</span>
+            </button>
+          </div>
+
           {/* Floating Big Standalone MENU Button when Scrolled / Mobile Menu at top */}
           <button
             onClick={() => setMobileMenuOpen(true)}
             className={`inline-flex items-center gap-2 rounded-full border-[2.5px] border-[#1E1B4B] bg-[#FFFDF7] text-[#1E1B4B] font-display font-black uppercase transition-all duration-300 cursor-pointer ${
               isScrolled 
                 ? 'px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm shadow-[3.5px_3.5px_0px_#1E1B4B] hover:bg-[#FBBF24] hover:shadow-[4.5px_4.5px_0px_#1E1B4B] hover:scale-105 active:translate-x-0.5 active:translate-y-0.5' 
-                : 'flex lg:hidden px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
+                : 'flex px-3.5 py-1.5 text-xs shadow-[2px_2px_0px_#1E1B4B] hover:bg-amber-100 active:translate-x-0.5 active:translate-y-0.5'
             }`}
             aria-label="Open menu drawer"
           >
@@ -179,17 +188,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
               <span className="w-2 h-2 rounded-full bg-[#EA580C] animate-ping ml-0.5" />
             )}
           </button>
-
-          {/* Register Capsule (Visible only at top) */}
-          <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
-            <button
-              onClick={() => handleNavClick('register')}
-              className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
-              <span>REGISTER NOW</span>
-            </button>
-          </div>
         </div>
 
       </div>
@@ -250,7 +248,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                                    (item.label === 'SPONSORS' && activePage === 'sponsors') ||
                                    (item.label === 'SHORTLISTED' && activePage === 'shortlisted') ||
                                    (item.label === 'PROBLEM STATEMENTS' && (activePage === 'problem-statements' || activePage === 'round2' || activePage === 'reveal')) ||
-                                   (item.label === 'DECK / PPT' && activePage === 'presentation') ||
                                    (item.label === 'CONTACT' && activePage === 'contact');
 
                   return (
@@ -333,13 +330,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                   </div>
                 </div>
 
-                {/* Register CTA Button */}
+                {/* Shortlisted CTA Button */}
                 <button
-                  onClick={() => handleNavClick('register')}
-                  className="w-full py-3.5 px-5 rounded-2xl bg-[#EA580C] hover:bg-[#D97706] text-white font-display font-black text-xs uppercase tracking-wider text-center shadow-[3px_3px_0px_#1E1B4B] border-2 border-[#1E1B4B] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                  onClick={() => handleNavClick('shortlisted')}
+                  className="w-full py-3.5 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider text-center shadow-[3px_3px_0px_#1E1B4B] border-2 border-[#1E1B4B] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
                 >
-                  <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
-                  <span>REGISTER SQUAD • ₹30K POOL</span>
+                  <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+                  <span>VIEW SHORTLISTED SQUADS 🎉</span>
                 </button>
               </div>
 

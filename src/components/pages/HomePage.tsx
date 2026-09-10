@@ -453,34 +453,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 }`}
               >
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full blur-md opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse" />
+                  <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-amber-600 rounded-full blur-md opacity-60 group-hover:opacity-100 transition duration-300 animate-pulse" />
                   <button
-                    onClick={() => onNavigate('register')}
-                    className="relative px-7 py-3.5 rounded-full bg-[#4F46E5] hover:bg-[#4338CA] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2.5"
+                    onClick={() => onNavigate('shortlisted')}
+                    className="relative px-7 py-3.5 rounded-full bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wider sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2.5"
                   >
-                    <Trophy className="w-4 h-4 text-amber-300 animate-bounce" />
-                    <span>REGISTER NOW!</span>
+                    <Trophy className="w-4 h-4 text-[#1E1B4B] animate-bounce" />
+                    <span>VIEW SHORTLISTED SQUADS 🎉</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
 
-                {/* How to Register Demo Video Button (Opens Pop-up Modal) */}
+                {/* Problem Statements Button */}
                 <button
-                  type="button"
-                  onClick={() => setIsVideoModalOpen(true)}
-                  className="px-6 py-3.5 rounded-full bg-[#FEF08A] hover:bg-[#FDE047] text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2 group"
+                  onClick={() => onNavigate('problem-statements')}
+                  className="px-6 py-3.5 rounded-full bg-[#1E1B4B] hover:bg-[#312E81] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wide sketch-border shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2 group"
                 >
-                  <PlayCircle className="w-4 h-4 text-[#EA580C] group-hover:scale-110 transition-transform flex-shrink-0" />
-                  <span>HOW TO REGISTER DEMO VIDEO</span>
-                </button>
-
-                {/* Shortlisted Teams Button in Hero */}
-                <button
-                  onClick={() => onNavigate('shortlisted')}
-                  className="px-6 py-3.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wide border-2 border-[#1E1B4B] shadow-sketch hover:shadow-sketch-lg hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer flex items-center gap-2 group"
-                >
-                  <Sparkles className="w-4 h-4 text-[#1E1B4B] animate-spin flex-shrink-0" />
-                  <span>🎉 SHORTLISTED SQUADS</span>
+                  <Sparkles className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span>PROBLEM STATEMENTS</span>
                 </button>
 
                 {/* Official Rule Book Button in Hero */}
@@ -826,7 +816,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                   PART 2
                 </div>
                 <p className="font-bold text-xs text-[#1E1B4B]/80 pt-1">
-                  8 September 2026 Onwards
+                  10 September 2026 Onwards
                 </p>
                 <p className="text-[11px] text-[#1E1B4B]/65 font-medium">
                   Inauguration • 1st Evaluation • Sprints
@@ -1082,49 +1072,58 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
         title="🎉 ROUND 2 SHORTLISTING ANNOUNCED!"
         maxWidth="lg"
       >
-        <div className="space-y-4 text-center">
+        <div className="space-y-3 sm:space-y-4 text-center">
           
           {/* Festive Comic Banner */}
-          <div className="relative rounded-2xl bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-900 p-6 text-white border-2 border-[#1E1B4B] shadow-inner overflow-hidden">
+          <div className="relative rounded-2xl bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-900 p-3.5 xs:p-5 sm:p-6 text-white border-2 border-[#1E1B4B] shadow-inner overflow-hidden">
             {/* Soft Glow Circles */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-purple-500/20 blur-xl pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-purple-500/20 blur-xl pointer-events-none" />
             
-            <div className="relative z-10 space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-[#1E1B4B] font-display font-black text-[11px] uppercase tracking-wider shadow-sm">
-                <Sparkles className="w-3.5 h-3.5" />
+            <div className="relative z-10 space-y-1.5 sm:space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-400 text-[#1E1B4B] font-display font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-sm">
+                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>OFFICIAL LEAGUE UPDATE</span>
               </div>
 
-              <h4 className="font-display font-black text-2xl sm:text-3xl text-amber-300 uppercase tracking-tight italic">
+              <h4 className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-amber-300 uppercase tracking-tight italic leading-tight">
                 40 SQUADS SHORTLISTED!
               </h4>
 
-              <p className="text-xs sm:text-sm text-indigo-100/90 font-medium max-w-md mx-auto leading-relaxed">
+              <p className="text-[11px] xs:text-xs sm:text-sm text-indigo-100/90 font-medium max-w-md mx-auto leading-relaxed">
                 The evaluation panel has finalized the Round 1 results. 40 top engineering teams have qualified for the Round 2 Stakeholder Sprint!
               </p>
             </div>
           </div>
 
           {/* Key Details Card */}
-          <div className="p-4 bg-amber-50/90 rounded-2xl border-2 border-amber-300/80 text-left space-y-2">
-            <div className="font-display font-black text-xs uppercase text-[#1E1B4B] flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-amber-600" />
+          <div className="p-3 xs:p-4 sm:p-5 bg-amber-50/90 rounded-2xl border-2 border-amber-300/80 text-left space-y-2 sm:space-y-3">
+            <div className="font-display font-black text-xs sm:text-sm uppercase text-[#1E1B4B] flex items-center gap-1.5">
+              <Trophy className="w-4 h-4 text-amber-600 flex-shrink-0" />
               <span>What Shortlisted Squads Must Do Next:</span>
             </div>
-            <ul className="text-xs text-slate-700 space-y-1.5 pl-4 list-disc font-medium">
-              <li>Check your squad name in the official <strong>Shortlisted Squads Directory</strong>.</li>
-              <li>Explore the 4 live stakeholder problem statements (AyurEssence, SMARTBUS, Sahayak, SWMS).</li>
-              <li>Submit your final problem statement preference for live competitive prototyping.</li>
+            <ul className="text-xs sm:text-[13px] text-slate-800 space-y-2 pl-4 list-decimal font-medium leading-relaxed">
+              <li>
+                Check your squad name in the official <strong>Shortlisted Squads Directory</strong>.
+              </li>
+              <li>
+                <strong>Read the problem statements thoroughly</strong> and make sure which problem statement you will work on.
+              </li>
+              <li>
+                <strong>Only the Team Leader needs to register</strong> on the website at <strong>8:00 PM</strong> — in that, make sure you choose your Problem Statement (PS) correctly and fast!
+              </li>
+              <li>
+                <strong>Join the official WhatsApp group</strong> for all instant match-day updates, announcements, and live coordination.
+              </li>
             </ul>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t-2 border-[#1E1B4B]/10">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-2 border-t-2 border-[#1E1B4B]/10">
             <button
               type="button"
               onClick={() => setIsShortlistModalOpen(false)}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 font-display font-bold text-xs uppercase text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 font-display font-bold text-xs uppercase text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-center"
             >
               Dismiss
             </button>
@@ -1135,10 +1134,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 setIsShortlistModalOpen(false);
                 onNavigate('shortlisted');
               }}
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[2.5px_2.5px_0px_#1E1B4B] sm:shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>SEE SHORTLISTED SQUADS</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 flex-shrink-0" />
             </button>
           </div>
 

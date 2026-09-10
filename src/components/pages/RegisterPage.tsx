@@ -205,6 +205,33 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     }
   };
 
+  const registrationsLocked = true;
+
+  if (registrationsLocked) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-16">
+        <div className="bg-paper-light sketch-border rounded-sketch-lg p-10 shadow-sketch-xl text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-paper-dark sketch-border text-xs font-mono font-bold text-ink uppercase tracking-wider">
+            <XCircle className="w-4 h-4 text-red-600" />
+            REGISTRATION CLOSED
+            <XCircle className="w-4 h-4 text-red-600" />
+          </div>
+          <h1 className="text-4xl sm:text-5xl font-black font-display uppercase tracking-tight text-ink">
+            REGISTRATIONS ARE NOW <span className="text-[#EA580C]">LOCKED</span>
+          </h1>
+          <p className="text-lg text-ink-muted">
+            Thank you for your interest! The registration period for Hackathon Premier League 2026 has officially ended.
+          </p>
+          <div className="pt-4 flex justify-center">
+            <Button onClick={() => onNavigate('home')} variant="primary" icon={<ArrowLeft className="w-5 h-5" />}>
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
       {/* Header */}

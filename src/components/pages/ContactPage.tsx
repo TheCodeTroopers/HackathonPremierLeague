@@ -384,13 +384,13 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
         {hasPopped && (
           <>
             {/* Top Left Popper */}
-            <div className="absolute left-2 sm:left-6 top-8 sm:top-12 z-20 pointer-events-none animate-bounce">
-              <PartyPopperDoodle className="w-20 h-20 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg" />
+            <div className="absolute left-1 sm:left-6 top-4 sm:top-12 z-20 pointer-events-none animate-bounce">
+              <PartyPopperDoodle className="w-12 h-12 xs:w-16 xs:h-16 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg opacity-85 sm:opacity-100" />
             </div>
 
             {/* Top Right Popper */}
-            <div className="absolute right-2 sm:right-6 top-8 sm:top-12 z-20 pointer-events-none animate-bounce">
-              <PartyPopperDoodle className="w-20 h-20 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg" flipped />
+            <div className="absolute right-1 sm:right-6 top-4 sm:top-12 z-20 pointer-events-none animate-bounce">
+              <PartyPopperDoodle className="w-12 h-12 xs:w-16 xs:h-16 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg opacity-85 sm:opacity-100" flipped />
             </div>
 
             {/* Bottom Left Popper (Birthday Party Style Burst) */}
@@ -405,13 +405,13 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
           </>
         )}
 
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-6">
           
           {/* Comic Hero Card */}
-          <div className="relative bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-6 sm:p-10 shadow-[6px_6px_0px_#1E1B4B] overflow-hidden text-center">
+          <div className="relative bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-4 xs:p-6 sm:p-10 shadow-[6px_6px_0px_#1E1B4B] overflow-hidden text-center">
             
             {/* Top Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 border-2 border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] mb-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400 border-2 border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] mb-4 sm:mb-5">
               <Sparkles className="w-4 h-4 text-[#1E1B4B]" />
               <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-[#1E1B4B]">
                 OFFICIAL SHORTLIST ANNOUNCEMENT
@@ -419,7 +419,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
             </div>
 
             {/* Main Headline */}
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-display tracking-tight text-[#1E1B4B] italic leading-[1.08] max-w-3xl mx-auto">
+            <h1 className="text-2xl xs:text-3xl sm:text-5xl md:text-6xl font-black font-display tracking-tight text-[#1E1B4B] italic leading-[1.08] max-w-3xl mx-auto break-words">
               CONGRATULATIONS TO THE{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-amber-500 to-rose-600 underline decoration-amber-400 decoration-wavy">
                 40 SHORTLISTED
@@ -427,7 +427,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
               SQUADS!
             </h1>
 
-            <p className="mt-4 text-sm sm:text-base md:text-lg text-slate-700 font-medium max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-3 sm:mt-4 text-xs xs:text-sm sm:text-base md:text-lg text-slate-700 font-medium max-w-2xl mx-auto leading-relaxed">
               After an intense round of evaluation from evaluation panels, these 40 stellar teams have officially qualified for <strong>Round 2: Stakeholder Challenge Sprint</strong> of Hackathon Premier League 2026.
             </p>
 
@@ -437,30 +437,30 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
             </div>
 
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto pt-4 border-t-2 border-[#1E1B4B]/10">
-              <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-3 text-center">
-                <div className="font-display font-black text-2xl text-[#1E1B4B]">40</div>
-                <div className="font-mono text-[10px] font-bold text-amber-800 uppercase tracking-wider">Squads Qualified</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 max-w-3xl mx-auto pt-4 border-t-2 border-[#1E1B4B]/10">
+              <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-2.5 sm:p-3 text-center">
+                <div className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B]">40</div>
+                <div className="font-mono text-[9px] sm:text-[10px] font-bold text-amber-800 uppercase tracking-wider">Squads Qualified</div>
               </div>
-              <div className="bg-purple-50/80 border border-purple-300 rounded-2xl p-3 text-center">
-                <div className="font-display font-black text-2xl text-purple-900">4</div>
-                <div className="font-mono text-[10px] font-bold text-purple-800 uppercase tracking-wider">Live PS Tracks</div>
+              <div className="bg-purple-50/80 border border-purple-300 rounded-2xl p-2.5 sm:p-3 text-center">
+                <div className="font-display font-black text-xl sm:text-2xl text-purple-900">4</div>
+                <div className="font-mono text-[9px] sm:text-[10px] font-bold text-purple-800 uppercase tracking-wider">Live PS Tracks</div>
               </div>
-              <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-3 text-center">
-                <div className="font-display font-black text-2xl text-emerald-900">₹30,000+</div>
-                <div className="font-mono text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Prize Pool</div>
+              <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-2.5 sm:p-3 text-center">
+                <div className="font-display font-black text-xl sm:text-2xl text-emerald-900">₹30,000+</div>
+                <div className="font-mono text-[9px] sm:text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Prize Pool</div>
               </div>
-              <div className="bg-blue-50/80 border border-blue-300 rounded-2xl p-3 text-center">
-                <div className="font-display font-black text-2xl text-blue-900">12 SEP</div>
-                <div className="font-mono text-[10px] font-bold text-blue-800 uppercase tracking-wider">Part 1 Evaluation</div>
+              <div className="bg-blue-50/80 border border-blue-300 rounded-2xl p-2.5 sm:p-3 text-center">
+                <div className="font-display font-black text-xl sm:text-2xl text-blue-900">12 SEP</div>
+                <div className="font-mono text-[9px] sm:text-[10px] font-bold text-blue-800 uppercase tracking-wider">Part 1 Evaluation</div>
               </div>
             </div>
 
             {/* Next Steps Quick Action */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 onClick={() => onNavigate('problem-statements')}
-                className="px-6 py-3 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[3.5px_3.5px_0px_#F59E0B] transition-all cursor-pointer flex items-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[3.5px_3.5px_0px_#F59E0B] transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <span>Proceed to Choose Problem Statement</span>
                 <ArrowRight className="w-4 h-4" />
@@ -468,13 +468,69 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
 
               <button
                 onClick={() => onNavigate('rulebook')}
-                className="px-5 py-3 rounded-2xl bg-white border-2 border-[#1E1B4B] hover:bg-slate-50 font-display font-bold text-xs sm:text-sm uppercase tracking-wider text-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] transition-all cursor-pointer"
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-white border-2 border-[#1E1B4B] hover:bg-slate-50 font-display font-bold text-xs sm:text-sm uppercase tracking-wider text-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] transition-all cursor-pointer text-center"
               >
                 <span>Read Round 2 Guidelines</span>
               </button>
             </div>
 
           </div>
+
+          {/* 4-Step Mandatory Guidelines Card for Shortlisted Squads */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50/60 rounded-3xl border-2 border-[#1E1B4B] p-5 sm:p-7 shadow-[4px_4px_0px_#1E1B4B]">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <span className="w-8 h-8 rounded-xl bg-amber-400 border border-[#1E1B4B] flex items-center justify-center shadow-xs text-sm font-black">
+                📋
+              </span>
+              <div>
+                <h3 className="font-display font-black text-base sm:text-lg text-[#1E1B4B] uppercase tracking-tight">
+                  What Shortlisted Squads Must Do Next
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-600 font-mono">
+                  Crucial Round 2 kickoff instructions for all 40 qualified squads
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+              <div className="bg-white/90 rounded-2xl border border-amber-200/80 p-3.5 sm:p-4 flex items-start gap-3 shadow-2xs">
+                <span className="w-7 h-7 rounded-lg bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                  1
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  Check your squad name in the official <strong>Shortlisted Squads Directory</strong> below.
+                </div>
+              </div>
+
+              <div className="bg-white/90 rounded-2xl border border-amber-200/80 p-3.5 sm:p-4 flex items-start gap-3 shadow-2xs">
+                <span className="w-7 h-7 rounded-lg bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                  2
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <strong>Read the problem statements thoroughly</strong> and make sure which problem statement you will work on.
+                </div>
+              </div>
+
+              <div className="bg-white/90 rounded-2xl border border-amber-200/80 p-3.5 sm:p-4 flex items-start gap-3 shadow-2xs">
+                <span className="w-7 h-7 rounded-lg bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                  3
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <strong>Only the Team Leader needs to register</strong> on the website at <strong>8:00 PM</strong> — in that, make sure you choose your Problem Statement (PS) correctly and fast!
+                </div>
+              </div>
+
+              <div className="bg-white/90 rounded-2xl border border-amber-200/80 p-3.5 sm:p-4 flex items-start gap-3 shadow-2xs">
+                <span className="w-7 h-7 rounded-lg bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                  4
+                </span>
+                <div className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+                  <strong>Join the official WhatsApp group</strong> for all instant match-day updates, coordination, and urgent announcements.
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -597,26 +653,36 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
               {filteredTeams.map((team) => (
                 <div
                   key={team.rank}
-                  className="p-4 sm:px-6 sm:py-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-3"
+                  className="p-3.5 sm:px-6 sm:py-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-2.5"
                 >
                   {/* Slot & Squad Number */}
-                  <div className="sm:col-span-2 flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
-                      {String(team.rank).padStart(2, '0')}
-                    </span>
-                    <span className="font-mono text-[11px] font-bold text-slate-500 uppercase">
-                      {team.squadId}
-                    </span>
+                  <div className="sm:col-span-2 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
+                        {String(team.rank).padStart(2, '0')}
+                      </span>
+                      <span className="font-mono text-[11px] font-bold text-slate-500 uppercase">
+                        {team.squadId}
+                      </span>
+                    </div>
+
+                    {/* Mobile Status Badge on Header Right */}
+                    <div className="sm:hidden">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-[10px] font-bold uppercase tracking-wider">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                        <span>Round 2 Live</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Team Name */}
-                  <div className="sm:col-span-5 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight">
+                  <div className="sm:col-span-5 text-left w-full">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight break-words">
                         {team.name}
                       </span>
                       {team.rank <= 5 && (
-                        <span className="text-amber-500" title="Top 5 Roster">
+                        <span className="text-amber-500 text-sm" title="Top 5 Roster">
                           ⭐
                         </span>
                       )}
@@ -626,8 +692,8 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                     </span>
                   </div>
 
-                  {/* Status Badge */}
-                  <div className="sm:col-span-3 sm:text-center">
+                  {/* Status Badge (Desktop) */}
+                  <div className="hidden sm:block sm:col-span-3 sm:text-center">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                       <span>Round 2 Live</span>
@@ -635,13 +701,13 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                   </div>
 
                   {/* Action Link */}
-                  <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                  <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto flex sm:justify-end">
                     <button
                       onClick={() => onNavigate('problem-statements')}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
                     >
                       <span>Pick PS</span>
-                      <ArrowRight className="w-3 h-3" />
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

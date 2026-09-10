@@ -296,17 +296,17 @@ export const TIMELINE_PHASES = [
   {
     phaseNumber: '03',
     week: 'PLAYOFFS — PART 3',
-    dateRange: '19 – 22 AUGUST 2026',
-    title: 'Part 3 Released: Grand Finale & Crowning',
+    dateRange: '1 OCTOBER 2026',
+    title: 'Grand Finale & Championship Crowning',
     subHeader: '12 Finalist Squads (Top 4 per Domain) Battle for the Championship',
     color: 'purple',
     badgeText: 'CHAMPIONSHIP ARENA',
-    description: 'The 12 finalist squads (top 4 from each of the 3 domains) enter the physical arena. 24-hour sprint to build final production deployment, live security audit, and grand jury defense.',
+    description: 'Following the final Week 2 evaluation on 23rd September, the 12 finalist squads advance directly to the physical arena at SMVITM Bantakal for live knockout rounds and the Grand Finale.',
     milestones: [
-      'Day 1 (19 Aug): Playoff sprint begins & stadium setup',
-      'Day 2 (20 Aug): Semifinal 1 (Rank 1 vs 4) & Semifinal 2 (Rank 2 vs 3)',
-      'Day 3 (21 Aug): 3rd Place Match & Final Polish',
-      'Day 4 (22 Aug): Grand Finale Keynote, Live Stage Pitches & Trophy Presentation'
+      '23 Sep: Week 2 final evaluation concludes & Grand Finalists announced',
+      '1 Oct (Morning): Finalist team briefing & Semifinal knockout face-offs',
+      '1 Oct (Afternoon): Bronze 3rd place match & live jury deliberations',
+      '1 Oct (Evening): Grand Finale keynote, championship pitches & trophy presentation'
     ]
   }
 ];
@@ -347,7 +347,7 @@ export const MATCH_FIXTURES: MatchFixture[] = [
     matchNumber: 3,
     phase: 'Playoffs — Semifinal 1',
     week: 3,
-    date: '20 August 2026',
+    date: '1 October 2026',
     time: '10:00 AM IST',
     venue: 'Auditorium Arena Stage 1',
     status: 'upcoming',
@@ -362,8 +362,8 @@ export const MATCH_FIXTURES: MatchFixture[] = [
     matchNumber: 4,
     phase: 'Playoffs — Semifinal 2',
     week: 3,
-    date: '20 August 2026',
-    time: '02:00 PM IST',
+    date: '1 October 2026',
+    time: '01:30 PM IST',
     venue: 'Auditorium Arena Stage 2',
     status: 'upcoming',
     squad1: { name: 'Debuggers (Rank #2)' },
@@ -377,7 +377,7 @@ export const MATCH_FIXTURES: MatchFixture[] = [
     matchNumber: 5,
     phase: 'Playoffs — Grand Finale',
     week: 3,
-    date: '22 August 2026',
+    date: '1 October 2026',
     time: '04:00 PM IST',
     venue: 'Grand Championship Arena',
     status: 'upcoming',
@@ -499,7 +499,7 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
       'Each team must consist of exactly 5 members.',
       'A participant can be part of only one team.',
       'The team composition cannot be changed once the registration form is submitted.',
-      'Registration closes at 11:59 PM on 6 September 2026.',
+      'Registration strictly closes at 7:00 PM on 9 September 2026 (Extended).',
       'Teams must select one of the three official problem statements during registration.',
       'The selected problem statement cannot be changed after the registration form is submitted.',
       'Any correction or issue regarding registration details must be communicated to an HPL Coordinator.'
@@ -548,9 +548,9 @@ export const RULEBOOK_SECTIONS: RuleCategory[] = [
     icon: 'Code',
     summary: 'Information about shortlisting, registration fees, and refund policy.',
     rules: [
-      'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 8 September 2026.',
+      'All registered teams will undergo an initial shortlisting process. Shortlisted teams will be announced on 10 September 2026.',
       'A registration fee will apply only to shortlisted teams.',
-      'Team with no IEEE member: ₹200 / team. Team with at least one IEEE member: ₹150 / team.',
+      'Team with no IAHV member: ₹200 / team. Team with at least one IAHV member: ₹150 / team.',
       'Teams may cancel their participation at any time, but must inform an HPL Coordinator.',
       'Once the shortlisted-team registration fee has been paid, it is non-refundable.'
     ]
@@ -611,7 +611,7 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-7',
     category: 'Event Day',
     question: 'When and where will the Grand Finale take place?',
-    answer: 'The Grand Finale will take place on 22 August 2026 at the SMVITM Campus Auditorium Arena in Bantakal, Udupi, featuring live stage demos, physical trophy presentation, and venture partners.'
+    answer: 'The Grand Finale will take place on 1 October 2026 at the SMVITM Campus Auditorium Arena in Bantakal, Udupi, featuring live stage demos, physical trophy presentation, and venture partners.'
   }
 ];
 
@@ -619,8 +619,7 @@ export const PARTNERS_DATA = [
   { name: 'CodeTroopers', role: 'Lead Technical Club & Organizer', logoText: 'CODETROOPERS' },
   { name: 'IGNITE', role: 'Innovation & Incubation Cell', logoText: 'IGNITE' },
   { name: 'AIKYA', role: 'Cultural & Student Welfare Forum', logoText: 'AIKYA' },
-  { name: 'IEEE SMVITM Student Chapter', role: 'Technical Partner', logoText: 'IEEE SMVITM' },
-  { name: 'ISTE SMVITM Chapter', role: 'Academic Partner', logoText: 'ISTE SMVITM' },
+  { name: 'IAHV SMVITM Student Chapter', role: 'Technical Partner', logoText: 'IAHV SMVITM' },
 ];
 
 // Convenience Aliases for Clean Component Imports

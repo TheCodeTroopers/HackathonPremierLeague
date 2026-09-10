@@ -217,8 +217,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     { id: 'codetroopers', name: 'CodeTroopers', logo: HPL_IMAGES.codeTrooperLogo },
                     { id: 'ignite', name: 'IGNITE AI', logo: HPL_IMAGES.igniteLogo },
                     { id: 'aikya', name: 'AIKYA', logo: HPL_IMAGES.aikyaLogo },
-                    { id: 'ieee', name: 'IEEE', logo: HPL_IMAGES.ieeeLogo },
-                    { id: 'iste', name: 'ISTE', logo: HPL_IMAGES.isteLogo },
+                    { id: 'iahv', name: 'IAHV', logo: HPL_IMAGES.iahvLogo },
                   ].map((partner) => (
                     <div
                       key={partner.id}
