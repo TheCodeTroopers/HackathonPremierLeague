@@ -73,6 +73,7 @@ export const HPL_IMAGES = {
   adminClipboardBadge: adminClipboardBadgeImg,
   round2CurtainTrophy: new URL('./hpl_round2_curtain_trophy.jpg', import.meta.url).href,
   curtainClosed: new URL('./hpl_curtain_closed.jpg', import.meta.url).href,
+  shortlistCelebrate: '/hpl_shortlist_celebrate.jpg',
   // Sponsor & Partner Brand Logos
   shirvaLogo,
   smvitmLogo,

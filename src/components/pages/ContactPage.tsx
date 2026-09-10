@@ -20,7 +20,8 @@ import {
   Check 
 } from 'lucide-react';
 import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
-import { ShortlistTrophyIllustration, PartyPopperDoodle } from '../illustrations/AboutIllustration';
+import { PartyPopperDoodle } from '../illustrations/AboutIllustration';
+import { HPL_IMAGES } from '../../assets/images';
 
 interface ContactPageProps {
   onNavigate: (page: PageRoute) => void;
@@ -306,7 +307,6 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
         name: teamName,
         squadId,
         status: 'Qualified for Round 2',
-        tier: rank <= 20 ? 'Tier 1 Qualifier' : 'Tier 2 Qualifier',
       };
     }).filter((team) => {
       const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -431,9 +431,24 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
               After an intense round of evaluation from evaluation panels, these 40 stellar teams have officially qualified for <strong>Round 2: Stakeholder Challenge Sprint</strong> of Hackathon Premier League 2026.
             </p>
 
-            {/* Beautiful Custom Illustration */}
-            <div className="mt-4 mb-2 max-w-lg mx-auto">
-              <ShortlistTrophyIllustration className="w-full max-w-md mx-auto" />
+            {/* Beautiful Custom Generated Illustration - Fully Responsive */}
+            <div className="mt-4 sm:mt-6 mb-4 sm:mb-6 w-full max-w-xl md:max-w-2xl mx-auto px-1 sm:px-0">
+              <div className="rounded-xl sm:rounded-2xl border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] sm:shadow-[5px_5px_0px_#1E1B4B] overflow-hidden bg-white group hover:shadow-[5px_5px_0px_#1E1B4B] sm:hover:shadow-[7px_7px_0px_#1E1B4B] transition-all">
+                <div className="relative w-full aspect-[16/9] bg-[#FAF6EE] flex items-center justify-center overflow-hidden">
+                  <img
+                    src={HPL_IMAGES.shortlistCelebrate}
+                    alt="Hackathon Championship Shortlisted Teams Congratulations"
+                    className="w-full h-full object-contain sm:object-cover transform group-hover:scale-[1.02] transition-transform duration-300"
+                    loading="eager"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.src.endsWith('/hpl_shortlist_celebrate.jpg')) {
+                        target.src = '/hpl_shortlist_celebrate.jpg';
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Quick Metrics Bar */}
@@ -680,15 +695,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                       <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight break-words">
                         {team.name}
                       </span>
-                      {team.rank <= 5 && (
-                        <span className="text-amber-500 text-sm" title="Top 5 Roster">
-                          ⭐
-                        </span>
-                      )}
                     </div>
-                    <span className="text-[11px] font-mono text-purple-700 font-semibold sm:hidden inline-block mt-0.5">
-                      {team.tier}
-                    </span>
                   </div>
 
                   {/* Status Badge (Desktop) */}
