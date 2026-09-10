@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { PageRoute } from '../../types';
 import { Menu } from 'lucide-react';
+import { getActiveTeamSession } from '../../services/teamPortalService';
 
 interface NavbarProps {
   activePage: PageRoute;
@@ -12,6 +13,17 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hasSession, setHasSession] = useState<boolean>(() => !!getActiveTeamSession());
+
+  useEffect(() => {
+    const checkSession = () => setHasSession(!!getActiveTeamSession());
+    window.addEventListener('hpl-team-session-update', checkSession);
+    window.addEventListener('storage', checkSession);
+    return () => {
+      window.removeEventListener('hpl-team-session-update', checkSession);
+      window.removeEventListener('storage', checkSession);
+    };
+  }, []);
 
   const navItems: { label: string; page: PageRoute }[] = [
     { label: 'HOME', page: 'home' },
@@ -161,14 +173,20 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
 
         {/* Right: Floating MENU Pill & Shortlisted CTA */}
         <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
-          {/* Shortlisted Capsule (Visible only at top) */}
+          {/* Register / Squad Profile CTA Capsule (Visible only at top) */}
           <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
             <button
-              onClick={() => handleNavClick('shortlisted')}
+              onClick={() => {
+                if (hasSession) {
+                  handleNavClick('team-profile');
+                } else {
+                  handleNavClick('register');
+                }
+              }}
               className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs xl:text-sm uppercase tracking-wider shadow-[2.5px_2.5px_0px_#1E1B4B] border-2 border-[#1E1B4B] hover:shadow-[3.5px_3.5px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
-              <span>SHORTLISTED</span>
+              <span>{hasSession ? 'MY SQUAD' : 'REGISTER'}</span>
             </button>
           </div>
 
@@ -330,14 +348,31 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                   </div>
                 </div>
 
-                {/* Shortlisted CTA Button */}
-                <button
-                  onClick={() => handleNavClick('shortlisted')}
-                  className="w-full py-3.5 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider text-center shadow-[3px_3px_0px_#1E1B4B] border-2 border-[#1E1B4B] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
-                >
-                  <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
-                  <span>VIEW SHORTLISTED SQUADS 🎉</span>
-                </button>
+                {/* Register / Squad Profile CTA Button */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      if (hasSession) {
+                        handleNavClick('team-profile');
+                      } else {
+                        handleNavClick('register');
+                      }
+                    }}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider text-center shadow-[3px_3px_0px_#1E1B4B] border-2 border-[#1E1B4B] flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-rose-600 animate-ping" />
+                    <span>{hasSession ? 'VIEW SQUAD PROFILE ⚡' : 'REGISTER FOR HPL SEASON 1 ⚡'}</span>
+                  </button>
+
+                  {!hasSession && (
+                    <button
+                      onClick={() => handleNavClick('team-profile')}
+                      className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider text-center border-2 border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] flex items-center justify-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer"
+                    >
+                      <span>SQUAD LEADER DASHBOARD 🔐</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
             </div>

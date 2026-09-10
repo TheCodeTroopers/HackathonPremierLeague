@@ -34,6 +34,13 @@ import {
 import { AdminTeamEvalIllustration, AdminClipboardDoodle } from '../illustrations/AdminIllustration';
 import { AdminLoginGate } from '../auth/AdminLoginGate';
 import { isCurrentAdminAuthenticated, logoutAdminSession, getActiveAdminSession } from '../../services/adminAuthService';
+import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
+import { 
+  OFFICIAL_QUALIFIED_TEAMS, 
+  findQualifiedTeamBySquadId, 
+  findQualifiedTeamByName 
+} from '../../services/teamPortalService';
+import { Lock, Unlock, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export interface RegistrationRecord {
   id: string;
@@ -109,6 +116,118 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       // ignore storage err
     }
   }, [statusOverrides]);
+
+  // Round 2 Problem Statement Locks state & listeners
+  const [round2Selections, setRound2Selections] = useState<Record<string, string>>(() => {
+    try {
+      const raw = localStorage.getItem('hpl-round2-ps-selections');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [resetFeedbackMsg, setResetFeedbackMsg] = useState<string>('');
+
+  const refreshRound2Locks = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('hpl-round2-ps-selections');
+      setRound2Selections(raw ? JSON.parse(raw) : {});
+    } catch {
+      setRound2Selections({});
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = () => refreshRound2Locks();
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('hpl-selection-update', handleStorage);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('hpl-selection-update', handleStorage);
+    };
+  }, [refreshRound2Locks]);
+
+  // Derive which official teams have locked what
+  const round2TeamLockMap = useMemo(() => {
+    const map: Record<string, { squadId: string; teamName: string; psId: string; psTitle: string }> = {};
+    Object.entries(round2Selections).forEach(([key, psId]) => {
+      const team = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
+      if (team && !map[team.squadId]) {
+        const ps = ROUND2_PROBLEM_STATEMENTS.find(p => p.id === psId);
+        map[team.squadId] = {
+          squadId: team.squadId,
+          teamName: team.teamName,
+          psId: psId,
+          psTitle: ps ? ps.title : psId
+        };
+      }
+    });
+    return map;
+  }, [round2Selections]);
+
+  const round2TrackCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      'ps-01': 0,
+      'ps-02': 0,
+      'ps-03': 0,
+      'ps-04': 0
+    };
+    Object.values(round2TeamLockMap).forEach(item => {
+      const normalizedPsId = item.psId.replace('track-', 'ps-');
+      if (counts[normalizedPsId] !== undefined) {
+        counts[normalizedPsId]++;
+      } else {
+        counts[item.psId] = (counts[item.psId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [round2TeamLockMap]);
+
+  // Admin action: Reset ALL Round 2 locks
+  const handleResetAllRound2Locks = () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to RESET ALL Round 2 Problem Statement Locks?\n\nThis will unlock every track for all 40 teams, allowing them to pick freshly. This action cannot be undone!'
+    );
+    if (!confirmed) return;
+
+    try {
+      localStorage.removeItem('hpl-round2-ps-selections');
+      window.dispatchEvent(new Event('hpl-selection-update'));
+      setRound2Selections({});
+      setResetFeedbackMsg('All Round 2 Problem Statement locks have been completely reset!');
+      setTimeout(() => setResetFeedbackMsg(''), 4000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Admin action: Unlock single team
+  const handleUnlockSingleTeam = (squadIdToUnlock: string, teamNameToUnlock: string) => {
+    try {
+      const raw = localStorage.getItem('hpl-round2-ps-selections');
+      const current = raw ? JSON.parse(raw) : {};
+      const q = findQualifiedTeamBySquadId(squadIdToUnlock);
+      
+      // Clean all possible alias keys
+      delete current[squadIdToUnlock];
+      delete current[squadIdToUnlock.toLowerCase()];
+      delete current[teamNameToUnlock];
+      delete current[teamNameToUnlock.toLowerCase()];
+      if (q) {
+        delete current[q.squadId];
+        delete current[q.teamName];
+        delete current[`squad-${q.rank}`];
+        delete current[q.leaderEmail.toLowerCase()];
+      }
+      localStorage.setItem('hpl-round2-ps-selections', JSON.stringify(current));
+      window.dispatchEvent(new Event('hpl-selection-update'));
+      setRound2Selections(current);
+      setResetFeedbackMsg(`Unlocked Problem Statement for ${teamNameToUnlock}!`);
+      setTimeout(() => setResetFeedbackMsg(''), 3000);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Load from Supabase with Local Storage Caching fallback
   const fetchSubmissions = useCallback(async (isManualRefresh = false) => {
@@ -728,6 +847,171 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           {/* Top-Right Decorative Vignette from Mockup */}
           <div className="hidden xl:block absolute -top-8 -right-4 pointer-events-none select-none">
             <AdminClipboardDoodle className="w-28 h-28 opacity-95" />
+          </div>
+        </div>
+
+        {/* ═════════════════════════════════════════════════════════════════════ */}
+        {/* ROUND 2 PROBLEM STATEMENT LOCKS & ADMIN CAPACITY MANAGEMENT           */}
+        {/* ═════════════════════════════════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 sm:p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#4F46E5] flex items-center justify-center font-bold">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight">
+                    Round 2 Problem Statement Allocation
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-md bg-purple-100 text-[#4F46E5] font-mono text-[10px] font-bold uppercase">
+                    Cap: 10 / Track
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-sans">
+                  Live monitoring of track choices locked by the 40 qualified teams. Only Admin can reset locks.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleResetAllRound2Locks}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-98"
+                title="Reset all problem statement locks so teams can choose again"
+              >
+                <RotateCcw className="w-4 h-4 text-rose-600" />
+                <span>Reset All PS Locks</span>
+              </button>
+            </div>
+          </div>
+
+          {resetFeedbackMsg && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-display font-bold flex items-center gap-2 animate-in fade-in">
+              <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{resetFeedbackMsg}</span>
+            </div>
+          )}
+
+          {/* 4 Tracks Grid with live capacity gauges */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+            {ROUND2_PROBLEM_STATEMENTS.map((ps) => {
+              const count = round2TrackCounts[ps.id] || 0;
+              const isFull = count >= 10;
+              const pct = Math.min(100, Math.round((count / 10) * 100));
+
+              return (
+                <div 
+                  key={ps.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    isFull 
+                      ? 'bg-rose-50/50 border-rose-200' 
+                      : 'bg-[#FDFBF7] border-slate-200 hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-[11px] font-black uppercase text-purple-700">
+                      {ps.id.toUpperCase()}
+                    </span>
+                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md ${
+                      isFull 
+                        ? 'bg-rose-600 text-white' 
+                        : count > 7 
+                        ? 'bg-amber-100 text-amber-800' 
+                        : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {count} / 10 Locked
+                    </span>
+                  </div>
+
+                  <h3 className="font-display font-bold text-xs text-[#1E1B4B] line-clamp-2 min-h-[32px] leading-snug">
+                    {ps.title}
+                  </h3>
+
+                  {/* Progress Bar */}
+                  <div className="mt-3 w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        isFull 
+                          ? 'bg-rose-500' 
+                          : count > 7 
+                          ? 'bg-amber-500' 
+                          : 'bg-[#4F46E5]'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Locked Teams Detailed Drawer / Summary Table */}
+          <div className="pt-1">
+            <details className="group border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+              <summary className="p-3.5 text-xs font-display font-bold text-[#1E1B4B] cursor-pointer hover:bg-slate-100 flex items-center justify-between transition-colors list-none select-none">
+                <span className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#4F46E5]" />
+                  <span>View Locked Teams Breakdown ({Object.keys(round2TeamLockMap).length} of 40 Teams Locked)</span>
+                </span>
+                <span className="font-mono text-[11px] text-purple-700 group-open:rotate-180 transition-transform">
+                  ▼
+                </span>
+              </summary>
+
+              <div className="p-4 bg-white border-t border-slate-200">
+                {Object.keys(round2TeamLockMap).length === 0 ? (
+                  <p className="text-xs text-slate-400 font-sans text-center py-4">
+                    No teams have locked a problem statement yet. All 40 teams can select freely.
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px]">
+                          <th className="py-2 px-3 font-semibold">Team Name</th>
+                          <th className="py-2 px-3 font-semibold">Squad ID</th>
+                          <th className="py-2 px-3 font-semibold">Locked Track</th>
+                          <th className="py-2 px-3 font-semibold text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {Object.values(round2TeamLockMap).map((item) => (
+                          <tr key={item.squadId} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-2.5 px-3 font-display font-bold text-[#1E1B4B]">
+                              {item.teamName}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
+                              {item.squadId}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="inline-block px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-100 text-[#4F46E5]">
+                                {item.psId.toUpperCase()}
+                              </span>
+                              <span className="ml-2 text-slate-600 text-[11px] font-sans">
+                                {item.psTitle}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleUnlockSingleTeam(item.squadId, item.teamName)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-display font-bold text-[10px] uppercase border border-rose-200 transition-colors cursor-pointer"
+                                title={`Unlock PS for ${item.teamName}`}
+                              >
+                                <Unlock className="w-3 h-3 text-rose-600" />
+                                <span>Unlock</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </details>
           </div>
         </div>
 

@@ -21,6 +21,7 @@ export type PageRoute =
   | 'contact'
   | 'admin'
   | 'team-login'
+  | 'team-profile'
   | 'team-select'
   | 'team-portal';
 

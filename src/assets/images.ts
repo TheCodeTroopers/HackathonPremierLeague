@@ -74,6 +74,11 @@ export const HPL_IMAGES = {
   round2CurtainTrophy: new URL('./hpl_round2_curtain_trophy.jpg', import.meta.url).href,
   curtainClosed: new URL('./hpl_curtain_closed.jpg', import.meta.url).href,
   shortlistCelebrate: '/hpl_shortlist_celebrate.jpg',
+  // Profile Dashboard Illustrations
+  profileDashboardHero: '/hpl_profile_dashboard_hero.jpg',
+  profileTeamRoster: '/hpl_profile_team_roster.jpg',
+  profilePsChallenge: '/hpl_profile_ps_challenge.jpg',
+  profileSecuritySettings: '/hpl_profile_security_settings.jpg',
   // Sponsor & Partner Brand Logos
   shirvaLogo,
   smvitmLogo,

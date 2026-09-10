@@ -27,12 +27,14 @@ import { PageTransition } from './components/common/PageTransition';
 import { DeadlineMarquee } from './components/layout/DeadlineMarquee';
 import { preloadAllImages } from './utils/imagePreloader';
 
+import { getActiveTeamSession } from './services/teamPortalService';
+
 const getInitialPage = (): PageRoute => {
   if (typeof window !== 'undefined' && window.location.hash) {
     const rawHash = window.location.hash.replace('#', '') as PageRoute;
     const validPages: PageRoute[] = [
       'home', 'how-it-works', 'match-day', 'squads',
-      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-select', 'team-portal'
+      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-profile', 'team-select', 'team-portal'
     ];
     if (validPages.includes(rawHash)) {
       return rawHash;
@@ -44,7 +46,26 @@ const getInitialPage = (): PageRoute => {
 export function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePage, setActivePage] = useState<PageRoute>(getInitialPage);
-  const [selectedSquadId, setSelectedSquadId] = useState<string | null>(null);
+  const [selectedSquadId, setSelectedSquadId] = useState<string | null>(() => {
+    const session = getActiveTeamSession();
+    return session?.squadId || null;
+  });
+
+  // Keep selectedSquadId in sync with active team session
+  useEffect(() => {
+    const syncSession = () => {
+      const session = getActiveTeamSession();
+      if (session?.squadId) {
+        setSelectedSquadId(session.squadId);
+      }
+    };
+    window.addEventListener('hpl-team-session-update', syncSession);
+    window.addEventListener('storage', syncSession);
+    return () => {
+      window.removeEventListener('hpl-team-session-update', syncSession);
+      window.removeEventListener('storage', syncSession);
+    };
+  }, []);
 
   // Preload all assets in the background immediately on mount
   useEffect(() => {
@@ -75,7 +96,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-select', 'team-portal'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-profile', 'team-select', 'team-portal'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -173,9 +194,9 @@ export function App() {
           {activePage === 'shortlisted' && (
             <ShortlistedPage onNavigate={handleNavigate} onSelectSquad={handleSelectSquad} />
           )}
-          {(activePage === 'team-login' || activePage === 'team-select' || activePage === 'team-portal') && (
+          {(activePage === 'team-login' || activePage === 'team-profile' || activePage === 'team-select' || activePage === 'team-portal') && (
             <TeamAccessPage
-              view={activePage.replace('team-', '') as 'login' | 'select' | 'portal'}
+              view={activePage.replace('team-', '') as 'login' | 'profile' | 'select' | 'portal'}
               squadId={selectedSquadId}
               onNavigate={handleNavigate}
             />

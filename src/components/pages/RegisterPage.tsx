@@ -1,833 +1,907 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { PageRoute, RegistrationFormData } from '../../types';
-import { Button } from '../common/Button';
-import { Modal } from '../common/Modal';
+import React, { useEffect, useMemo, useState } from 'react';
+import { 
+  ArrowRight, 
+  CheckCircle2, 
+  LockKeyhole, 
+  Users, 
+  Mail, 
+  Phone, 
+  School, 
+  KeyRound, 
+  Edit3, 
+  Save, 
+  Sparkle, 
+  ShieldCheck, 
+  Trophy, 
+  Sparkles 
+} from 'lucide-react';
+import { PageRoute } from '../../types';
+import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
+import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
+import { 
+  changeTeamPassword, 
+  findTeamRegistration, 
+  findTeamRegistrationByEmail, 
+  getTeamPassword, 
+  TeamRegistration,
+  getActiveTeamSession,
+  saveActiveTeamSession,
+  clearActiveTeamSession
+} from '../../services/teamPortalService';
 import { RegisterIllustration } from '../illustrations/RegisterIllustration';
 import { SparkleDoodle } from '../illustrations/MicroDoodles';
-import { CheckCircle2, ArrowRight, ArrowLeft, QrCode, Trophy, AlertCircle, Loader2, XCircle, Check, PlayCircle, Video, ExternalLink } from 'lucide-react';
 import { supabase } from '../../client_config';
-import driveDemoVideo from '../../assets/DriveDemo2.mp4';
 
 interface RegisterPageProps {
   onNavigate: (page: PageRoute) => void;
 }
 
+const SELECTIONS_KEY = 'hpl-round2-ps-selections';
+type Selections = Record<string, string>;
+
+const readSelections = (): Selections => {
+  try {
+    const value = window.localStorage.getItem(SELECTIONS_KEY);
+    return value ? JSON.parse(value) as Selections : {};
+  } catch {
+    return {};
+  }
+};
+
 export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
+  // Stepper: 1: Team Sign In -> 2: Team Details & Members (Editable) -> 3: Choose Round 2 PS -> 4: Pass
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
 
-  // Live team name availability state
-  const [teamNameStatus, setTeamNameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
-  const [teamNameFeedback, setTeamNameFeedback] = useState<string | null>(null);
+  // Authentication inputs: Email and Password only (Team name is fetched automatically!)
+  const [emailInput, setEmailInput] = useState<string>('');
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [authError, setAuthError] = useState<string>('');
+  const [isVerifying, setIsVerifying] = useState<boolean>(false);
 
-  const [formData, setFormData] = useState<RegistrationFormData>({
-    teamName: '',
-    track: 'PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information',
-    teamLeaderName: '',
-    leaderEmail: '',
-    leaderPhone: '',
-    college: 'Shri Madhwa Vadiraja Institute of Technology and Management',
-    teamSize: 4,
-    member2Name: '',
-    member2Email: '',
-    member3Name: '',
-    member3Email: '',
-    member4Name: '',
-    member4Email: '',
-    member5Name: '',
-    member5Email: '',
-    projectIdea: '',
-    githubOrg: '',
-    acceptRules: true
-  });
+  // Verified Team Data
+  const [matchedTeam, setMatchedTeam] = useState<{ rank: number; name: string; squadId: string } | null>(null);
+  const [registration, setRegistration] = useState<TeamRegistration | null>(null);
 
-  // Preselect Problem Statement from navigation/localStorage if set
+  // Editable details state
+  const [leaderPhone, setLeaderPhone] = useState<string>('');
+  const [collegeName, setCollegeName] = useState<string>('');
+  const [member2Name, setMember2Name] = useState<string>('');
+  const [member2Email, setMember2Email] = useState<string>('');
+  const [member3Name, setMember3Name] = useState<string>('');
+  const [member3Email, setMember3Email] = useState<string>('');
+  const [member4Name, setMember4Name] = useState<string>('');
+  const [member4Email, setMember4Email] = useState<string>('');
+  const [member5Name, setMember5Name] = useState<string>('');
+  const [member5Email, setMember5Email] = useState<string>('');
+
+  const [isSavingDetails, setIsSavingDetails] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string>('');
+
+  // Auto-load existing active session if available
   useEffect(() => {
-    try {
-      const preselectedPs = localStorage.getItem('hpl_selected_ps');
-      if (preselectedPs) {
-        if (preselectedPs.includes('WeatherGPT')) {
-          setFormData(prev => ({ ...prev, track: 'PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information' }));
-        } else if (preselectedPs.includes('Rural Market')) {
-          setFormData(prev => ({ ...prev, track: 'PS 02: Rural Market Intelligence Platform' }));
-        } else if (preselectedPs.includes('Internship') || preselectedPs.includes('Opportunity Aggregator')) {
-          setFormData(prev => ({ ...prev, track: 'PS 03: Internship and Opportunity Aggregator' }));
-        } else {
-          setFormData(prev => ({ ...prev, track: preselectedPs }));
-        }
+    const session = getActiveTeamSession();
+    if (session) {
+      // If team already has a locked problem statement, redirect straight to their team profile!
+      const allSelections = readSelections();
+      if (allSelections[session.squadId]) {
+        onNavigate('team-profile');
+        return;
       }
-    } catch (e) {
-      // Ignore if localStorage unavailable
+
+      setMatchedTeam({
+        rank: session.rank,
+        name: session.teamName,
+        squadId: session.squadId
+      });
+      // Fetch fresh record from Supabase
+      findTeamRegistrationByEmail(session.leaderEmail).then((record) => {
+        if (record) {
+          setRegistration(record);
+          setLeaderPhone(record.leader_phone || '');
+          setCollegeName(record.college || '');
+          setMember2Name(record.member2_name || '');
+          setMember2Email(record.member2_email || '');
+          setMember3Name(record.member3_name || '');
+          setMember3Email(record.member3_email || '');
+          setMember4Name(record.member4_name || '');
+          setMember4Email(record.member4_email || '');
+          setMember5Name(record.member5_name || '');
+          setMember5Email(record.member5_email || '');
+          setCurrentStep(2);
+        }
+      }).catch(console.error);
     }
+  }, [onNavigate]);
+
+  // Round 2 Problem Statement selection state
+  const [selections, setSelections] = useState<Selections>(() => readSelections());
+  const [selectedPs, setSelectedPs] = useState<string>('');
+  const [psError, setPsError] = useState<string>('');
+
+  // Sync selections across windows/tabs
+  useEffect(() => {
+    const sync = () => setSelections(readSelections());
+    window.addEventListener('storage', sync);
+    window.addEventListener('hpl-selection-update', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('hpl-selection-update', sync);
+    };
   }, []);
 
-  // Debounced real-time team name availability check
+  // Update selected problem statement when team is resolved
   useEffect(() => {
-    const rawName = formData.teamName.trim();
-    if (rawName.length < 3) {
-      setTeamNameStatus('idle');
-      setTeamNameFeedback(null);
+    if (matchedTeam) {
+      setSelectedPs(selections[matchedTeam.squadId] || '');
+    }
+  }, [matchedTeam, selections]);
+
+  // Problem statement live counts (10 capacity max)
+  const counts = useMemo(() => ROUND2_PROBLEM_STATEMENTS.reduce<Record<string, number>>((result, ps) => {
+    result[ps.id] = Object.values(selections).filter((selection) => selection === ps.id).length;
+    return result;
+  }, {}), [selections]);
+
+  // Member list for display in Step 2 (matching Mithul's format)
+  const teamMembers = useMemo(() => {
+    if (!registration) return [];
+    const list = [
+      { role: 'Team Leader', name: registration.team_leader_name, email: registration.leader_email, phone: leaderPhone || registration.leader_phone },
+      { role: 'Member 2', name: member2Name || registration.member2_name, email: member2Email || registration.member2_email, phone: null },
+      { role: 'Member 3', name: member3Name || registration.member3_name, email: member3Email || registration.member3_email, phone: null },
+      { role: 'Member 4', name: member4Name || registration.member4_name, email: member4Email || registration.member4_email, phone: null },
+    ];
+    if (member5Name || (registration.member5_name && registration.member5_name.trim())) {
+      list.push({
+        role: 'Member 5',
+        name: member5Name || registration.member5_name || '',
+        email: member5Email || registration.member5_email || '',
+        phone: null
+      });
+    }
+    return list;
+  }, [registration, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
+
+  // Step 1: Sign in handler using Email and Password only
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setIsVerifying(true);
+
+    try {
+      const cleanEmail = emailInput.trim().toLowerCase();
+
+      // 1. Fetch team registration record by leader email from Supabase
+      const record = await findTeamRegistrationByEmail(cleanEmail);
+      if (!record) {
+        setAuthError('No registered team found with this team leader email. Please check your email.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // 2. Match with official 40 shortlisted squads
+      const teamIndex = SHORTLISTED_TEAMS_DATA.findIndex(
+        name => name.toLowerCase() === record.team_name.trim().toLowerCase()
+      );
+
+      const resolvedIndex = teamIndex !== -1 
+        ? teamIndex 
+        : SHORTLISTED_TEAMS_DATA.findIndex(name => 
+            record.team_name.toLowerCase().includes(name.toLowerCase()) || 
+            name.toLowerCase().includes(record.team_name.toLowerCase())
+          );
+
+      const rank = resolvedIndex !== -1 ? resolvedIndex + 1 : 1;
+      const officialName = resolvedIndex !== -1 ? SHORTLISTED_TEAMS_DATA[resolvedIndex] : record.team_name;
+      const squadId = `HPL-R2-${String(rank).padStart(2, '0')}`;
+
+      // 3. Verify password
+      const expectedPassword = getTeamPassword(squadId, officialName);
+      if (passwordInput !== expectedPassword) {
+        setAuthError('Invalid team password. Please enter the team password provided to your team leader.');
+        setIsVerifying(false);
+        return;
+      }
+
+      // Successful authentication!
+      setMatchedTeam({ rank, name: officialName, squadId });
+      setRegistration(record);
+
+      // Save persistent session so team stays signed in across refreshes
+      saveActiveTeamSession({
+        squadId,
+        teamName: officialName,
+        leaderEmail: record.leader_email,
+        rank
+      });
+
+      // If this team has already selected and locked their Problem Statement,
+      // redirect them straight to their Team Profile!
+      const currentSelections = readSelections();
+      if (currentSelections[squadId]) {
+        onNavigate('team-profile');
+        return;
+      }
+
+      // Populate editable fields with live data from Supabase
+      setLeaderPhone(record.leader_phone || '');
+      setCollegeName(record.college || '');
+      setMember2Name(record.member2_name || '');
+      setMember2Email(record.member2_email || '');
+      setMember3Name(record.member3_name || '');
+      setMember3Email(record.member3_email || '');
+      setMember4Name(record.member4_name || '');
+      setMember4Email(record.member4_email || '');
+      setMember5Name(record.member5_name || '');
+      setMember5Email(record.member5_email || '');
+
+      // Advance directly to Step 2 (Team Profile & Details)
+      setCurrentStep(2);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+    } catch (err: any) {
+      console.error('Authentication error:', err);
+      setAuthError('An error occurred during verification. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Step 2: Save updated team details to Supabase
+  const handleSaveTeamDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!registration) return;
+
+    setIsSavingDetails(true);
+    setSaveMessage('');
+
+    try {
+      const { error } = await supabase
+        .from('registrations')
+        .update({
+          leader_phone: leaderPhone.trim(),
+          college: collegeName.trim(),
+          member2_name: member2Name.trim(),
+          member2_email: member2Email.trim().toLowerCase(),
+          member3_name: member3Name.trim(),
+          member3_email: member3Email.trim().toLowerCase(),
+          member4_name: member4Name.trim(),
+          member4_email: member4Email.trim().toLowerCase(),
+          member5_name: member5Name.trim() || null,
+          member5_email: member5Email.trim().toLowerCase() || null,
+        })
+        .eq('id', registration.id);
+
+      if (error) {
+        console.error('Failed to update team details:', error);
+        setSaveMessage('Failed to save updates to database. Proceeding to challenge selection...');
+      } else {
+        setSaveMessage('Team details updated successfully in database!');
+      }
+
+      // Advance to Step 3: Choose Problem Statement
+      setTimeout(() => {
+        setCurrentStep(3);
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+      }, 400);
+    } catch (err) {
+      console.error(err);
+      setCurrentStep(3);
+    } finally {
+      setIsSavingDetails(false);
+    }
+  };
+
+  // Step 3: Lock Round 2 Problem Statement selection & Redirect to Profile Page
+  const handleLockSelection = () => {
+    if (!matchedTeam || !selectedPs) return;
+
+    const latestSelections = readSelections();
+    const currentSelection = latestSelections[matchedTeam.squadId];
+    const countForSelection = Object.values(latestSelections).filter(s => s === selectedPs).length;
+
+    if (countForSelection >= 10 && currentSelection !== selectedPs) {
+      setSelections(latestSelections);
+      setPsError('This problem statement has reached its 10-team limit. Please choose another one.');
       return;
     }
 
-    setTeamNameStatus('checking');
-    setTeamNameFeedback('Checking availability...');
+    const nextSelections = { ...latestSelections, [matchedTeam.squadId]: selectedPs };
+    window.localStorage.setItem(SELECTIONS_KEY, JSON.stringify(nextSelections));
+    window.dispatchEvent(new Event('hpl-selection-update'));
+    setSelections(nextSelections);
+    setPsError('');
 
-    const timer = setTimeout(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('registrations')
-          .select('id')
-          .ilike('team_name', rawName)
-          .limit(1);
+    // Persist session
+    saveActiveTeamSession({
+      squadId: matchedTeam.squadId,
+      teamName: matchedTeam.name,
+      leaderEmail: registration?.leader_email || emailInput,
+      rank: matchedTeam.rank
+    });
 
-        if (error) {
-          // If query restricted or network hiccup, don't hard block
-          setTeamNameStatus('idle');
-          setTeamNameFeedback(null);
-          return;
-        }
-
-        if (data && data.length > 0) {
-          setTeamNameStatus('taken');
-          setTeamNameFeedback(`"${rawName}" is already taken. Please choose another squad name.`);
-        } else {
-          setTeamNameStatus('available');
-          setTeamNameFeedback(`"${rawName}" is available!`);
-        }
-      } catch (err) {
-        setTeamNameStatus('idle');
-        setTeamNameFeedback(null);
-      }
-    }, 400);
-
-    return () => clearTimeout(timer);
-  }, [formData.teamName]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    // Directly redirect to the profile page (Mithul's team-profile)
+    onNavigate('team-profile');
   };
 
-  const handleNext = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (currentStep === 1) {
-      // Quick check if team name is already taken
-      setIsSubmitting(true);
-      try {
-        const { data: existing } = await supabase
-          .from('registrations')
-          .select('id')
-          .ilike('team_name', formData.teamName.trim())
-          .limit(1);
-
-        if (existing && existing.length > 0) {
-          setErrorMessage(`Squad name "${formData.teamName.trim()}" is already taken! Please choose a unique team name.`);
-          setIsSubmitting(false);
-          return;
-        }
-      } catch (err) {
-        // Continue if select is restricted by RLS
-      } finally {
-        setIsSubmitting(false);
-      }
-
-      setCurrentStep(2);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
-    } else if (currentStep < 3) {
-      setCurrentStep(prev => prev + 1);
-      window.scrollTo({ top: 120, behavior: 'smooth' });
-    } else {
-      setIsSubmitting(true);
-      try {
-        const isTeamSize5 = Number(formData.teamSize) === 5;
-        const { error } = await supabase.from('registrations').insert([
-          {
-            team_name: formData.teamName.trim(),
-            track: formData.track,
-            team_leader_name: formData.teamLeaderName.trim(),
-            leader_email: formData.leaderEmail.trim().toLowerCase(),
-            leader_phone: formData.leaderPhone.trim(),
-            college: formData.college.trim(),
-            team_size: Number(formData.teamSize) || 4,
-            member2_name: formData.member2Name.trim(),
-            member2_email: formData.member2Email.trim().toLowerCase(),
-            member3_name: formData.member3Name.trim(),
-            member3_email: formData.member3Email.trim().toLowerCase(),
-            member4_name: formData.member4Name.trim(),
-            member4_email: formData.member4Email.trim().toLowerCase(),
-            member5_name: isTeamSize5 ? (formData.member5Name || '').trim() : null,
-            member5_email: isTeamSize5 ? (formData.member5Email || '').trim().toLowerCase() : null,
-            project_idea: formData.projectIdea.trim(),
-            github_org: formData.githubOrg?.trim() || null,
-            accept_rules: formData.acceptRules
-          }
-        ]);
-
-        if (error) {
-          console.error('Supabase registration error:', error);
-          if (
-            error.code === '23505' ||
-            error.message?.toLowerCase().includes('unique') ||
-            error.message?.toLowerCase().includes('duplicate')
-          ) {
-            setErrorMessage(`Squad name "${formData.teamName.trim()}" is already registered. Please go back to Step 1 and choose a unique team name.`);
-          } else {
-            setErrorMessage(error.message || 'Failed to submit registration. Please try again.');
-          }
-          return;
-        }
-
-        setIsSubmitted(true);
-        window.scrollTo({ top: 120, behavior: 'smooth' });
-      } catch (err: any) {
-        console.error('Unexpected error:', err);
-        setErrorMessage(err.message || 'An unexpected error occurred while saving data.');
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const registrationsLocked = true;
-
-  if (registrationsLocked) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 mt-16">
-        <div className="bg-paper-light sketch-border rounded-sketch-lg p-10 shadow-sketch-xl text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-paper-dark sketch-border text-xs font-mono font-bold text-ink uppercase tracking-wider">
-            <XCircle className="w-4 h-4 text-red-600" />
-            REGISTRATION CLOSED
-            <XCircle className="w-4 h-4 text-red-600" />
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-black font-display uppercase tracking-tight text-ink">
-            REGISTRATIONS ARE NOW <span className="text-[#EA580C]">LOCKED</span>
-          </h1>
-          <p className="text-lg text-ink-muted">
-            Thank you for your interest! The registration period for Hackathon Premier League 2026 has officially ended.
-          </p>
-          <div className="pt-4 flex justify-center">
-            <Button onClick={() => onNavigate('home')} variant="primary" icon={<ArrowLeft className="w-5 h-5" />}>
-              Back to Home
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const activeLockedPs = matchedTeam ? ROUND2_PROBLEM_STATEMENTS.find(ps => ps.id === selections[matchedTeam.squadId]) : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Header */}
-      <div className="text-center max-w-3xl mx-auto space-y-4">
+      <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-paper-dark sketch-border text-xs font-mono font-bold text-ink uppercase tracking-wider shadow-sketch-sm">
           <SparkleDoodle className="w-4 h-4 text-hpl-gold" />
-          SEASON 2026 REGISTRATION
+          ROUND 2 SQUAD PORTAL
           <SparkleDoodle className="w-4 h-4 text-hpl-gold" />
         </div>
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-black font-display uppercase tracking-tight text-ink">
-          REGISTER YOUR{' '}
+          TEAM ACCESS &{' '}
           <span className="font-marker text-[#EA580C] not-italic inline-block">
-            TEAM
+            CHALLENGE SELECT
           </span>
         </h1>
-        <p className="text-base sm:text-lg text-ink-muted leading-relaxed">
-          Let the league begin! Enter your squad details and secure your place on the starting grid.
+        <p className="text-sm sm:text-base text-ink-muted leading-relaxed">
+          Shortlisted team leaders: sign in to review your verified roster, edit member details, and lock your Round 2 Problem Statement.
         </p>
       </div>
 
-      {/* Main Container */}
+      {/* Main Container Card */}
       <div className="bg-paper-light sketch-border rounded-sketch-lg p-4 sm:p-7 md:p-10 shadow-sketch-xl">
-        {!isSubmitted ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-            {/* Left Form Column */}
-            <div className="lg:col-span-7 space-y-6">
-              {/* Stepper Indicator */}
-              <div className="flex items-center justify-between border-b-2 border-ink pb-4 gap-2">
-                {[
-                  { step: 1, label: 'SQUAD & PROBLEM STATEMENT', shortLabel: 'Squad & PS' },
-                  { step: 2, label: 'MEMBERS', shortLabel: 'Members' },
-                  { step: 3, label: 'COLLEGE & CONFIRM', shortLabel: 'Confirm' }
-                ].map((s) => (
-                  <div key={s.step} className="flex items-center gap-1.5 sm:gap-2">
-                    <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-display font-black text-xs sketch-border flex-shrink-0 ${
-                      currentStep === s.step
-                        ? 'bg-hpl-purple text-white shadow-sketch-sm'
-                        : currentStep > s.step
-                        ? 'bg-hpl-emerald text-white'
-                        : 'bg-paper-dark text-ink'
-                    }`}>
-                      {currentStep > s.step ? '✓' : s.step}
-                    </span>
-                    <span className="hidden md:inline text-xs font-mono font-bold text-ink uppercase">
-                      {s.label}
-                    </span>
-                    <span className="inline md:hidden text-[11px] font-mono font-bold text-ink uppercase">
-                      {s.shortLabel}
-                    </span>
-                  </div>
-                ))}
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+          
+          {/* Left Flow Column */}
+          <div className="lg:col-span-7 space-y-6">
 
-              {/* Form Flow */}
-              <form onSubmit={handleNext} className="space-y-4">
-                {/* STEP 1: SQUAD & PROBLEM STATEMENT */}
-                {currentStep === 1 && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    <div>
-                      <div className="flex flex-wrap items-baseline justify-between gap-1 mb-1">
-                        <label className="block text-xs font-mono font-bold text-ink uppercase">
-                          Squad / Team Name *
-                        </label>
-                        {teamNameStatus === 'checking' && (
-                          <span className="text-[11px] font-mono text-amber-700 font-bold flex items-center gap-1 animate-pulse">
-                            <Loader2 className="w-3 h-3 animate-spin text-amber-600" />
-                            Checking availability...
-                          </span>
-                        )}
-                        {teamNameStatus === 'available' && (
-                          <span className="text-[11px] font-mono text-emerald-700 font-bold flex items-center gap-1 bg-emerald-100 border border-emerald-400 px-2 py-0.5 rounded-full animate-in fade-in">
-                            <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                            Name Available
-                          </span>
-                        )}
-                        {teamNameStatus === 'taken' && (
-                          <span className="text-[11px] font-mono text-rose-700 font-bold flex items-center gap-1 bg-rose-100 border border-rose-400 px-2 py-0.5 rounded-full animate-in shake duration-200">
-                            <XCircle className="w-3 h-3 text-rose-600" />
-                            Already Taken
-                          </span>
-                        )}
-                      </div>
-                      <input
-                        type="text"
-                        name="teamName"
-                        required
-                        value={formData.teamName}
-                        onChange={handleChange}
-                        placeholder="e.g. CodeTroopers, ByteBrawlers"
-                        className={`w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-sm focus:outline-none focus:ring-2 transition-all ${
-                          teamNameStatus === 'taken'
-                            ? 'border-2 border-red-500 focus:ring-red-500 bg-red-50/50'
-                            : teamNameStatus === 'available'
-                            ? 'border-2 border-emerald-500 focus:ring-emerald-500'
-                            : 'focus:ring-hpl-purple'
-                        }`}
-                      />
-                      {teamNameStatus === 'taken' && teamNameFeedback && (
-                        <p className="mt-1.5 text-xs text-red-600 font-mono font-bold flex items-center gap-1 animate-in fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          {teamNameFeedback}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                          Select Problem Statement (PS) *
-                        </label>
-                        <select
-                          name="track"
-                          value={formData.track}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
-                        >
-                          <option value="PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information">
-                            PS 01: WeatherGPT: Conversational AI for Weather Forecasting, Alerts, and Climate Information
-                          </option>
-                          <option value="PS 02: Rural Market Intelligence Platform">
-                            PS 02: Rural Market Intelligence Platform
-                          </option>
-                          <option value="PS 03: Internship and Opportunity Aggregator">
-                            PS 03: Internship and Opportunity Aggregator
-                          </option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                          Team Size (Min 4, Max 5) *
-                        </label>
-                        <select
-                          name="teamSize"
-                          value={formData.teamSize}
-                          onChange={handleChange}
-                          className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink font-display font-bold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple cursor-pointer"
-                        >
-                          <option value={4}>4 Members (Leader + 3 Members)</option>
-                          <option value={5}>5 Members (Leader + 4 Members)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                        Brief Problem Pitch / Innovation Idea (Optional at registration)
-                      </label>
-                      <textarea
-                        name="projectIdea"
-                        rows={3}
-                        value={formData.projectIdea}
-                        onChange={handleChange}
-                        placeholder="Describe your planned solution approach for your chosen Problem Statement..."
-                        className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-sans text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-hpl-purple"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 2: MEMBERS */}
-                {currentStep === 2 && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    <div className="p-3 bg-paper-cream rounded-xl sketch-border flex flex-wrap items-center justify-between gap-2 text-xs font-mono font-bold text-ink">
-                      <span>TEAM LEADER (MEMBER 1 OF {formData.teamSize} - PRIMARY POC)</span>
-                      <span className="text-[11px] bg-purple-100 text-hpl-purple px-2.5 py-0.5 rounded-full border border-purple-300">
-                        {formData.teamSize} Members Total
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Leader Name *
-                        </label>
-                        <input
-                          type="text"
-                          name="teamLeaderName"
-                          required
-                          value={formData.teamLeaderName}
-                          onChange={handleChange}
-                          placeholder="Full Name"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Leader Email *
-                        </label>
-                        <input
-                          type="email"
-                          name="leaderEmail"
-                          required
-                          value={formData.leaderEmail}
-                          onChange={handleChange}
-                          placeholder="lead@college.edu"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Leader WhatsApp *
-                        </label>
-                        <input
-                          type="tel"
-                          name="leaderPhone"
-                          required
-                          value={formData.leaderPhone}
-                          onChange={handleChange}
-                          placeholder="+91 98765 43210"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-paper-cream rounded-xl sketch-border text-xs font-mono font-bold text-ink mt-2">
-                      SQUAD CO-BUILDERS (MEMBERS 2 TO {formData.teamSize})
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 2 Name & Role *
-                        </label>
-                        <input
-                          type="text"
-                          name="member2Name"
-                          required
-                          value={formData.member2Name}
-                          onChange={handleChange}
-                          placeholder="e.g. Sneha Nayak (Frontend)"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 2 Email *
-                        </label>
-                        <input
-                          type="email"
-                          name="member2Email"
-                          required
-                          value={formData.member2Email}
-                          onChange={handleChange}
-                          placeholder="member2@college.edu"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 3 Name & Role *
-                        </label>
-                        <input
-                          type="text"
-                          name="member3Name"
-                          required
-                          value={formData.member3Name}
-                          onChange={handleChange}
-                          placeholder="e.g. Adithya Bhat (Backend)"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 3 Email *
-                        </label>
-                        <input
-                          type="email"
-                          name="member3Email"
-                          required
-                          value={formData.member3Email}
-                          onChange={handleChange}
-                          placeholder="member3@college.edu"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 4 Name & Role *
-                        </label>
-                        <input
-                          type="text"
-                          name="member4Name"
-                          required
-                          value={formData.member4Name}
-                          onChange={handleChange}
-                          placeholder="e.g. Pooja Hegde (AI/ML)"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                          Member 4 Email *
-                        </label>
-                        <input
-                          type="email"
-                          name="member4Email"
-                          required
-                          value={formData.member4Email}
-                          onChange={handleChange}
-                          placeholder="member4@college.edu"
-                          className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                        />
-                      </div>
-
-                      {Number(formData.teamSize) === 5 && (
-                        <>
-                          <div>
-                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                              Member 5 Name & Role *
-                            </label>
-                            <input
-                              type="text"
-                              name="member5Name"
-                              required={Number(formData.teamSize) === 5}
-                              value={formData.member5Name || ''}
-                              onChange={handleChange}
-                              placeholder="e.g. Rahul Shenoy (UI/UX)"
-                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
-                              Member 5 Email *
-                            </label>
-                            <input
-                              type="email"
-                              name="member5Email"
-                              required={Number(formData.teamSize) === 5}
-                              value={formData.member5Email || ''}
-                              onChange={handleChange}
-                              placeholder="member5@college.edu"
-                              className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-xs font-sans"
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* STEP 3: COLLEGE & CONFIRM */}
-                {currentStep === 3 && (
-                  <div className="space-y-4 animate-in fade-in duration-200">
-                    <div>
-                      <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
-                        College / Institution Name & Department *
-                      </label>
-                      <input
-                        type="text"
-                        name="college"
-                        disabled
-                        value={formData.college}
-                        className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-dark text-ink font-display font-bold text-sm cursor-not-allowed opacity-90"
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-xs font-mono font-bold text-ink uppercase">
-                          Drive Link (Project Video) *
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setIsVideoModalOpen(true)}
-                          className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-hpl-purple hover:text-hpl-coral transition-colors underline underline-offset-2 cursor-pointer"
-                        >
-                          <PlayCircle className="w-3.5 h-3.5" />
-                          <span>Watch Sample Video</span>
-                        </button>
-                      </div>
-                      <input
-                        type="url"
-                        name="githubOrg"
-                        required
-                        value={formData.githubOrg}
-                        onChange={handleChange}
-                        placeholder="https://drive.google.com/file/d/..."
-                        className="w-full px-4 py-2 rounded-xl sketch-border bg-paper-cream text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-hpl-purple"
-                      />
-                      <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-1.5 mt-1.5 text-[11px] text-ink-muted font-sans">
-                        <span>Set Drive share permissions to <strong>"Anyone with the link can view"</strong></span>
-                        <a
-                          href={driveDemoVideo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink font-mono text-[10px] underline underline-offset-1 flex-shrink-0"
-                        >
-                          <span>Open Demo in Tab</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-paper-cream rounded-xl sketch-border space-y-2">
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          name="acceptRules"
-                          checked={formData.acceptRules}
-                          onChange={handleChange}
-                          required
-                          className="mt-1 w-4 h-4 rounded text-hpl-purple focus:ring-hpl-purple"
-                        />
-                        <span className="text-xs text-ink-muted leading-relaxed font-sans">
-                          We confirm that our team members are authentic enrolled students and agree to comply with all HPL 2026 Fair Play, Git Commit, and Evaluation policies.
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {errorMessage && (
-                  <div className="p-3 bg-red-100 border-2 border-red-500 rounded-xl flex items-center gap-3 text-red-800 text-xs font-mono font-bold animate-in fade-in">
-                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-                    <span>{errorMessage}</span>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between pt-4 border-t-2 border-ink gap-3">
-                  {currentStep > 1 ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="md"
-                      onClick={handleBack}
-                      disabled={isSubmitting}
-                      icon={<ArrowLeft className="w-4 h-4" />}
-                      iconPosition="left"
-                      className="w-full xs:w-auto justify-center"
-                    >
-                      BACK
-                    </Button>
-                  ) : <div className="hidden xs:block" />}
-
-                  <Button
-                    type="submit"
-                    variant="purple"
-                    size="lg"
-                    disabled={isSubmitting}
-                    icon={isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-                    className="w-full xs:w-auto justify-center text-xs sm:text-sm"
-                  >
-                    {isSubmitting
-                      ? 'REGISTERING SQUAD...'
-                      : currentStep === 3
-                      ? 'SUBMIT SQUAD REGISTRATION'
-                      : 'NEXT STEP'}
-                  </Button>
-                </div>
-              </form>
-            </div>
-
-            {/* Right Illustration Column (From Mockup Bottom-Right) */}
-            <div className="lg:col-span-5 flex justify-center">
-              <RegisterIllustration />
-            </div>
-          </div>
-        ) : (
-          /* REGISTRATION SUCCESS / OFFICIAL LEAGUE PASS */
-          <div className="max-w-2xl mx-auto space-y-8 text-center py-6 animate-in zoom-in-95 duration-300">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-500 text-emerald-800 mx-auto flex items-center justify-center shadow-sketch-sm">
-              <CheckCircle2 className="w-8 h-8 text-hpl-emerald" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-bold text-hpl-emerald uppercase tracking-widest">
-                ✦ SQUAD OFFICIALLY REGISTERED ✦
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-black font-display uppercase text-ink">
-                WELCOME TO THE LEAGUE!
-              </h2>
-              <p className="text-sm text-ink-muted font-sans max-w-lg mx-auto">
-                Your squad registration for <strong>{formData.teamName || 'Your Squad'}</strong> has been confirmed on the HPL 2026 League Ledger.
-              </p>
-            </div>
-
-            {/* Digital HPL League Pass */}
-            <div className="bg-ink text-paper-light sketch-border rounded-2xl p-6 sm:p-8 shadow-sketch-xl text-left space-y-4 relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-700 pb-3">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-hpl-yellow" />
-                  <span className="font-display font-black text-base text-white uppercase">
-                    HPL 2026 OFFICIAL SQUAD PASS
+            {/* Step Indicators */}
+            <div className="flex items-center justify-between border-b-2 border-ink pb-4 gap-2">
+              {[
+                { step: 1, label: 'LEADER SIGN IN', shortLabel: 'Sign In' },
+                { step: 2, label: 'TEAM DETAILS', shortLabel: 'Team Roster' },
+                { step: 3, label: 'CHOOSE PS', shortLabel: 'Choose PS' }
+              ].map((s) => (
+                <div key={s.step} className="flex items-center gap-1.5 sm:gap-2">
+                  <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-display font-black text-xs sketch-border flex-shrink-0 ${
+                    currentStep === s.step
+                      ? 'bg-hpl-purple text-white shadow-sketch-sm'
+                      : currentStep > s.step
+                      ? 'bg-hpl-emerald text-white'
+                      : 'bg-paper-dark text-ink'
+                  }`}>
+                    {currentStep > s.step ? '✓' : s.step}
+                  </span>
+                  <span className="hidden sm:inline text-xs font-mono font-bold text-ink uppercase">
+                    {s.label}
+                  </span>
+                  <span className="inline sm:hidden text-[11px] font-mono font-bold text-ink uppercase">
+                    {s.shortLabel}
                   </span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded bg-hpl-coral text-white font-mono text-[10px] font-bold">
-                  VERIFIED ENTRY
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">SQUAD NAME:</span>
-                  <span className="font-black text-sm text-hpl-yellow">{formData.teamName || 'CodeTroopers'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">PROBLEM STATEMENT:</span>
-                  <span className="font-black text-xs sm:text-sm text-white line-clamp-2">{formData.track}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">TEAM LEADER:</span>
-                  <span className="font-bold text-white">{formData.teamLeaderName || 'Squad Lead'}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">SQUAD SIZE:</span>
-                  <span className="font-bold text-emerald-400">{formData.teamSize} Members (Leader + {Number(formData.teamSize) - 1} Co-builders)</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-slate-400 block text-[10px]">INSTITUTION:</span>
-                  <span className="font-bold text-white truncate block">{formData.college || 'SMVITM Bantakal'}</span>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-slate-700 flex items-center justify-between">
-                <div className="text-[10px] font-mono text-slate-400">
-                  <span>LEAGUE PASS ID: </span>
-                  <span className="text-emerald-400 font-bold">HPL-2026-SQ-{(Math.random() * 9000 + 1000).toFixed(0)}</span>
-                </div>
-                <QrCode className="w-8 h-8 text-white" />
-              </div>
+              ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-              <Button
-                variant="purple"
-                size="md"
-                onClick={() => onNavigate('timeline')}
-                icon={<ArrowRight className="w-4 h-4" />}
-              >
-                VIEW TOURNAMENT TIMELINE
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => onNavigate('rulebook')}
-              >
-                READ OFFICIAL RULE BOOK
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
+            {/* ========================================================================= */}
+            {/* STEP 1: LEADER SIGN IN (Email & Password Only)                            */}
+            {/* ========================================================================= */}
+            {currentStep === 1 && (
+              <div className="space-y-5 animate-in fade-in duration-200">
+                <div className="w-12 h-12 rounded-2xl bg-amber-400 border-2 border-[#1E1B4B] flex items-center justify-center shadow-sketch-sm">
+                  <LockKeyhole className="w-6 h-6 text-[#1E1B4B]" />
+                </div>
+                <div>
+                  <h2 className="font-display font-black text-2xl sm:text-3xl text-[#1E1B4B] uppercase tracking-tight">
+                    Team Leader Sign In
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    Enter your registered Team Leader email and team password. Your team details and member records will be automatically fetched from the database.
+                  </p>
+                </div>
 
-      {/* Sample Demo Video Modal */}
-      <Modal
-        isOpen={isVideoModalOpen}
-        onClose={() => setIsVideoModalOpen(false)}
-        title="PROJECT VIDEO GUIDELINES & SAMPLE"
-        maxWidth="xl"
-      >
-        <div className="space-y-4">
-          <div className="rounded-xl overflow-hidden sketch-border bg-black aspect-video flex items-center justify-center shadow-sketch-sm">
-            <video
-              controls
-              playsInline
-              preload="auto"
-              key={isVideoModalOpen ? 'drive-video-open' : 'drive-video-closed'}
-              className="w-full h-full object-contain"
-            >
-              <source src={driveDemoVideo} type="video/mp4" />
-              Your browser does not support HTML5 video.
-            </video>
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
+                      Team Leader Registered Email *
+                    </label>
+                    <input
+                      required
+                      type="email"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="e.g. sridevi.25ad043@sode-edu.in"
+                      className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink text-sm font-medium focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono font-bold text-ink uppercase mb-1">
+                      Team Access Password *
+                    </label>
+                    <input
+                      required
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Enter team access password"
+                      className="w-full px-4 py-2.5 rounded-xl sketch-border bg-paper-cream text-ink text-sm font-medium focus:outline-none focus:ring-2 focus:ring-hpl-purple"
+                    />
+                  </div>
+
+                  {authError && (
+                    <div className="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-800 text-xs font-mono font-bold animate-in fade-in">
+                      {authError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isVerifying}
+                    className="w-full py-3.5 px-6 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all"
+                  >
+                    <span>{isVerifying ? 'FETCHING TEAM DETAILS...' : 'SIGN IN & VIEW SQUAD DETAILS'}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* STEP 2: TEAM DETAILS & MEMBER ROSTER (Mithul Design: Live from Supabase)  */}
+            {/* ========================================================================= */}
+            {currentStep === 2 && matchedTeam && registration && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                {/* Header Banner - Mithul's dark card */}
+                <div className="bg-[#1E1B4B] text-white rounded-2xl p-5 sm:p-6 shadow-[5px_5px_0px_#F59E0B] border-2 border-[#1E1B4B]">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-xs font-bold text-amber-300 uppercase tracking-widest">
+                        Squad Profile • {matchedTeam.squadId}
+                      </p>
+                      <h2 className="font-display font-black text-2xl sm:text-4xl mt-1">
+                        {matchedTeam.name}
+                      </h2>
+                      <p className="text-amber-200 text-xs sm:text-sm mt-1 flex items-center gap-2">
+                        <School className="w-4 h-4 shrink-0" />
+                        <span>{collegeName || registration.college || 'Registered College / Institution'}</span>
+                      </p>
+                    </div>
+                    <span className="px-3.5 py-1.5 rounded-full bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 font-mono text-xs font-bold uppercase tracking-wider">
+                      Slot #{String(matchedTeam.rank).padStart(2, '0')} Qualified
+                    </span>
+                  </div>
+                </div>
+
+                {/* Team Members & Details Display (Live from Supabase) */}
+                <div className="bg-white border-2 border-[#1E1B4B] rounded-2xl p-5 shadow-[4px_4px_0px_#1E1B4B] space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b-2 border-slate-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-300 border-2 border-[#1E1B4B] flex items-center justify-center">
+                        <Users className="w-4 h-4 text-[#1E1B4B]" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase">
+                          Team Members & Details
+                        </h3>
+                        <p className="text-[11px] text-slate-500 font-mono">
+                          Fetched live from Supabase registration database
+                        </p>
+                      </div>
+                    </div>
+                    <span className="font-mono text-xs font-bold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700">
+                      {teamMembers.length} Members
+                    </span>
+                  </div>
+
+                  {/* Members Grid (Mithul's verified layout) */}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {teamMembers.map((m, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`rounded-xl border-2 p-3.5 transition-all ${
+                          idx === 0 
+                            ? 'border-amber-400 bg-amber-50/70 shadow-xs' 
+                            : 'border-[#1E1B4B]/15 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-black uppercase ${
+                            idx === 0 
+                              ? 'bg-amber-400 text-[#1E1B4B]' 
+                              : 'bg-slate-200 text-slate-700'
+                          }`}>
+                            {m.role}
+                          </span>
+                          {idx === 0 && (
+                            <span className="text-[10px] font-mono font-bold text-amber-800 flex items-center gap-1">
+                              <KeyRound className="w-3 h-3" /> Team Leader
+                            </span>
+                          )}
+                        </div>
+                        <div className="font-display font-black text-sm text-[#1E1B4B]">
+                          {m.name || 'Name not provided'}
+                        </div>
+                        <div className="text-xs text-slate-600 mt-1 flex items-center gap-1.5 break-all">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{m.email || 'Email not available'}</span>
+                        </div>
+                        {m.phone && (
+                          <div className="text-xs text-slate-600 mt-0.5 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>+91 {m.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveTeamDetails} className="space-y-4">
+                  <div className="border-b border-ink/10 pb-2">
+                    <h3 className="font-display font-black text-base text-[#1E1B4B] uppercase">
+                      1. Team Leader & College Details
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                        Team Leader Name
+                      </label>
+                      <input
+                        disabled
+                        type="text"
+                        value={registration.team_leader_name}
+                        className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-dark text-ink font-display font-bold text-xs opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                        Team Leader Email
+                      </label>
+                      <input
+                        disabled
+                        type="email"
+                        value={registration.leader_email}
+                        className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-dark text-ink text-xs opacity-80 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                        Leader Contact Phone *
+                      </label>
+                      <input
+                        required
+                        type="tel"
+                        value={leaderPhone}
+                        onChange={(e) => setLeaderPhone(e.target.value)}
+                        placeholder="Leader Phone Number"
+                        className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-ink text-xs font-sans focus:ring-2 focus:ring-hpl-purple"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono font-bold text-ink uppercase mb-1">
+                        College / Institution *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={collegeName}
+                        onChange={(e) => setCollegeName(e.target.value)}
+                        placeholder="College Name"
+                        className="w-full px-3 py-2 rounded-lg sketch-border bg-paper-cream text-ink text-xs font-sans focus:ring-2 focus:ring-hpl-purple"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border-b border-ink/10 pb-2 pt-2">
+                    <h3 className="font-display font-black text-base text-[#1E1B4B] uppercase">
+                      2. Team Member Roster (Edit & Confirm)
+                    </h3>
+                  </div>
+
+                  {/* Member 2 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-paper-cream rounded-xl sketch-border">
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 2 Name *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={member2Name}
+                        onChange={(e) => setMember2Name(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 2 Email *
+                      </label>
+                      <input
+                        required
+                        type="email"
+                        value={member2Email}
+                        onChange={(e) => setMember2Email(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Member 3 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-paper-cream rounded-xl sketch-border">
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 3 Name *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={member3Name}
+                        onChange={(e) => setMember3Name(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 3 Email *
+                      </label>
+                      <input
+                        required
+                        type="email"
+                        value={member3Email}
+                        onChange={(e) => setMember3Email(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Member 4 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-paper-cream rounded-xl sketch-border">
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 4 Name *
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        value={member4Name}
+                        onChange={(e) => setMember4Name(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 4 Email *
+                      </label>
+                      <input
+                        required
+                        type="email"
+                        value={member4Email}
+                        onChange={(e) => setMember4Email(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Member 5 (Optional) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-paper-cream rounded-xl sketch-border">
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 5 Name (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={member5Name}
+                        onChange={(e) => setMember5Name(e.target.value)}
+                        placeholder="Leave empty if 4 members"
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono font-bold text-ink uppercase mb-1">
+                        Member 5 Email (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={member5Email}
+                        onChange={(e) => setMember5Email(e.target.value)}
+                        placeholder="Leave empty if 4 members"
+                        className="w-full px-3 py-1.5 rounded-lg border border-ink/20 text-xs bg-white font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {saveMessage && (
+                    <div className="p-3 bg-emerald-100 border-2 border-emerald-500 rounded-xl text-emerald-900 text-xs font-mono font-bold">
+                      {saveMessage}
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t-2 border-ink">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(1)}
+                      className="px-4 py-2.5 rounded-xl border-2 border-ink text-xs font-mono font-bold uppercase hover:bg-paper-dark cursor-pointer"
+                    >
+                      ← Back
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isSavingDetails}
+                      className="px-6 py-3 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-[3px_3px_0px_#1E1B4B] transition-all"
+                    >
+                      <span>{isSavingDetails ? 'SAVING UPDATES...' : 'CONFIRM & NEXT: CHOOSE PS'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* STEP 3: CHOOSE PROBLEM STATEMENT (Mithul's 10-team limited selection)      */}
+            {/* ========================================================================= */}
+            {currentStep === 3 && matchedTeam && (
+              <div className="space-y-5 animate-in fade-in duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                  <div>
+                    <p className="font-mono text-xs font-bold text-amber-700 uppercase tracking-widest">
+                      {matchedTeam.name} • Slot #{String(matchedTeam.rank).padStart(2, '0')}
+                    </p>
+                    <h2 className="font-display font-black text-2xl sm:text-3xl text-[#1E1B4B] mt-0.5">
+                      Select Round 2 Problem Statement
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                      Each challenge is available to a maximum of 10 teams. Once locked, your squad secures its challenge slot.
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-300 px-3 py-1.5 text-xs font-mono font-bold text-emerald-900 shrink-0">
+                    40 teams / 4 challenges
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  {ROUND2_PROBLEM_STATEMENTS.map((ps) => {
+                    const count = counts[ps.id] || 0;
+                    const isFull = count >= 10 && selections[matchedTeam.squadId] !== ps.id;
+                    const isSelected = selectedPs === ps.id;
+
+                    return (
+                      <button
+                        type="button"
+                        key={ps.id}
+                        disabled={isFull}
+                        onClick={() => { setSelectedPs(ps.id); setPsError(''); }}
+                        className={`block w-full text-left rounded-2xl border-2 p-4 cursor-pointer transition-all ${
+                          isSelected
+                            ? 'border-amber-500 bg-amber-50/80 shadow-[3px_3px_0px_#F59E0B]'
+                            : 'border-[#1E1B4B]/20 bg-white hover:border-[#1E1B4B]'
+                        } ${isFull ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <span className="font-mono text-xs font-black text-indigo-700 uppercase bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                              {ps.psCode}
+                            </span>
+                            <h3 className="font-display font-black text-lg mt-1 text-[#1E1B4B]">
+                              {ps.title}
+                            </h3>
+                            <p className="text-xs text-slate-600 mt-1">
+                              {ps.subtitle}
+                            </p>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-mono font-bold ${
+                            isFull ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {count}/10 {isFull ? 'FULL' : 'SLOTS'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {psError && (
+                  <div className="p-3 bg-red-100 border-2 border-red-500 rounded-xl text-red-800 text-xs font-mono font-bold">
+                    {psError}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t-2 border-ink">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="px-4 py-2.5 rounded-xl border-2 border-ink text-xs font-mono font-bold uppercase hover:bg-paper-dark cursor-pointer"
+                  >
+                    ← Back to Team Roster
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLockSelection}
+                    disabled={!selectedPs}
+                    className="px-6 py-3 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-[3px_3px_0px_#1E1B4B] transition-all disabled:opacity-40"
+                  >
+                    <span>LOCK PROBLEM STATEMENT</span>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ========================================================================= */}
+            {/* STEP 4: SELECTION CONFIRMATION PASS                                       */}
+            {/* ========================================================================= */}
+            {currentStep === 4 && matchedTeam && (
+              <div className="space-y-6 text-center py-4 animate-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-500 text-emerald-800 mx-auto flex items-center justify-center shadow-sketch-sm">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs font-mono font-bold text-emerald-700 uppercase tracking-widest">
+                    ✦ ROUND 2 CHALLENGE LOCKED ✦
+                  </span>
+                  <h2 className="text-3xl sm:text-4xl font-black font-display uppercase text-ink">
+                    CHALLENGE SECURED!
+                  </h2>
+                  <p className="text-sm text-slate-600 max-w-md mx-auto">
+                    Your team <strong>{matchedTeam.name}</strong> has locked in their challenge slot for Hackathon Premier League Round 2.
+                  </p>
+                </div>
+
+                <div className="bg-[#1E1B4B] text-white rounded-2xl p-6 text-left space-y-3 shadow-[5px_5px_0px_#F59E0B] border-2 border-[#1E1B4B]">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+                    <span className="font-display font-black text-base text-amber-300 uppercase">
+                      HPL ROUND 2 SQUAD VERIFICATION PASS
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500 text-white font-mono text-[10px] font-bold">
+                      LOCKED
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">SQUAD:</span>
+                      <strong className="text-amber-300 text-sm">{matchedTeam.name}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">SQUAD ID:</span>
+                      <strong className="text-white">{matchedTeam.squadId}</strong>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-slate-400 block text-[10px]">LOCKED CHALLENGE:</span>
+                      <strong className="text-white text-xs sm:text-sm">
+                        {activeLockedPs ? `${activeLockedPs.psCode}: ${activeLockedPs.title}` : 'Selected'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => setCurrentStep(3)}
+                    className="px-4 py-2.5 rounded-xl border-2 border-ink text-xs font-display font-black uppercase hover:bg-slate-100 cursor-pointer"
+                  >
+                    Change Problem Statement
+                  </button>
+                  <button
+                    onClick={() => onNavigate('shortlisted')}
+                    className="px-6 py-2.5 rounded-xl bg-[#1E1B4B] text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] cursor-pointer"
+                  >
+                    View All Shortlisted Squads →
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
-          <div className="p-3.5 bg-paper-cream rounded-xl sketch-border text-xs font-sans text-ink space-y-1.5">
-            <div className="font-mono font-bold uppercase text-[11px] text-hpl-purple flex items-center gap-1.5">
-              <Video className="w-4 h-4" />
-              <span>Drive Video Submission Guidelines</span>
-            </div>
-            <p className="text-ink-muted text-[11px] leading-relaxed">
-              Record a brief 2–3 minute video presentation covering your team intro, problem statement, architecture, and live prototype walkthrough. Upload it to Google Drive and paste the public link above.
-            </p>
+
+          {/* Right Illustration Column (Keeps the same aesthetic!) */}
+          <div className="lg:col-span-5 flex justify-center">
+            <RegisterIllustration onClick={() => onNavigate('team-profile')} />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-ink">
-            <a
-              href={driveDemoVideo}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg border border-ink text-xs font-mono font-bold bg-paper-cream hover:bg-paper-dark transition-colors inline-flex items-center gap-1.5"
-            >
-              <span>Open in New Tab</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-            <Button
-              type="button"
-              variant="purple"
-              size="sm"
-              onClick={() => setIsVideoModalOpen(false)}
-            >
-              GOT IT
-            </Button>
-          </div>
+
         </div>
-      </Modal>
+      </div>
     </div>
   );
 };

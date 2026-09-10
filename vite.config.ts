@@ -32,6 +32,23 @@ const curtainTrophyDest = path.resolve(__dirname, 'src/assets/hpl_round2_curtain
 const curtainClosedSrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/hpl_curtain_closed_1788974572625.jpg';
 const curtainClosedDest = path.resolve(__dirname, 'src/assets/hpl_curtain_closed.jpg');
 
+// Newly generated Profile & Dashboard Illustrations
+const profileDashboardHeroSrc = 'C:/Users/User/.gemini/antigravity/brain/7482fb42-7c04-47ad-a40f-3d18b7660910/profile_dashboard_hero_1789052121980.jpg';
+const profileDashboardHeroDest = path.resolve(__dirname, 'src/assets/hpl_profile_dashboard_hero.jpg');
+const profileDashboardHeroPublic = path.resolve(__dirname, 'public/hpl_profile_dashboard_hero.jpg');
+
+const profileTeamRosterSrc = 'C:/Users/User/.gemini/antigravity/brain/7482fb42-7c04-47ad-a40f-3d18b7660910/profile_team_roster_1789052179945.jpg';
+const profileTeamRosterDest = path.resolve(__dirname, 'src/assets/hpl_profile_team_roster.jpg');
+const profileTeamRosterPublic = path.resolve(__dirname, 'public/hpl_profile_team_roster.jpg');
+
+const profilePsChallengeSrc = 'C:/Users/User/.gemini/antigravity/brain/7482fb42-7c04-47ad-a40f-3d18b7660910/profile_ps_challenge_1789052203759.jpg';
+const profilePsChallengeDest = path.resolve(__dirname, 'src/assets/hpl_profile_ps_challenge.jpg');
+const profilePsChallengePublic = path.resolve(__dirname, 'public/hpl_profile_ps_challenge.jpg');
+
+const profileSecuritySettingsSrc = 'C:/Users/User/.gemini/antigravity/brain/7482fb42-7c04-47ad-a40f-3d18b7660910/profile_security_settings_1789052233768.jpg';
+const profileSecuritySettingsDest = path.resolve(__dirname, 'src/assets/hpl_profile_security_settings.jpg');
+const profileSecuritySettingsPublic = path.resolve(__dirname, 'public/hpl_profile_security_settings.jpg');
+
 try {
   if (fs.existsSync(adminEvalSrc) && !fs.existsSync(adminEvalDest)) {
     fs.copyFileSync(adminEvalSrc, adminEvalDest);
@@ -45,6 +62,20 @@ try {
   if (fs.existsSync(curtainClosedSrc)) {
     fs.copyFileSync(curtainClosedSrc, curtainClosedDest);
   }
+
+  const syncAsset = (src: string, dests: string[]) => {
+    if (fs.existsSync(src)) {
+      for (const dest of dests) {
+        try {
+          fs.copyFileSync(src, dest);
+        } catch (err) {}
+      }
+    }
+  };
+  syncAsset(profileDashboardHeroSrc, [profileDashboardHeroDest, profileDashboardHeroPublic]);
+  syncAsset(profileTeamRosterSrc, [profileTeamRosterDest, profileTeamRosterPublic]);
+  syncAsset(profilePsChallengeSrc, [profilePsChallengeDest, profilePsChallengePublic]);
+  syncAsset(profileSecuritySettingsSrc, [profileSecuritySettingsDest, profileSecuritySettingsPublic]);
 } catch (e) {
   // Silent fallback
 }
@@ -121,6 +152,33 @@ const adminAuthBackendPlugin = () => ({
           return;
         }
       }
+
+      // Serve profile images dynamically if requested
+      if (url.includes('hpl_profile_dashboard_hero')) {
+        if (fs.existsSync(profileDashboardHeroSrc)) {
+          res.setHeader('Content-Type', 'image/jpeg');
+          return fs.createReadStream(profileDashboardHeroSrc).pipe(res);
+        }
+      }
+      if (url.includes('hpl_profile_team_roster')) {
+        if (fs.existsSync(profileTeamRosterSrc)) {
+          res.setHeader('Content-Type', 'image/jpeg');
+          return fs.createReadStream(profileTeamRosterSrc).pipe(res);
+        }
+      }
+      if (url.includes('hpl_profile_ps_challenge')) {
+        if (fs.existsSync(profilePsChallengeSrc)) {
+          res.setHeader('Content-Type', 'image/jpeg');
+          return fs.createReadStream(profilePsChallengeSrc).pipe(res);
+        }
+      }
+      if (url.includes('hpl_profile_security_settings')) {
+        if (fs.existsSync(profileSecuritySettingsSrc)) {
+          res.setHeader('Content-Type', 'image/jpeg');
+          return fs.createReadStream(profileSecuritySettingsSrc).pipe(res);
+        }
+      }
+
       next();
     });
   }

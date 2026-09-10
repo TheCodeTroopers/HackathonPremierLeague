@@ -656,9 +656,8 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate, on
             {/* Desktop Table Header */}
             <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3.5 bg-slate-100/90 border-b-2 border-[#1E1B4B] font-display font-black text-xs uppercase text-slate-700 tracking-wider">
               <div className="col-span-2">Slot #</div>
-              <div className="col-span-5">Shortlisted Squad Name</div>
-              <div className="col-span-3 text-center">Status</div>
-              <div className="col-span-2 text-right">Team Portal</div>
+              <div className="col-span-7">Shortlisted Squad Name</div>
+              <div className="col-span-3 text-right sm:text-center">Status</div>
             </div>
 
             {/* List Rows */}
@@ -666,12 +665,16 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate, on
               {filteredTeams.map((team) => (
                 <div
                   key={team.rank}
-                  className="p-3.5 sm:px-6 sm:py-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-2.5"
+                  onClick={() => {
+                    onSelectSquad(team.squadId);
+                    onNavigate('team-profile');
+                  }}
+                  className="p-3.5 sm:px-6 sm:py-4 hover:bg-amber-50/70 transition-all flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-2.5 cursor-pointer group"
                 >
                   {/* Slot & Squad Number */}
                   <div className="sm:col-span-2 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
                     <div className="flex items-center gap-2.5">
-                      <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
+                      <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform">
                         {String(team.rank).padStart(2, '0')}
                       </span>
                       <span className="font-mono text-[11px] font-bold text-slate-500 uppercase">
@@ -681,42 +684,30 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate, on
 
                     {/* Mobile Status Badge on Header Right */}
                     <div className="sm:hidden">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-[10px] font-bold uppercase tracking-wider">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                        <span>Round 2 Live</span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400 text-[#1E1B4B] font-display font-black text-[10px] uppercase tracking-wider">
+                        <span>Profile →</span>
                       </span>
                     </div>
                   </div>
 
                   {/* Team Name */}
-                  <div className="sm:col-span-5 text-left w-full">
+                  <div className="sm:col-span-7 text-left w-full">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight break-words">
+                      <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] group-hover:text-indigo-700 tracking-tight break-words transition-colors">
                         {team.name}
                       </span>
                     </div>
                   </div>
 
-                  {/* Status Badge (Desktop) */}
-                  <div className="hidden sm:block sm:col-span-3 sm:text-center">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
+                  {/* Action & Status Badge (Desktop) */}
+                  <div className="hidden sm:flex sm:col-span-3 items-center justify-end gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                       <span>Round 2 Live</span>
                     </span>
-                  </div>
-
-                  {/* Action Link: Sign In to Team Portal */}
-                  <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto flex sm:justify-end">
-                    <button
-                      onClick={() => {
-                        onSelectSquad(team.squadId);
-                        onNavigate('team-login');
-                      }}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
-                    >
-                      <span>Sign In</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl bg-[#1E1B4B] group-hover:bg-amber-400 group-hover:text-[#1E1B4B] text-white font-display font-black text-xs uppercase tracking-wider transition-colors shadow-xs">
+                      <span>Dashboard →</span>
+                    </span>
                   </div>
                 </div>
               ))}
