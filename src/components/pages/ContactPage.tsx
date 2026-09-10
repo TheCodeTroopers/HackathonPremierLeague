@@ -1,23 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PageRoute } from '../../types';
-import { 
-  Phone, 
-  MapPin, 
-  ArrowRight, 
-  Shield, 
-  Users, 
+import {
+  Phone,
+  MapPin,
+  ArrowRight,
+  Shield,
+  Users,
   GraduationCap,
-  Trophy, 
-  Search, 
-  Sparkles, 
-  CheckCircle2, 
-  ChevronRight, 
-  Filter, 
-  Layers, 
-  Award, 
-  Flame, 
-  Zap, 
-  Check 
+  Trophy,
+  Search,
+  Sparkles,
+  CheckCircle2,
+  ChevronRight,
+  Filter,
+  Layers,
+  Award,
+  Flame,
+  Zap,
+  Check
 } from 'lucide-react';
 import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
 import { ShortlistTrophyIllustration, PartyPopperDoodle } from '../illustrations/AboutIllustration';
@@ -285,9 +285,10 @@ export default ContactPage;
 
 interface ShortlistedPageProps {
   onNavigate: (page: PageRoute) => void;
+  onSelectSquad: (squadId: string) => void;
 }
 
-export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) => {
+export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate, onSelectSquad }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'first20' | 'second20'>('all');
   const [hasPopped, setHasPopped] = useState(true);
@@ -310,7 +311,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
       };
     }).filter((team) => {
       const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            team.squadId.toLowerCase().includes(searchTerm.toLowerCase());
+        team.squadId.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return false;
       if (activeFilter === 'first20') return team.rank <= 20;
       if (activeFilter === 'second20') return team.rank > 20;
@@ -321,7 +322,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
   return (
     <div className="min-h-screen bg-[#FAF6EE] text-[#1E1B4B] relative overflow-hidden pb-24 selection:bg-amber-300 selection:text-[#1E1B4B]">
       {/* Halftone subtle dot pattern */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.035] pointer-events-none"
         style={{
           backgroundImage: 'radial-gradient(circle, #1E1B4B 1px, transparent 1px)',
@@ -334,7 +335,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
       {/* ─────────────────────────────────────────────────────────────────── */}
       <div className="w-full bg-[#1E1B4B] text-white border-b-2 border-amber-400 shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <button 
+          <button
             onClick={() => onNavigate('home')}
             className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
           >
@@ -379,7 +380,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
       {/* 2. FESTIVE PARTY POPPERS & CELEBRATION HERO                         */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden pt-8 sm:pt-12 pb-10 px-4 sm:px-6 lg:px-8">
-        
+
         {/* Animated Celebration Confetti Poppers (Top & Bottom Left/Right) */}
         {hasPopped && (
           <>
@@ -406,10 +407,10 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
         )}
 
         <div className="max-w-5xl mx-auto space-y-6">
-          
+
           {/* Comic Hero Card */}
           <div className="relative bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-4 xs:p-6 sm:p-10 shadow-[6px_6px_0px_#1E1B4B] overflow-hidden text-center">
-            
+
             {/* Top Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-400 border-2 border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] mb-4 sm:mb-5">
               <Sparkles className="w-4 h-4 text-[#1E1B4B]" />
@@ -538,10 +539,10 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
       {/* 3. SEARCH & SHORTLISTED TEAMS DIRECTORY TABLE                       */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        
+
         {/* Search and Filter Controls */}
         <div className="bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-5 sm:p-7 shadow-[4px_4px_0px_#1E1B4B] mb-8 space-y-4">
-          
+
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h2 className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B] uppercase tracking-tight flex items-center gap-2">
@@ -588,31 +589,28 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
 
             <button
               onClick={() => setActiveFilter('all')}
-              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'all'
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${activeFilter === 'all'
                   ? 'bg-[#1E1B4B] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+                }`}
             >
               All 40 Squads
             </button>
             <button
               onClick={() => setActiveFilter('first20')}
-              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'first20'
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${activeFilter === 'first20'
                   ? 'bg-[#1E1B4B] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+                }`}
             >
               Squads 1 – 20
             </button>
             <button
               onClick={() => setActiveFilter('second20')}
-              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
-                activeFilter === 'second20'
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${activeFilter === 'second20'
                   ? 'bg-[#1E1B4B] text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+                }`}
             >
               Squads 21 – 40
             </button>
@@ -639,7 +637,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
           </div>
         ) : (
           <div className="bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] overflow-hidden shadow-[5px_5px_0px_#1E1B4B]">
-            
+
             {/* Desktop Table Header */}
             <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3.5 bg-slate-100/90 border-b-2 border-[#1E1B4B] font-display font-black text-xs uppercase text-slate-700 tracking-wider">
               <div className="col-span-2">Slot #</div>
@@ -703,10 +701,13 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                   {/* Action Link */}
                   <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto flex sm:justify-end">
                     <button
-                      onClick={() => onNavigate('problem-statements')}
+                      onClick={() => {
+                        onSelectSquad(team.squadId);
+                        onNavigate('team-login');
+                      }}
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
                     >
-                      <span>Pick PS</span>
+                      <span>Sign In</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>

@@ -21,6 +21,7 @@ import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage'
 import { PresentationPage } from './components/pages/PresentationPage';
 import { ContactPage, ShortlistedPage } from './components/pages/ContactPage';
 import { AdminPage } from './components/pages/AdminPage';
+import { TeamAccessPage } from './components/pages/TeamAccessPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
 import { DeadlineMarquee } from './components/layout/DeadlineMarquee';
@@ -31,7 +32,7 @@ const getInitialPage = (): PageRoute => {
     const rawHash = window.location.hash.replace('#', '') as PageRoute;
     const validPages: PageRoute[] = [
       'home', 'how-it-works', 'match-day', 'squads',
-      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin'
+      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-select', 'team-portal'
     ];
     if (validPages.includes(rawHash)) {
       return rawHash;
@@ -60,7 +61,7 @@ export function App() {
     if (window.location.hash === '#about-hpl' || window.location.hash === '#league') {
       window.history.replaceState(null, '', window.location.pathname);
     }
-    
+
     // Always start at top on fresh load / refresh
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
 
@@ -74,7 +75,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-select', 'team-portal'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -117,12 +118,12 @@ export function App() {
       <CustomCursor />
 
       {/* Top Sticky Header (Hidden on Admin portal & Presentation mode for clean workspace view) */}
-      {activePage !== 'admin' && activePage !== 'presentation' && (
+      {activePage !== 'admin' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
         <>
           <Navbar activePage={activePage} onNavigate={handleNavigate} />
-          <DeadlineMarquee 
-            onNavigate={handleNavigate} 
-            onOpenNotice={() => handleNavigate('shortlisted')} 
+          <DeadlineMarquee
+            onNavigate={handleNavigate}
+            onOpenNotice={() => handleNavigate('shortlisted')}
           />
         </>
       )}
@@ -170,7 +171,14 @@ export function App() {
             <PresentationPage onNavigate={handleNavigate} />
           )}
           {activePage === 'shortlisted' && (
-            <ShortlistedPage onNavigate={handleNavigate} />
+            <ShortlistedPage onNavigate={handleNavigate} onSelectSquad={handleSelectSquad} />
+          )}
+          {(activePage === 'team-login' || activePage === 'team-select' || activePage === 'team-portal') && (
+            <TeamAccessPage
+              view={activePage.replace('team-', '') as 'login' | 'select' | 'portal'}
+              squadId={selectedSquadId}
+              onNavigate={handleNavigate}
+            />
           )}
           {activePage === 'contact' && (
             <ContactPage onNavigate={handleNavigate} />
@@ -185,7 +193,7 @@ export function App() {
       </main>
 
       {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal, Timeline & Presentation) */}
-      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && activePage !== 'presentation' && (
+      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
         <Footer onNavigate={handleNavigate} />
       )}
     </div>
