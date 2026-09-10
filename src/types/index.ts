@@ -1,4 +1,4 @@
-export type PageRoute = 
+export type PageRoute =
   | 'home'
   | 'league'
   | 'timeline'
@@ -19,7 +19,10 @@ export type PageRoute =
   | 'presentation'
   | 'shortlisted'
   | 'contact'
-  | 'admin';
+  | 'admin'
+  | 'team-login'
+  | 'team-select'
+  | 'team-portal';
 
 export interface Squad {
   id: string;
