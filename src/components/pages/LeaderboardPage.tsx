@@ -757,7 +757,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                         8 MATCHES
                       </div>
                       <div className="p-1 xs:p-1.5 bg-[#F6F3EB] rounded-lg border border-[#1E1B4B]/10">
-                        ₹30K PRIZE
+                        ₹40K PRIZE
                       </div>
                     </div>
 

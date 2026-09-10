@@ -104,10 +104,10 @@ export const PILLARS_DATA: PillarStep[] = [
     icon: Award,
     color: '#D97706',
     accentBg: '#FEF08A',
-    description: 'The Grand Champion lifts the golden HPL Trophy, claims the ₹30,000+ cash prize pool, secures incubation support with industry partners, and enters the HPL Hall of Fame.',
+    description: 'The Grand Champion lifts the golden HPL Trophy, claims the ₹40,000+ cash prize pool, secures incubation support with industry partners, and enters the HPL Hall of Fame.',
     points: [
       'Official Golden HPL Champion Trophy & Medals',
-      '₹30K prize pool and cloud infrastructure credits',
+      '₹40K prize pool and cloud infrastructure credits',
       'Direct angel incubation and tech internship fast-tracks'
     ]
   }

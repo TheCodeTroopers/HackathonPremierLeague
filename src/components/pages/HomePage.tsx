@@ -524,7 +524,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
             <span className="text-[#EA580C]">✦</span>
             <span className="flex items-center gap-2"><Swords className="w-4 h-4 text-[#818CF8]" /> 8+ HEAD-TO-HEAD MATCH FIXTURES</span>
             <span className="text-[#EA580C]">✦</span>
-            <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-[#FBF9F2]" /> ₹30,000+ CASH PRIZE POOL & TROPHIES</span>
+            <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-[#FBF9F2]" /> ₹40,000+ CASH PRIZE POOL & TROPHIES</span>
             <span className="text-[#EA580C]">✦</span>
           </div>
           {/* TRACK 2 (Seamless Infinite Loop Mirror) */}
@@ -535,7 +535,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
             <span className="text-[#EA580C]">✦</span>
             <span className="flex items-center gap-2"><Swords className="w-4 h-4 text-[#818CF8]" /> 8+ HEAD-TO-HEAD MATCH FIXTURES</span>
             <span className="text-[#EA580C]">✦</span>
-            <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-[#FBF9F2]" /> ₹30,000+ CASH PRIZE POOL & TROPHIES</span>
+            <span className="flex items-center gap-2"><Rocket className="w-4 h-4 text-[#FBF9F2]" /> ₹40,000+ CASH PRIZE POOL & TROPHIES</span>
             <span className="text-[#EA580C]">✦</span>
           </div>
         </div>
@@ -707,7 +707,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
                 { num: '3', label: 'WEEKS', sub: 'of progressive building' },
                 { num: '8+', label: 'MATCH DAYS', sub: 'live head-to-head fixtures' },
                 { num: '12 TEAMS', label: 'PLAYOFFS', sub: 'Top 4 from each domain' },
-                { num: '₹30K', label: 'PRIZE POOL', sub: 'cash awards & trophies' },
+                { num: '₹40K', label: 'PRIZE POOL', sub: 'cash awards & trophies' },
               ].map((s, idx) => (
                 <div key={s.label} className={`scroll-stat-item reveal-on-scroll stagger-${idx + 1}`}>
                   <div className="font-marker text-4xl sm:text-5xl text-[#F59E0B] leading-none">{s.num}</div>

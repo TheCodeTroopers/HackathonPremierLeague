@@ -69,7 +69,7 @@ const PROTOCOL_STAGES = [
     code: 'ILLUMINATE_ARENA',
     phase: 'PHASE 04 // UDUPI GRAND FINALE',
     title: 'ILLUMINATING FINALE STAGE',
-    description: 'Configuring coastal Udupi championship arena • ₹30,000 cash purse & golden trophy polished.',
+    description: 'Configuring coastal Udupi championship arena • ₹40,000 cash purse & golden trophy polished.',
     subtext: 'Top 4 Squads per Domain Advance to Grand Finale (12 Finalists)',
     badge: 'GRAND FINALE READY',
     icon: Trophy,
@@ -446,7 +446,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
             { label: '3 WEEKS', sub: 'League Season', icon: Calendar, thresh: 25 },
             { label: '16 SQUADS', sub: 'Franchise Teams', icon: Users, thresh: 50 },
             { label: '8+ MATCHES', sub: 'Head-to-Head', icon: Swords, thresh: 75 },
-            { label: '₹30,000', sub: 'Cash & Trophy', icon: Trophy, thresh: 100 },
+            { label: '₹40,000', sub: 'Cash & Trophy', icon: Trophy, thresh: 100 },
           ].map((item) => {
             const isUnlocked = progress >= item.thresh;
             const ItemIcon = item.icon;

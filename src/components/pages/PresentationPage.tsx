@@ -141,7 +141,7 @@ export const PresentationPage: React.FC<PresentationPageProps> = ({ onNavigate }
       s1.addText('HACKATHON PREMIER LEAGUE 2026', { x: 0.8, y: 1.8, w: 11.7, fontSize: 36, bold: true, color: navyInk, fontFace: 'Arial Black' });
       s1.addText('“CODE TODAY. IMPACT TOMORROW.”', { x: 0.8, y: 2.7, w: 11.7, fontSize: 22, bold: true, color: amberGold });
       s1.addText('Organized by Shri Madhwa Vadiraja Institute of Technology and Management (SMVITM), Bantakal\nIn Association with Code Troopers • ISTE • IEEE • Aikya • Ignite', { x: 0.8, y: 3.8, w: 11.7, fontSize: 13, color: '4B5563' });
-      s1.addText('🏆 ₹30,000+ Prize Pool    •    ⚡ 4 Stakeholder Problem Statements    •    🔥 3-Week Progressive Championship', { x: 0.8, y: 5.2, w: 11.7, fontSize: 13, bold: true, color: navyInk });
+      s1.addText('🏆 ₹40,000+ Prize Pool    •    ⚡ 4 Stakeholder Problem Statements    •    🔥 3-Week Progressive Championship', { x: 0.8, y: 5.2, w: 11.7, fontSize: 13, bold: true, color: navyInk });
 
       // Slide 2: About HPL
       const s2 = pptx.addSlide();
@@ -177,7 +177,7 @@ export const PresentationPage: React.FC<PresentationPageProps> = ({ onNavigate }
       s3.addText('16 - 23 SEP\nPart 2 Mid-Sprint\n\nDatabase and API evaluation, feature completion checks, prototype stress tests.', { x: 7.0, y: 2.2, w: 2.2, fontSize: 11, color: navyInk });
 
       s3.addShape(pptx.shapes.RECTANGLE, { x: 9.7, y: 2.0, w: 2.6, h: 4.0, fill: { color: 'FFFFFF' }, line: { color: navyInk, width: 2 } });
-      s3.addText('26 & 28 SEP\nPlayoffs & Finale\n\nSemi-final fixtures and live On-Stage Auditorium Grand Finale at SMVITM.\n₹30,000+ awarded!', { x: 9.9, y: 2.2, w: 2.2, fontSize: 11, color: navyInk });
+      s3.addText('26 & 28 SEP\nPlayoffs & Finale\n\nSemi-final fixtures and live On-Stage Auditorium Grand Finale at SMVITM.\n₹40,000+ awarded!', { x: 9.9, y: 2.2, w: 2.2, fontSize: 11, color: navyInk });
 
       // Slide 4: PS 01 AyurEssence
       const s4 = pptx.addSlide();
@@ -301,7 +301,7 @@ export const PresentationPage: React.FC<PresentationPageProps> = ({ onNavigate }
       s12.background = bgPaper;
       s12.addText('STEP INTO THE ARENA — HPL 2026', { x: 0.8, y: 1.5, w: 11.7, fontSize: 32, bold: true, color: navyInk });
       s12.addText('“CODE TODAY. IMPACT TOMORROW.”', { x: 0.8, y: 2.4, w: 11.7, fontSize: 22, bold: true, color: amberGold });
-      s12.addText('NEXT IMMEDIATE CHECKPOINT:\nSaturday, 12th September @ 5:30 PM\nPart 1 Evaluation 1: Deliverable Video & Code Walkthrough Presentation\n\n₹30,000+ Prize Pool  •  Championship Trophy  •  Incubation Pilots', { x: 0.8, y: 3.4, w: 11.7, fontSize: 14, color: navyInk });
+      s12.addText('NEXT IMMEDIATE CHECKPOINT:\nSaturday, 12th September @ 5:30 PM\nPart 1 Evaluation 1: Deliverable Video & Code Walkthrough Presentation\n\n₹40,000+ Prize Pool  •  Championship Trophy  •  Incubation Pilots', { x: 0.8, y: 3.4, w: 11.7, fontSize: 14, color: navyInk });
 
       await pptx.writeFile({ fileName: 'HPL_2026_Round2_Official_Presentation.pptx' });
       setIsDownloading(false);
@@ -566,7 +566,7 @@ const Slide01_Title = () => (
 
       <div className="mt-5 flex flex-wrap gap-2.5">
         <span className="px-3 py-1 rounded-lg bg-emerald-100 border-2 border-[#1E1B4B] text-xs font-black text-[#065F46] shadow-[2px_2px_0px_#1E1B4B]">
-          🏆 ₹30,000+ Prize Pool
+          🏆 ₹40,000+ Prize Pool
         </span>
         <span className="px-3 py-1 rounded-lg bg-blue-100 border-2 border-[#1E1B4B] text-xs font-black text-[#1E40AF] shadow-[2px_2px_0px_#1E1B4B]">
           ⚡ 4 Real Stakeholder Problem Statements
@@ -685,7 +685,7 @@ const Slide02_About = () => (
       </div>
       <div className="h-6 w-[2px] bg-[#1E1B4B]/20" />
       <div>
-        <div className="text-lg font-black text-[#2563EB]">₹30,000+</div>
+        <div className="text-lg font-black text-[#2563EB]">₹40,000+</div>
         <div className="text-[10px] text-[#1E1B4B]/70 font-mono uppercase">Championship Pool</div>
       </div>
     </div>
@@ -785,7 +785,7 @@ const Slide03_Timeline = () => (
           </p>
         </div>
         <div className="mt-2 pt-1.5 border-t border-[#1E1B4B]/10 text-[9px] font-mono text-[#7C3AED] font-bold">
-          ₹30,000+ Trophy Awarded
+          ₹40,000+ Trophy Awarded
         </div>
       </div>
     </div>
@@ -1523,7 +1523,7 @@ const Slide12_Conclusion = () => (
       </p>
 
       <p className="mt-2 text-xs sm:text-sm text-[#1E1B4B]/80 max-w-xl leading-relaxed">
-        Build with rigor, test with passion, and present with conviction. The championship trophy, ₹30,000+ prize pool, and real-world impact are yours to seize!
+        Build with rigor, test with passion, and present with conviction. The championship trophy, ₹40,000+ prize pool, and real-world impact are yours to seize!
       </p>
 
       {/* Checkpoint Banner */}

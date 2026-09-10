@@ -250,7 +250,7 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ onNavigate }) => {
       month: 'OCT',
       yearDay: '2026 THURSDAY',
       title: 'Auditorium Grand Finale',
-      subtitle: 'Live On-Stage Presentations at SMVITM. Finalist battles, ₹30,000+ Prize Pool awarded & Trophy lifted!',
+      subtitle: 'Live On-Stage Presentations at SMVITM. Finalist battles, ₹40,000+ Prize Pool awarded & Trophy lifted!',
       tag: 'GRAND FINALE',
       icon: <Trophy className="w-3.5 h-3.5 text-[#F59E0B]" />
     }

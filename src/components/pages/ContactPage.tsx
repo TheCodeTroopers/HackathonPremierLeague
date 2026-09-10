@@ -447,7 +447,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                 <div className="font-mono text-[9px] sm:text-[10px] font-bold text-purple-800 uppercase tracking-wider">Live PS Tracks</div>
               </div>
               <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-2.5 sm:p-3 text-center">
-                <div className="font-display font-black text-xl sm:text-2xl text-emerald-900">₹30,000+</div>
+                <div className="font-display font-black text-xl sm:text-2xl text-emerald-900">₹40,000+</div>
                 <div className="font-mono text-[9px] sm:text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Prize Pool</div>
               </div>
               <div className="bg-blue-50/80 border border-blue-300 rounded-2xl p-2.5 sm:p-3 text-center">
@@ -642,10 +642,9 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
             
             {/* Desktop Table Header */}
             <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3.5 bg-slate-100/90 border-b-2 border-[#1E1B4B] font-display font-black text-xs uppercase text-slate-700 tracking-wider">
-              <div className="col-span-2">Slot #</div>
-              <div className="col-span-5">Shortlisted Squad Name</div>
-              <div className="col-span-3 text-center">Status</div>
-              <div className="col-span-2 text-right">Action</div>
+              <div className="col-span-3">Slot #</div>
+              <div className="col-span-6">Shortlisted Squad Name</div>
+              <div className="col-span-3 text-right sm:text-center">Status</div>
             </div>
 
             {/* List Rows */}
@@ -656,7 +655,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                   className="p-3.5 sm:px-6 sm:py-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-2.5"
                 >
                   {/* Slot & Squad Number */}
-                  <div className="sm:col-span-2 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
+                  <div className="sm:col-span-3 flex items-center justify-between sm:justify-start gap-2.5 w-full sm:w-auto">
                     <div className="flex items-center gap-2.5">
                       <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
                         {String(team.rank).padStart(2, '0')}
@@ -676,7 +675,7 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                   </div>
 
                   {/* Team Name */}
-                  <div className="sm:col-span-5 text-left w-full">
+                  <div className="sm:col-span-6 text-left w-full">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight break-words">
                         {team.name}
@@ -698,17 +697,6 @@ export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) 
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                       <span>Round 2 Live</span>
                     </span>
-                  </div>
-
-                  {/* Action Link */}
-                  <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full sm:w-auto flex sm:justify-end">
-                    <button
-                      onClick={() => onNavigate('problem-statements')}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
-                    >
-                      <span>Pick PS</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 </div>
               ))}
