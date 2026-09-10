@@ -1,6 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PageRoute } from '../../types';
-import { Phone, MapPin, ArrowRight, Shield, Users, GraduationCap } from 'lucide-react';
+import { 
+  Phone, 
+  MapPin, 
+  ArrowRight, 
+  Shield, 
+  Users, 
+  GraduationCap,
+  Trophy, 
+  Search, 
+  Sparkles, 
+  CheckCircle2, 
+  ChevronRight, 
+  Filter, 
+  Layers, 
+  Award, 
+  Flame, 
+  Zap, 
+  Check 
+} from 'lucide-react';
+import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
+import { ShortlistTrophyIllustration, PartyPopperDoodle } from '../illustrations/AboutIllustration';
 
 interface ContactPageProps {
   onNavigate: (page: PageRoute) => void;
@@ -258,3 +278,419 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
 };
 
 export default ContactPage;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HPL 2026 ROUND 2 SHORTLISTED SQUADS PAGE (WITH SEARCH & POPPER CELEBRATIONS)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface ShortlistedPageProps {
+  onNavigate: (page: PageRoute) => void;
+}
+
+export const ShortlistedPage: React.FC<ShortlistedPageProps> = ({ onNavigate }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'first20' | 'second20'>('all');
+  const [hasPopped, setHasPopped] = useState(true);
+
+  // Trigger celebration on mount
+  useEffect(() => {
+    setHasPopped(true);
+  }, []);
+
+  const filteredTeams = useMemo(() => {
+    return SHORTLISTED_TEAMS_DATA.map((teamName, index) => {
+      const rank = index + 1;
+      const squadId = `HPL-R2-${String(rank).padStart(2, '0')}`;
+      return {
+        rank,
+        name: teamName,
+        squadId,
+        status: 'Qualified for Round 2',
+        tier: rank <= 20 ? 'Tier 1 Qualifier' : 'Tier 2 Qualifier',
+      };
+    }).filter((team) => {
+      const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            team.squadId.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!matchesSearch) return false;
+      if (activeFilter === 'first20') return team.rank <= 20;
+      if (activeFilter === 'second20') return team.rank > 20;
+      return true;
+    });
+  }, [searchTerm, activeFilter]);
+
+  return (
+    <div className="min-h-screen bg-[#FAF6EE] text-[#1E1B4B] relative overflow-hidden pb-24 selection:bg-amber-300 selection:text-[#1E1B4B]">
+      {/* Halftone subtle dot pattern */}
+      <div 
+        className="absolute inset-0 opacity-[0.035] pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #1E1B4B 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+        }}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 1. TOP ANNOUNCEMENT BAR                                             */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div className="w-full bg-[#1E1B4B] text-white border-b-2 border-amber-400 shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate('home')}
+            className="flex items-center gap-2.5 group cursor-pointer focus:outline-none"
+          >
+            <div className="w-8 h-8 relative flex-shrink-0">
+              <svg viewBox="0 0 100 100" fill="none" className="w-full h-full transform group-hover:scale-105 transition-transform">
+                <polygon points="50,6 90,24 90,74 50,94 10,74 10,24" fill="#FBBF24" stroke="#D97706" strokeWidth="4" />
+                <path d="M 30 38 L 40 54 L 50 34 L 60 54 L 70 38 L 68 62 H 32 Z" fill="#1E1B4B" stroke="#1E1B4B" strokeWidth="1.5" />
+                <rect x="36" y="64" width="28" height="5" rx="1.5" fill="#1E1B4B" />
+              </svg>
+            </div>
+            <div className="flex flex-col text-left">
+              <span className="font-display font-black text-sm tracking-tight text-white leading-none">
+                HACKATHON PREMIER LEAGUE
+              </span>
+              <span className="font-mono text-[9px] font-bold text-amber-300 tracking-wider uppercase leading-tight mt-0.5">
+                ROUND 2 QUALIFIED SQUADS
+              </span>
+            </div>
+          </button>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              onClick={() => onNavigate('problem-statements')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-[0_2px_10px_rgba(245,158,11,0.4)] transition-all transform hover:scale-105 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>ROUND 2 CHALLENGES</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('home')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-white/20 hover:border-amber-400 text-white/90 hover:text-white font-display font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              <span>Arena Home</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 2. FESTIVE PARTY POPPERS & CELEBRATION HERO                         */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden pt-8 sm:pt-12 pb-10 px-4 sm:px-6 lg:px-8">
+        
+        {/* Animated Celebration Confetti Poppers (Top & Bottom Left/Right) */}
+        {hasPopped && (
+          <>
+            {/* Top Left Popper */}
+            <div className="absolute left-2 sm:left-6 top-8 sm:top-12 z-20 pointer-events-none animate-bounce">
+              <PartyPopperDoodle className="w-20 h-20 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg" />
+            </div>
+
+            {/* Top Right Popper */}
+            <div className="absolute right-2 sm:right-6 top-8 sm:top-12 z-20 pointer-events-none animate-bounce">
+              <PartyPopperDoodle className="w-20 h-20 sm:w-28 sm:h-28 text-amber-500 drop-shadow-lg" flipped />
+            </div>
+
+            {/* Bottom Left Popper (Birthday Party Style Burst) */}
+            <div className="fixed bottom-6 left-6 z-30 pointer-events-none animate-pulse hidden md:block">
+              <PartyPopperDoodle className="w-24 h-24 text-purple-600 drop-shadow-xl -rotate-12" />
+            </div>
+
+            {/* Bottom Right Popper (Birthday Party Style Burst) */}
+            <div className="fixed bottom-6 right-6 z-30 pointer-events-none animate-pulse hidden md:block">
+              <PartyPopperDoodle className="w-24 h-24 text-rose-500 drop-shadow-xl rotate-12" flipped />
+            </div>
+          </>
+        )}
+
+        <div className="max-w-5xl mx-auto">
+          
+          {/* Comic Hero Card */}
+          <div className="relative bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-6 sm:p-10 shadow-[6px_6px_0px_#1E1B4B] overflow-hidden text-center">
+            
+            {/* Top Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400 border-2 border-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B] mb-5">
+              <Sparkles className="w-4 h-4 text-[#1E1B4B]" />
+              <span className="font-display font-black text-xs sm:text-sm uppercase tracking-wider text-[#1E1B4B]">
+                OFFICIAL SHORTLIST ANNOUNCEMENT
+              </span>
+            </div>
+
+            {/* Main Headline */}
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-display tracking-tight text-[#1E1B4B] italic leading-[1.08] max-w-3xl mx-auto">
+              CONGRATULATIONS TO THE{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-700 via-amber-500 to-rose-600 underline decoration-amber-400 decoration-wavy">
+                40 SHORTLISTED
+              </span>{' '}
+              SQUADS!
+            </h1>
+
+            <p className="mt-4 text-sm sm:text-base md:text-lg text-slate-700 font-medium max-w-2xl mx-auto leading-relaxed">
+              After an intense round of evaluation from evaluation panels, these 40 stellar teams have officially qualified for <strong>Round 2: Stakeholder Challenge Sprint</strong> of Hackathon Premier League 2026.
+            </p>
+
+            {/* Beautiful Custom Illustration */}
+            <div className="mt-4 mb-2 max-w-lg mx-auto">
+              <ShortlistTrophyIllustration className="w-full max-w-md mx-auto" />
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto pt-4 border-t-2 border-[#1E1B4B]/10">
+              <div className="bg-amber-50/80 border border-amber-300 rounded-2xl p-3 text-center">
+                <div className="font-display font-black text-2xl text-[#1E1B4B]">40</div>
+                <div className="font-mono text-[10px] font-bold text-amber-800 uppercase tracking-wider">Squads Qualified</div>
+              </div>
+              <div className="bg-purple-50/80 border border-purple-300 rounded-2xl p-3 text-center">
+                <div className="font-display font-black text-2xl text-purple-900">4</div>
+                <div className="font-mono text-[10px] font-bold text-purple-800 uppercase tracking-wider">Live PS Tracks</div>
+              </div>
+              <div className="bg-emerald-50/80 border border-emerald-300 rounded-2xl p-3 text-center">
+                <div className="font-display font-black text-2xl text-emerald-900">₹30,000+</div>
+                <div className="font-mono text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Prize Pool</div>
+              </div>
+              <div className="bg-blue-50/80 border border-blue-300 rounded-2xl p-3 text-center">
+                <div className="font-display font-black text-2xl text-blue-900">12 SEP</div>
+                <div className="font-mono text-[10px] font-bold text-blue-800 uppercase tracking-wider">Part 1 Evaluation</div>
+              </div>
+            </div>
+
+            {/* Next Steps Quick Action */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={() => onNavigate('problem-statements')}
+                className="px-6 py-3 rounded-2xl bg-[#1E1B4B] hover:bg-amber-400 hover:text-[#1E1B4B] text-white font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[3.5px_3.5px_0px_#F59E0B] transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span>Proceed to Choose Problem Statement</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => onNavigate('rulebook')}
+                className="px-5 py-3 rounded-2xl bg-white border-2 border-[#1E1B4B] hover:bg-slate-50 font-display font-bold text-xs sm:text-sm uppercase tracking-wider text-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] transition-all cursor-pointer"
+              >
+                <span>Read Round 2 Guidelines</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 3. SEARCH & SHORTLISTED TEAMS DIRECTORY TABLE                       */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        
+        {/* Search and Filter Controls */}
+        <div className="bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] p-5 sm:p-7 shadow-[4px_4px_0px_#1E1B4B] mb-8 space-y-4">
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B] uppercase tracking-tight flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <span>Shortlisted Squads Directory</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
+                Search your squad name or browse the complete roster of 40 qualified teams.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>{filteredTeams.length} of 40 Teams Displayed</span>
+            </div>
+          </div>
+
+          {/* Search Input Box */}
+          <div className="relative">
+            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by squad name (e.g., Apex Coders, AgroNex, Neuro Nexus)..."
+              className="w-full pl-12 pr-10 py-3.5 rounded-2xl bg-white border-2 border-[#1E1B4B] font-medium text-sm text-[#1E1B4B] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-inner"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded-md bg-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-300"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 mr-1 flex items-center gap-1">
+              <Filter className="w-3 h-3" />
+              <span>Filter:</span>
+            </span>
+
+            <button
+              onClick={() => setActiveFilter('all')}
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                activeFilter === 'all'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              All 40 Squads
+            </button>
+            <button
+              onClick={() => setActiveFilter('first20')}
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                activeFilter === 'first20'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Squads 1 – 20
+            </button>
+            <button
+              onClick={() => setActiveFilter('second20')}
+              className={`px-3.5 py-1.5 rounded-xl font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                activeFilter === 'second20'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Squads 21 – 40
+            </button>
+          </div>
+
+        </div>
+
+        {/* Shortlisted Squads Table / Cards */}
+        {filteredTeams.length === 0 ? (
+          <div className="bg-white rounded-3xl border-2 border-dashed border-[#1E1B4B]/30 p-12 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-700 mx-auto flex items-center justify-center font-bold text-xl">
+              🔍
+            </div>
+            <h3 className="font-display font-black text-lg text-[#1E1B4B]">No matching squad found</h3>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-sm mx-auto">
+              We couldn't find any shortlisted squad matching "{searchTerm}". Please check spelling.
+            </p>
+            <button
+              onClick={() => setSearchTerm('')}
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-display font-bold text-xs uppercase text-[#1E1B4B]"
+            >
+              Reset Search
+            </button>
+          </div>
+        ) : (
+          <div className="bg-[#FFFDF7] rounded-3xl border-2 border-[#1E1B4B] overflow-hidden shadow-[5px_5px_0px_#1E1B4B]">
+            
+            {/* Desktop Table Header */}
+            <div className="hidden sm:grid grid-cols-12 gap-4 px-6 py-3.5 bg-slate-100/90 border-b-2 border-[#1E1B4B] font-display font-black text-xs uppercase text-slate-700 tracking-wider">
+              <div className="col-span-2">Slot #</div>
+              <div className="col-span-5">Shortlisted Squad Name</div>
+              <div className="col-span-3 text-center">Status</div>
+              <div className="col-span-2 text-right">Action</div>
+            </div>
+
+            {/* List Rows */}
+            <div className="divide-y-2 divide-[#1E1B4B]/10">
+              {filteredTeams.map((team) => (
+                <div
+                  key={team.rank}
+                  className="p-4 sm:px-6 sm:py-4 hover:bg-amber-50/40 transition-colors flex flex-col sm:grid sm:grid-cols-12 sm:gap-4 sm:items-center justify-between gap-3"
+                >
+                  {/* Slot & Squad Number */}
+                  <div className="sm:col-span-2 flex items-center gap-2.5">
+                    <span className="w-8 h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shadow-xs flex-shrink-0">
+                      {String(team.rank).padStart(2, '0')}
+                    </span>
+                    <span className="font-mono text-[11px] font-bold text-slate-500 uppercase">
+                      {team.squadId}
+                    </span>
+                  </div>
+
+                  {/* Team Name */}
+                  <div className="sm:col-span-5 text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="font-display font-black text-base sm:text-lg text-[#1E1B4B] tracking-tight">
+                        {team.name}
+                      </span>
+                      {team.rank <= 5 && (
+                        <span className="text-amber-500" title="Top 5 Roster">
+                          ⭐
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-mono text-purple-700 font-semibold sm:hidden inline-block mt-0.5">
+                      {team.tier}
+                    </span>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="sm:col-span-3 sm:text-center">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-xs font-bold uppercase tracking-wider">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Round 2 Live</span>
+                    </span>
+                  </div>
+
+                  {/* Action Link */}
+                  <div className="sm:col-span-2 sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <button
+                      onClick={() => onNavigate('problem-statements')}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-xl border border-[#1E1B4B] bg-white hover:bg-amber-400 font-display font-black text-xs uppercase text-[#1E1B4B] transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <span>Pick PS</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Table Footer Summary */}
+            <div className="p-4 bg-slate-50 border-t-2 border-[#1E1B4B] flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-slate-600">
+              <span>All 40 squads must finalize problem statement selection before evaluation begins.</span>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="font-bold text-[#1E1B4B] hover:underline"
+              >
+                ↑ Back to Top
+              </button>
+            </div>
+
+          </div>
+        )}
+
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* 4. BOTTOM CELEBRATION FLOATER                                       */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-40 hidden sm:block">
+        <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-2xl p-3 sm:p-4 shadow-[4px_4px_0px_#1E1B4B] flex items-center gap-3 animate-in fade-in slide-in-from-bottom-3 duration-300 max-w-xs sm:max-w-sm">
+          <div className="w-10 h-10 rounded-xl bg-amber-400 border border-[#1E1B4B] flex items-center justify-center text-lg flex-shrink-0">
+            🎉
+          </div>
+          <div className="text-left flex-1 min-w-0">
+            <div className="font-display font-black text-xs uppercase text-[#1E1B4B] leading-tight">
+              Shortlisting Live!
+            </div>
+            <div className="text-[11px] text-slate-600 line-clamp-1">
+              40 squads advancing to Round 2.
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('problem-statements')}
+            className="px-2.5 py-1.5 rounded-xl bg-[#1E1B4B] text-white font-display font-black text-[10px] uppercase hover:bg-amber-500 hover:text-[#1E1B4B] transition-colors cursor-pointer"
+          >
+            View PS
+          </button>
+        </div>
+      </div>
+
+    </div>
+  );
+};
+
+

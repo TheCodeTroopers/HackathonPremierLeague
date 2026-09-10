@@ -21,11 +21,16 @@ try {
   // Silent fallback
 }
 
-// Auto-sync admin illustration assets directly into src/assets/
+// Auto-sync admin & round 2 curtain illustration assets directly into src/assets/
 const adminEvalSrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/admin_team_evaluation_1788626880689.jpg';
 const adminEvalDest = path.resolve(__dirname, 'src/assets/hpl_admin_eval_art.jpg');
 const adminBadgeSrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/admin_clipboard_badge_1788626900712.jpg';
 const adminBadgeDest = path.resolve(__dirname, 'src/assets/hpl_admin_clipboard_badge.jpg');
+
+const curtainTrophySrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/hpl_curtain_trophy_1788974545149.jpg';
+const curtainTrophyDest = path.resolve(__dirname, 'src/assets/hpl_round2_curtain_trophy.jpg');
+const curtainClosedSrc = 'C:/Users/User/.gemini/antigravity/brain/d5d05f19-e8b9-48f2-bd0b-aca1f084736d/hpl_curtain_closed_1788974572625.jpg';
+const curtainClosedDest = path.resolve(__dirname, 'src/assets/hpl_curtain_closed.jpg');
 
 try {
   if (fs.existsSync(adminEvalSrc) && !fs.existsSync(adminEvalDest)) {
@@ -33,6 +38,12 @@ try {
   }
   if (fs.existsSync(adminBadgeSrc) && !fs.existsSync(adminBadgeDest)) {
     fs.copyFileSync(adminBadgeSrc, adminBadgeDest);
+  }
+  if (fs.existsSync(curtainTrophySrc)) {
+    fs.copyFileSync(curtainTrophySrc, curtainTrophyDest);
+  }
+  if (fs.existsSync(curtainClosedSrc)) {
+    fs.copyFileSync(curtainClosedSrc, curtainClosedDest);
   }
 } catch (e) {
   // Silent fallback
@@ -134,7 +145,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
+    open: false,
     host: true,
     allowedHosts: true,
     fs: {

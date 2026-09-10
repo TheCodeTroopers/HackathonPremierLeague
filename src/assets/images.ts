@@ -32,6 +32,8 @@ import adminClipboardBadgeImg from './hpl_admin_clipboard_badge.jpg';
 // Real Partner & Sponsor Logos
 import shirvaLogo from './shirva.png';
 import smvitmLogo from './smvitm.png';
+import sdmLogo from './sdm.png';
+import iahvLogo from './IAHV-Logo.png';
 import isteLogo from './iste.png';
 import igniteLogo from './ignite.jpeg';
 import ieeeLogo from './ieee.png';
@@ -68,9 +70,13 @@ export const HPL_IMAGES = {
   rulebookSquad: rulebookSquadArtImg,
   adminEvalArt: adminEvalArtImg,
   adminClipboardBadge: adminClipboardBadgeImg,
+  round2CurtainTrophy: new URL('./hpl_round2_curtain_trophy.jpg', import.meta.url).href,
+  curtainClosed: new URL('./hpl_curtain_closed.jpg', import.meta.url).href,
   // Sponsor & Partner Brand Logos
   shirvaLogo,
   smvitmLogo,
+  sdmLogo,
+  iahvLogo,
   isteLogo,
   igniteLogo,
   ieeeLogo,

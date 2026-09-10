@@ -631,4 +631,60 @@ export const FAQS_DATA = FAQ_DATA;
 export const PARTNERS = PARTNERS_DATA;
 export const FIXTURES = MATCH_FIXTURES;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// OFFICIAL ROUND 2 SHORTLISTED SQUADS (40 Teams Qualified)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface ShortlistedTeamItem {
+  id: string;
+  rank: number;
+  name: string;
+  squadBadge: string;
+  category: 'Tier 1 Qualified' | 'Round 2 Finalist';
+  status: 'Qualified for Round 2';
+}
+
+export const SHORTLISTED_TEAMS_DATA: string[] = [
+  "Apex Coders",
+  "Blue Streak",
+  "Neuro Nexus",
+  "HackOrbit",
+  "Pentacode",
+  "Arise",
+  "Rookie Coders",
+  "Team Ace",
+  "nyx",
+  "Vajra Yield",
+  "So Called Engineer",
+  "wakanda forever",
+  "Bits and Bytes",
+  "kisan mitra",
+  "Kiawreckers",
+  "Code Catalyst",
+  "Code Raiders",
+  "Hackblaze",
+  "NoobScripterS",
+  "Code Worrior",
+  "Tech Hive",
+  "Innovators",
+  "tech avenue",
+  "Team Alpha",
+  "Innovexa",
+  "abyss emarald",
+  "mind mesh",
+  "algo angels",
+  "team apex",
+  "AgroNex",
+  "agri innovators",
+  "tattva tech",
+  "error404:not found",
+  "team diffusion",
+  "event horizon hackers",
+  "Team Aaramb",
+  "phoenix",
+  "hacksphere",
+  "pixel pioneers",
+  "gramltel ai"
+];
+
+
 

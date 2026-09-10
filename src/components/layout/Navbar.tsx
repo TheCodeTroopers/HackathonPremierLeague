@@ -20,7 +20,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
     { label: 'LEADERBOARD', page: 'leaderboard' },
     { label: 'MENTORS', page: 'mentors' },
     { label: 'SPONSORS', page: 'sponsors' },
+    { label: 'SHORTLISTED', page: 'shortlisted' },
     { label: 'PROBLEM STATEMENTS', page: 'problem-statements' },
+    { label: 'DECK / PPT', page: 'presentation' },
     { label: 'CONTACT', page: 'contact' },
   ];
 
@@ -134,7 +136,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                              (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                              (item.label === 'MENTORS' && activePage === 'mentors') ||
                              (item.label === 'SPONSORS' && activePage === 'sponsors') ||
-                             (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
+                             (item.label === 'SHORTLISTED' && activePage === 'shortlisted') ||
+                             (item.label === 'PROBLEM STATEMENTS' && (activePage === 'problem-statements' || activePage === 'round2' || activePage === 'reveal')) ||
+                             (item.label === 'DECK / PPT' && activePage === 'presentation') ||
                              (item.label === 'CONTACT' && activePage === 'contact');
 
             return (
@@ -244,7 +248,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
                                    (item.label === 'LEADERBOARD' && activePage === 'leaderboard') ||
                                    (item.label === 'MENTORS' && activePage === 'mentors') ||
                                    (item.label === 'SPONSORS' && activePage === 'sponsors') ||
-                                   (item.label === 'PROBLEM STATEMENTS' && activePage === 'problem-statements') ||
+                                   (item.label === 'SHORTLISTED' && activePage === 'shortlisted') ||
+                                   (item.label === 'PROBLEM STATEMENTS' && (activePage === 'problem-statements' || activePage === 'round2' || activePage === 'reveal')) ||
+                                   (item.label === 'DECK / PPT' && activePage === 'presentation') ||
                                    (item.label === 'CONTACT' && activePage === 'contact');
 
                   return (

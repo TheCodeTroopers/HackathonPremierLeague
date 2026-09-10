@@ -14,6 +14,10 @@ export type PageRoute =
   | 'register'
   | 'sponsors'
   | 'problem-statements'
+  | 'round2'
+  | 'reveal'
+  | 'presentation'
+  | 'shortlisted'
   | 'contact'
   | 'admin';
 

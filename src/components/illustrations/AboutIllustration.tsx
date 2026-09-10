@@ -236,3 +236,142 @@ export const MatchFlowIllustration: React.FC<{ className?: string }> = ({ classN
   </div>
 );
 
+/**
+ * Party Popper celebration burst doodle with colorful confetti particles
+ */
+export const PartyPopperDoodle: React.FC<{ 
+  className?: string; 
+  flipped?: boolean;
+}> = ({ className = 'w-16 h-16', flipped = false }) => (
+  <svg 
+    viewBox="0 0 120 120" 
+    fill="none" 
+    className={`${className} transform ${flipped ? '-scale-x-100' : ''}`}
+  >
+    {/* Confetti ribbons & bursts */}
+    <path d="M60 45 Q75 30 85 40 T105 35" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" fill="none" />
+    <path d="M45 40 Q55 20 70 25 T88 15" stroke="#7C3AED" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+    <path d="M50 55 Q65 60 78 50 T98 58" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+    <path d="M40 30 Q50 15 62 18 T78 8" stroke="#EC4899" strokeWidth="2" strokeLinecap="round" fill="none" />
+
+    {/* Confetti discs & stars */}
+    <circle cx="85" cy="22" r="3.5" fill="#EF4444" />
+    <circle cx="98" cy="42" r="3" fill="#3B82F6" />
+    <circle cx="70" cy="12" r="2.5" fill="#FBBF24" />
+    <circle cx="62" cy="38" r="3" fill="#10B981" />
+    <circle cx="108" cy="25" r="2.5" fill="#8B5CF6" />
+    <circle cx="92" cy="62" r="3" fill="#F97316" />
+    <polygon points="76,28 78,33 84,33 79,36 81,42 76,38 71,42 73,36 68,33 74,33" fill="#FDE047" />
+    <polygon points="102,12 103,15 107,15 104,17 105,21 102,18 99,21 100,17 97,15 101,15" fill="#A855F7" />
+
+    {/* Popper Cone */}
+    <g transform="translate(18, 55) rotate(-28)">
+      {/* Outer Cone */}
+      <polygon points="0,40 28,0 48,22" fill="#F59E0B" stroke="#1E1B4B" strokeWidth="2.5" strokeLinejoin="round" />
+      {/* Stripes on cone */}
+      <path d="M7 30 L34 8" stroke="#DC2626" strokeWidth="3.5" />
+      <path d="M14 20 L40 14" stroke="#7C3AED" strokeWidth="3.5" />
+      {/* Cone Rim */}
+      <ellipse cx="38" cy="11" rx="14" ry="6" fill="#FDE68A" stroke="#1E1B4B" strokeWidth="2" transform="rotate(-15 38 11)" />
+    </g>
+  </svg>
+);
+
+/**
+ * Shortlist Trophy Celebration Vector Hero Illustration
+ */
+export const ShortlistTrophyIllustration: React.FC<{ className?: string }> = ({ className = 'w-full max-w-md mx-auto' }) => (
+  <div className={`relative ${className} select-none flex items-center justify-center p-4`}>
+    <svg viewBox="0 0 500 320" fill="none" className="w-full h-auto drop-shadow-md">
+      {/* Subtle Glow Aura behind Trophy */}
+      <circle cx="250" cy="150" r="110" fill="#FEF08A" fillOpacity="0.45" />
+      <ellipse cx="250" cy="275" rx="140" ry="18" fill="#1E1B4B" fillOpacity="0.12" />
+
+      {/* Sunburst Rays */}
+      <g stroke="#F59E0B" strokeWidth="2" strokeDasharray="6 6" opacity="0.4">
+        <line x1="250" y1="150" x2="250" y2="40" />
+        <line x1="250" y1="150" x2="350" y2="60" />
+        <line x1="250" y1="150" x2="370" y2="150" />
+        <line x1="250" y1="150" x2="150" y2="60" />
+        <line x1="250" y1="150" x2="130" y2="150" />
+      </g>
+
+      {/* Confetti Bursts Left */}
+      <g transform="translate(60, 40)">
+        <path d="M20 60 Q35 30 55 45 T85 20" stroke="#7C3AED" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="30" cy="20" r="5" fill="#EF4444" />
+        <circle cx="65" cy="15" r="4" fill="#3B82F6" />
+        <polygon points="45,40 48,46 55,46 50,50 52,57 45,53 38,57 40,50 35,46 42,46" fill="#FBBF24" />
+      </g>
+
+      {/* Confetti Bursts Right */}
+      <g transform="translate(340, 40)">
+        <path d="M20 20 Q40 45 60 30 T85 55" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="75" cy="20" r="5" fill="#F97316" />
+        <circle cx="40" cy="15" r="4" fill="#EC4899" />
+        <polygon points="60,40 63,46 70,46 65,50 67,57 60,53 53,57 55,50 50,46 57,46" fill="#FBBF24" />
+      </g>
+
+      {/* Left Laurel Wreath */}
+      <g transform="translate(160, 90)">
+        <path d="M30 110 C-10 80 -10 20 20 0" stroke="#059669" strokeWidth="4" strokeLinecap="round" fill="none" />
+        <ellipse cx="22" cy="10" rx="8" ry="4" fill="#10B981" transform="rotate(-30 22 10)" />
+        <ellipse cx="7" cy="35" rx="8" ry="4" fill="#10B981" transform="rotate(-55 7 35)" />
+        <ellipse cx="2" cy="65" rx="8" ry="4" fill="#10B981" transform="rotate(-85 2 65)" />
+        <ellipse cx="14" cy="95" rx="8" ry="4" fill="#10B981" transform="rotate(-115 14 95)" />
+      </g>
+
+      {/* Right Laurel Wreath */}
+      <g transform="translate(290, 90)">
+        <path d="M20 110 C60 80 60 20 30 0" stroke="#059669" strokeWidth="4" strokeLinecap="round" fill="none" />
+        <ellipse cx="28" cy="10" rx="8" ry="4" fill="#10B981" transform="rotate(30 28 10)" />
+        <ellipse cx="43" cy="35" rx="8" ry="4" fill="#10B981" transform="rotate(55 43 35)" />
+        <ellipse cx="48" cy="65" rx="8" ry="4" fill="#10B981" transform="rotate(85 48 65)" />
+        <ellipse cx="36" cy="95" rx="8" ry="4" fill="#10B981" transform="rotate(115 36 95)" />
+      </g>
+
+      {/* Big Golden Championship Trophy */}
+      {/* Trophy Handles */}
+      <path d="M190 105 C150 105 145 155 190 165" stroke="#D97706" strokeWidth="7" fill="none" strokeLinecap="round" />
+      <path d="M190 105 C150 105 145 155 190 165" stroke="#FDE047" strokeWidth="4" fill="none" strokeLinecap="round" />
+      
+      <path d="M310 105 C350 105 355 155 310 165" stroke="#D97706" strokeWidth="7" fill="none" strokeLinecap="round" />
+      <path d="M310 105 C350 105 355 155 310 165" stroke="#FDE047" strokeWidth="4" fill="none" strokeLinecap="round" />
+
+      {/* Cup Body */}
+      <path d="M185 85 H315 V135 C315 175 285 200 250 200 C215 200 185 175 185 135 Z" fill="#FBBF24" stroke="#1E1B4B" strokeWidth="3.5" />
+      {/* Cup Highlight */}
+      <path d="M195 95 H245 V135 C245 160 230 180 215 185 C202 172 195 155 195 135 Z" fill="#FEF08A" opacity="0.8" />
+
+      {/* Star Crest on Trophy */}
+      <g transform="translate(250, 135)">
+        <polygon points="0,-16 5,-5 16,-4 8,4 10,15 0,9 -10,15 -8,4 -16,-4 -5,-5" fill="#1E1B4B" />
+        <polygon points="0,-12 3.5,-3.5 12,-3 6,3 7.5,11 0,6.5 -7.5,11 -6,3 -12,-3 -3.5,-3.5" fill="#FDE047" />
+      </g>
+
+      {/* Cup Rim */}
+      <ellipse cx="250" cy="85" rx="65" ry="10" fill="#F59E0B" stroke="#1E1B4B" strokeWidth="3.5" />
+      <ellipse cx="250" cy="85" rx="55" ry="6" fill="#FEF08A" />
+
+      {/* Trophy Stem */}
+      <path d="M238 200 H262 V230 H238 Z" fill="#F59E0B" stroke="#1E1B4B" strokeWidth="3" />
+      <ellipse cx="250" cy="230" rx="20" ry="5" fill="#D97706" stroke="#1E1B4B" strokeWidth="2.5" />
+
+      {/* Pedestal Base */}
+      <polygon points="220,235 280,235 295,268 205,268" fill="#1E1B4B" stroke="#1E1B4B" strokeWidth="3" />
+      <rect x="200" y="268" width="100" height="15" rx="3" fill="#312E81" stroke="#1E1B4B" strokeWidth="3" />
+      
+      {/* Plaque on Base */}
+      <rect x="222" y="244" width="56" height="16" rx="2" fill="#FDE047" stroke="#1E1B4B" strokeWidth="1.5" />
+      <text x="250" y="256" textAnchor="middle" fill="#1E1B4B" fontSize="9" fontWeight="900" fontFamily="sans-serif">
+        ROUND 2
+      </text>
+
+      {/* Little Floating Stars */}
+      <polygon points="215,60 217,65 223,65 218,68 220,74 215,70 210,74 212,68 207,65 213,65" fill="#F59E0B" />
+      <polygon points="285,60 287,65 293,65 288,68 290,74 285,70 280,74 282,68 277,65 283,65" fill="#F59E0B" />
+    </svg>
+  </div>
+);
+
+

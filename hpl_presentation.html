@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HPL 2026 — Official Round 2 Presentation Deck</title>
+  
+  <!-- Google Fonts for Comic Brush / Display & Clean Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Kalam:wght@700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+            brush: ['"Kalam"', 'cursive'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- PptxGenJS for Native PowerPoint (.pptx) Export -->
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+
+  <style>
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .slide-container {
+        page-break-after: always;
+        break-after: page;
+        display: flex !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+    }
+
+    .slide-fade {
+      transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  </style>
+</head>
+<body class="bg-[#FAF6EE] text-[#1E1B4B] min-h-screen flex flex-col justify-between select-none overflow-hidden font-sans">
+
+  <!-- ── TOP TOOLBAR (NO-PRINT) ── -->
+  <header class="no-print relative z-50 flex items-center justify-between px-6 py-3 border-b-2 border-[#1E1B4B] bg-[#1E1B4B] text-white shadow-md">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+        <span class="font-extrabold tracking-widest text-xs text-amber-300 uppercase font-mono">
+          HPL 2026 OFFICIAL DECK
+        </span>
+      </div>
+      <span class="text-white/30 text-xs">•</span>
+      <span class="text-xs text-white/70 font-mono hidden sm:inline">Use Arrow Keys or Space to Navigate</span>
+    </div>
+
+    <!-- Center Slide Counter -->
+    <div class="flex items-center gap-3">
+      <span id="slideCounter" class="text-xs font-mono font-black text-[#1E1B4B] bg-amber-400 px-3 py-1 rounded-full border border-amber-500 shadow-[1.5px_1.5px_0px_#000]">
+        SLIDE 01 / 12
+      </span>
+      <div class="hidden md:flex w-32 h-2.5 bg-white/20 rounded-full overflow-hidden border border-white/30">
+        <div id="progressBar" class="h-full bg-amber-400 transition-all duration-300 w-[8.33%]"></div>
+      </div>
+    </div>
+
+    <!-- Right Controls -->
+    <div class="flex items-center gap-2">
+      <!-- Direct Download PPTX Button -->
+      <button onclick="downloadPptx()" id="downloadPptBtn" title="Download PowerPoint PPTX File" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-black text-xs uppercase shadow-[2px_2px_0px_#000] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span id="downloadBtnText">Download PPTX</span>
+      </button>
+
+      <button onclick="toggleOverview()" title="Slide Overview (Press O)" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 transition-all text-xs font-mono flex items-center gap-1.5">
+        <i data-lucide="grid" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">Overview</span>
+      </button>
+      <button onclick="window.print()" title="Export PDF / Print (Ctrl+P)" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 transition-all text-xs font-mono flex items-center gap-1.5">
+        <i data-lucide="printer" class="w-4 h-4"></i>
+        <span class="hidden sm:inline">PDF</span>
+      </button>
+      <button onclick="toggleFullscreen()" title="Toggle Fullscreen (Press F)" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 transition-all">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── OVERVIEW GRID OVERLAY (PRESS 'O') ── -->
+  <div id="overviewModal" class="fixed inset-0 z-50 bg-[#1E1B4B]/95 backdrop-blur-md p-8 overflow-y-auto hidden text-white">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-black text-amber-400 tracking-wider uppercase font-display">Slide Overview</h2>
+          <p class="text-xs text-white/70 font-mono">Click any card to navigate immediately</p>
+        </div>
+        <button onclick="toggleOverview()" class="px-4 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-xs uppercase">
+          Close (ESC)
+        </button>
+      </div>
+      <div id="overviewGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN SLIDE VIEWPORT (WARM IVORY RETRO COMIC THEME) ── -->
+  <main class="flex-1 flex items-center justify-center p-3 md:p-6 relative z-20">
+    <div class="w-full max-w-6xl aspect-[16/9] min-h-[580px] bg-white rounded-2xl border-3 border-[#1E1B4B] shadow-[8px_8px_0px_#1E1B4B] flex flex-col overflow-hidden relative">
+      
+      <!-- Stage Watermark -->
+      <div class="absolute right-6 bottom-4 opacity-10 pointer-events-none text-right z-0">
+        <span class="text-7xl font-black tracking-tighter text-[#1E1B4B] font-display">HPL</span>
+        <p class="text-xs tracking-widest uppercase text-[#1E1B4B] font-mono">2026 LEAGUE</p>
+      </div>
+
+      <!-- Slide Render Container -->
+      <div id="slideContent" class="flex-1 p-6 md:p-8 flex flex-col justify-between relative z-10 slide-fade">
+        <!-- Active Slide dynamically rendered here -->
+      </div>
+
+      <!-- Bottom Slide Banner -->
+      <div class="px-8 py-2.5 bg-[#FAF6EE] border-t-2 border-[#1E1B4B] flex items-center justify-between text-xs text-[#1E1B4B]/80 font-mono no-print">
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-[#EA580C]">SMVITM BANTAKAL</span>
+          <span>•</span>
+          <span class="font-bold text-[#2563EB]">CODE TROOPERS</span>
+          <span>•</span>
+          <span class="font-bold text-[#1E1B4B]">HACKATHON PREMIER LEAGUE 2026</span>
+        </div>
+        <div id="slideFooterCounter">
+          SLIDE 1 OF 12
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── BOTTOM NAVIGATION DOCK (NO-PRINT) ── -->
+  <footer class="no-print relative z-50 flex items-center justify-between px-6 py-3 border-t-2 border-[#1E1B4B] bg-[#FAF6EE] shadow-md">
+    <button id="prevBtn" onclick="prevSlide()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm uppercase tracking-wider border-2 border-[#1E1B4B] bg-white hover:bg-amber-100 text-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all">
+      <i data-lucide="chevron-left" class="w-4 h-4"></i> Previous
+    </button>
+
+    <!-- Slide Dots -->
+    <div id="dotsContainer" class="flex items-center gap-2 overflow-x-auto max-w-[50vw] py-1 px-2">
+      <!-- Dots populated via JS -->
+    </div>
+
+    <button id="nextBtn" onclick="nextSlide()" class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-black text-sm uppercase tracking-wider border-2 border-[#1E1B4B] bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all font-black">
+      Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+    </button>
+  </footer>
+
+  <!-- ── SLIDE DATA & LOGIC ── -->
+  <script>
+    const slidesData = [
+      // 01: Title Slide (With Hero Arena Artwork)
+      {
+        title: "Title & Championship Arena",
+        render: () => `
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center h-full my-auto">
+            <div class="lg:col-span-7 flex flex-col justify-center text-left">
+              <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-100 border-2 border-[#1E1B4B] text-[#1E1B4B] text-xs font-black tracking-widest uppercase mb-3 shadow-[2px_2px_0px_#1E1B4B] w-fit">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-[#EA580C]"></i>
+                SEASON 2026 • COLLEGIATE CHAMPIONSHIP
+              </div>
+              <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#1E1B4B] uppercase font-display leading-[1.05]">
+                HACKATHON PREMIER LEAGUE
+              </h1>
+              <p class="mt-2 text-lg sm:text-xl font-black text-[#EA580C] font-mono tracking-wide uppercase">
+                “CODE TODAY. IMPACT TOMORROW.”
+              </p>
+              <div class="mt-4 pt-3 border-t-2 border-[#1E1B4B]/20">
+                <p className="text-xs sm:text-sm font-bold text-[#1E1B4B]">
+                  Organized by <span class="text-[#2563EB] font-bold">SMVITM Bantakal</span>
+                </p>
+                <p class="text-xs text-[#1E1B4B]/70 font-mono mt-0.5">
+                  In Association with Code Troopers • ISTE • IEEE • Aikya • Ignite
+                </p>
+              </div>
+              <div class="mt-5 flex flex-wrap gap-2.5">
+                <span class="px-3 py-1 rounded-lg bg-emerald-100 border-2 border-[#1E1B4B] text-xs font-black text-[#065F46] shadow-[2px_2px_0px_#1E1B4B]">
+                  🏆 ₹30,000+ Prize Pool
+                </span>
+                <span class="px-3 py-1 rounded-lg bg-blue-100 border-2 border-[#1E1B4B] text-xs font-black text-[#1E40AF] shadow-[2px_2px_0px_#1E1B4B]">
+                  ⚡ 4 Real Stakeholder Problem Statements
+                </span>
+                <span class="px-3 py-1 rounded-lg bg-orange-100 border-2 border-[#1E1B4B] text-xs font-black text-[#9A3412] shadow-[2px_2px_0px_#1E1B4B]">
+                  🔥 3-Week Progressive Tournament
+                </span>
+              </div>
+            </div>
+            <div class="lg:col-span-5 flex items-center justify-center">
+              <div class="relative w-full max-w-sm rounded-2xl overflow-hidden border-3 border-[#1E1B4B] shadow-[6px_6px_0px_#1E1B4B] bg-[#FAF6EE]">
+                <img src="./src/assets/hpl_hero_arena_1787762692893.jpg" alt="Arena Illustration" class="w-full h-auto object-cover" onerror="this.src='https://placehold.co/400x300/1e1b4b/f59e0b?text=HPL+ARENA'" />
+                <div class="p-2 bg-white border-t-2 border-[#1E1B4B] text-center">
+                  <span class="text-[11px] font-mono font-black text-[#1E1B4B] uppercase">Official Tournament Deck</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // 02: About HPL (With Team Collaboration Artwork)
+      {
+        title: "About HPL 2026",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                  <span class="w-2 h-2 rounded-full bg-[#EA580C]"></span>
+                  CHAMPIONSHIP VISION & SQUAD CULTURE
+                </div>
+                <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                  About Hackathon Premier League
+                </h2>
+              </div>
+              <div class="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-[#1E1B4B] text-xs font-mono font-bold text-[#1E1B4B] shadow-[2px_2px_0px_#1E1B4B]">
+                <span>Strict 5 Members / Squad</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 my-2 items-center">
+              <div class="lg:col-span-7 space-y-3">
+                <div class="p-3.5 rounded-xl bg-blue-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-black text-sm shrink-0 border border-[#1E1B4B]">01</div>
+                  <div>
+                    <h4 class="text-xs font-black text-[#1E1B4B] uppercase">Real Stakeholder Problems</h4>
+                    <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Challenges directly from Shirva Police, SDM Ayurveda Hospital, SMVITM Transit, and Art of Living (IAHV). Built for real deployability.</p>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-emerald-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-[#059669] text-white flex items-center justify-center font-black text-sm shrink-0 border border-[#1E1B4B]">02</div>
+                  <div>
+                    <h4 class="text-xs font-black text-[#1E1B4B] uppercase">3-Stage Engineering League</h4>
+                    <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Video pitch screening → Rapid prototyping sprint with mentor grilling → Head-to-head auditorium playoffs.</p>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-purple-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-[#7C3AED] text-white flex items-center justify-center font-black text-sm shrink-0 border border-[#1E1B4B]">03</div>
+                  <div>
+                    <h4 class="text-xs font-black text-[#1E1B4B] uppercase">Full-Stack Mentorship</h4>
+                    <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Industry software architects provide direct code reviews, database schema guidance, and live pitch rehearsals.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lg:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs rounded-xl overflow-hidden border-3 border-[#1E1B4B] shadow-[5px_5px_0px_#1E1B4B] bg-[#FAF6EE]">
+                  <img src="./src/assets/hpl_about_team_1787762724251.jpg" alt="Team Collaboration" class="w-full h-auto object-cover" onerror="this.src='https://placehold.co/320x220/1e1b4b/38bdf8?text=TEAM+COLLABORATION'" />
+                  <div class="p-2 bg-white border-t-2 border-[#1E1B4B] text-center">
+                    <span class="text-[10px] font-mono font-bold text-[#1E1B4B] uppercase">🤝 Collaborative Engineering Culture</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-amber-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center justify-around text-center">
+              <div>
+                <div class="text-lg font-black text-[#1E1B4B]">5 Members</div>
+                <div class="text-[10px] text-[#1E1B4B]/70 font-mono uppercase">Strict Squad Size</div>
+              </div>
+              <div class="h-6 w-[2px] bg-[#1E1B4B]/20"></div>
+              <div>
+                <div class="text-lg font-black text-[#EA580C]">3 Weeks</div>
+                <div class="text-[10px] text-[#1E1B4B]/70 font-mono uppercase">Progressive Tournament</div>
+              </div>
+              <div class="h-6 w-[2px] bg-[#1E1B4B]/20"></div>
+              <div>
+                <div class="text-lg font-black text-[#2563EB]">₹30,000+</div>
+                <div class="text-[10px] text-[#1E1B4B]/70 font-mono uppercase">Championship Pool</div>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // 03: Timeline (Highlighting Sept 12)
+      {
+        title: "Timeline & 12th Sept Milestone",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                SEASON ROADMAP & KEY MILESTONES
+              </div>
+              <div class="flex flex-wrap items-baseline justify-between gap-2 mt-0.5">
+                <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight font-display">
+                  Round 2 Timeline & Presentations
+                </h2>
+                <span class="px-3 py-1 rounded-full bg-red-100 border-2 border-[#1E1B4B] text-red-700 text-xs font-black animate-pulse shadow-[2px_2px_0px_#1E1B4B]">
+                  🚨 CRITICAL: 1st Presentation Starts Sept 12!
+                </span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3.5 my-2">
+              <div class="p-3.5 rounded-xl bg-emerald-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-mono font-bold text-gray-500">PLATFORM 03</span>
+                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-200 text-emerald-800">DONE</span>
+                  </div>
+                  <div class="text-xl font-black text-[#059669] font-display">08 SEP</div>
+                  <h4 class="font-black text-[#1E1B4B] text-xs mt-1">Shortlist & Inauguration</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-1 leading-snug">Season opening briefing and qualified squads release into Round 2 Arena.</p>
+                </div>
+                <div class="mt-2 pt-1.5 border-t border-[#1E1B4B]/10 text-[9px] font-mono text-gray-500">Official Briefing Done</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-blue-100 border-3 border-[#2563EB] shadow-[4px_4px_0px_#2563EB] flex flex-col justify-between transform md:-translate-y-1">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-mono font-black text-[#2563EB]">PLATFORM 04</span>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-amber-400 text-[#1E1B4B] border border-[#1E1B4B] animate-bounce">⭐ ROUND 2 START</span>
+                  </div>
+                  <div class="text-2xl font-black text-[#1D4ED8] font-display">12 SEP</div>
+                  <div class="text-[10px] font-mono font-black text-[#2563EB]">5:30 PM ONWARDS</div>
+                  <h4 class="font-black text-[#1E1B4B] text-xs mt-1">Part 1: Evaluation 1 (Live Presentation)</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/90 mt-1 leading-snug font-medium">Video deliverable + 24-hr panel review followed by live team Q&A and code walkthrough.</p>
+                </div>
+                <div class="mt-2 pt-1.5 border-t border-[#2563EB]/30 text-[9px] font-mono text-[#1D4ED8] font-black">➔ Mandatory Attendance (All 5)</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-orange-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-mono font-bold text-gray-500">PLATFORMS 05-07</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-200 text-orange-800">MID-SPRINT</span>
+                  </div>
+                  <div class="text-xl font-black text-[#EA580C] font-display">16 - 23 SEP</div>
+                  <h4 class="font-black text-[#1E1B4B] text-xs mt-1">Evaluations 2 & Part 2 Review</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-1 leading-snug">Feature completion check, database & API evaluation, live prototype stress tests.</p>
+                </div>
+                <div class="mt-2 pt-1.5 border-t border-[#1E1B4B]/10 text-[9px] font-mono text-gray-500">Rankings updated on board</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-purple-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-mono font-bold text-gray-500">PLATFORMS 08-09</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-200 text-purple-800">PLAYOFFS</span>
+                  </div>
+                  <div class="text-xl font-black text-[#7C3AED] font-display">26 & 28 SEP</div>
+                  <h4 class="font-black text-[#1E1B4B] text-xs mt-1">Auditorium Grand Finale</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-1 leading-snug">Top qualifying squads battle live on stage at SMVITM Main Auditorium before judges & audience.</p>
+                </div>
+                <div class="mt-2 pt-1.5 border-t border-[#1E1B4B]/10 text-[9px] font-mono text-[#7C3AED] font-bold">₹30,000+ Trophy Awarded</div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-blue-50 border-2 border-[#2563EB] flex items-center justify-between text-xs text-[#1E1B4B] font-mono">
+              <div class="flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-[#2563EB] shrink-0"></i>
+                <span><strong>First Presentation Deliverable:</strong> High-quality demo video + Architecture diagram + GitHub repository access due before the 12th Sept 5:30 PM evaluation slot.</span>
+              </div>
+            </div>
+          </div>
+        `
+      },
+
+      // 04: PS 01 AyurEssence
+      {
+        title: "PS 01: AyurEssence (SDM)",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded bg-[#7C3AED] text-white font-mono text-xs font-black border border-[#1E1B4B]">PS 01</span>
+                  <span class="text-[#7C3AED] font-mono text-xs font-bold uppercase tracking-wider">DIGITAL AYURVEDIC PLATFORM</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                  AyurEssence
+                </h2>
+                <p class="text-[#1E1B4B]/70 text-xs sm:text-sm font-semibold">
+                  Intelligent Ayurvedic Prakriti Assessment & Decision-Support System
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-purple-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B]">
+                <img src="./src/assets/sdm.png" alt="SDM College of Ayurveda" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-purple-200" onerror="this.src='https://placehold.co/80x80/7c3aed/ffffff?text=SDM'" />
+                <div class="text-right">
+                  <div class="text-[9px] text-[#1E1B4B]/60 font-mono uppercase">Official Sponsor</div>
+                  <div class="text-xs font-black text-[#7C3AED]">SDM College of Ayurveda</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-purple-50/70 border-2 border-[#7C3AED] text-xs text-[#1E1B4B] leading-relaxed my-1">
+              <strong>Problem Context:</strong> Prakriti (individual biological constitution) is central to Ayurvedic diagnosis across Vata, Pitta, and Kapha doshas. Clinical assessment relies on extensive subjective observations and paper questionnaires. AyurEssence standardizes this through an intelligent digital decision-support tool for clinicians and students.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-1">
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-purple-100 text-[#7C3AED] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">1</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Classical Questionnaire Engine</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Standardized multi-attribute questionnaire covering anatomical features, metabolism, sleep habits, and behavioral tendencies.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-purple-100 text-[#7C3AED] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">2</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Clinical Practitioner Observations</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Physician observation module capturing pulse characteristics (Nadi), tongue inspection, skin texture, and eye luster.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-purple-100 text-[#7C3AED] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">3</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Quantitative Dosha Breakdown</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Mathematical model computing normalized percentage breakdown (e.g., 45% Vata, 35% Pitta, 20% Kapha) with dominant classification.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-purple-100 text-[#7C3AED] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">4</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Evidence-Referenced Report Generation</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Exports comprehensive clinical PDF with citations to classical Ayurvedic texts (Charaka & Sushruta Samhita) for student learning.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-purple-50 border-2 border-[#1E1B4B] text-[11px] text-[#1E1B4B] font-mono flex items-center justify-between">
+              <span>💡 Sample Use Case: Ayurvedic intern administers guided diagnostic assessment to outpatient; system computes verified Prakriti chart.</span>
+              <span class="text-[#7C3AED] font-black">Focus: Traditional Science + AI</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 05: PS 02 SMARTBUS
+      {
+        title: "PS 02: SMARTBUS (SMVITM)",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded bg-[#059669] text-white font-mono text-xs font-black border border-[#1E1B4B]">PS 02</span>
+                  <span class="text-[#059669] font-mono text-xs font-bold uppercase tracking-wider">INTELLIGENT COLLEGE TRANSIT</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                  SMARTBUS
+                </h2>
+                <p class="text-[#1E1B4B]/70 text-xs sm:text-sm font-semibold">
+                  Smartphone GPS Tracking & Geofenced Notification System for College Fleet
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-emerald-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B]">
+                <img src="./src/assets/smvitm.png" alt="SMVITM Bantakal" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-emerald-200" onerror="this.src='https://placehold.co/80x80/059669/ffffff?text=SMVITM'" />
+                <div class="text-right">
+                  <div class="text-[9px] text-[#1E1B4B]/60 font-mono uppercase">Official Sponsor</div>
+                  <div class="text-xs font-black text-[#059669]">SMVITM Bantakal</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-emerald-50/70 border-2 border-[#059669] text-xs text-[#1E1B4B] leading-relaxed my-1">
+              <strong>Problem Context:</strong> Hundreds of day-scholar students and parents experience severe uncertainty regarding bus arrival times due to coastal weather and traffic bottlenecks. Existing systems require expensive custom hardware GPS boxes. SMARTBUS eliminates hardware by turning the driver's smartphone into the GPS beacon.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-1">
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-emerald-100 text-[#059669] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">1</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Driver Smartphone as GPS Beacon</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Zero-hardware deployment; driver initiates trip with 1 tap, streaming lightweight encrypted telemetry coords to server.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-emerald-100 text-[#059669] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">2</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Multi-Tier Boarding Geofencing</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Automated proximity push notifications to waiting students at 1 km, 500 m, and 200 m approaching thresholds.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-emerald-100 text-[#059669] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">3</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Dynamic Route-Aware ETA Engine</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Real-time calculation of remaining travel time adjusting for historical delays, halts, and coastal speed variations.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-emerald-100 text-[#059669] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">4</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">College Fleet Administration Hub</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Unified dashboard for college transport in-charge to monitor active routes, bus delays, driver status, and student rosters.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-emerald-50 border-2 border-[#1E1B4B] text-[11px] text-[#1E1B4B] font-mono flex items-center justify-between">
+              <span>💡 Sample Use Case: Parent receives automatic "Bus 500m away" alert at Katapadi junction; student boards without 25-min roadside wait.</span>
+              <span class="text-[#059669] font-black">Focus: Zero Hardware Cost</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 06: PS 03 Sahayak
+      {
+        title: "PS 03: Sahayak (Shirva Police)",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded bg-[#2563EB] text-white font-mono text-xs font-black border border-[#1E1B4B]">PS 03</span>
+                  <span class="text-[#2563EB] font-mono text-xs font-bold uppercase tracking-wider">COMMUNITY SAFETY & ELDER CARE</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                  Sahayak
+                </h2>
+                <p class="text-[#1E1B4B]/70 text-xs sm:text-sm font-semibold">
+                  A Community Assistance Platform for Senior Citizens
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-blue-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B]">
+                <img src="./src/assets/shirva.png" alt="Shirva Police Station" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-blue-200" onerror="this.src='https://placehold.co/80x80/2563eb/ffffff?text=SHIRVA'" />
+                <div class="text-right">
+                  <div class="text-[9px] text-[#1E1B4B]/60 font-mono uppercase">Official Sponsor</div>
+                  <div class="text-xs font-black text-[#2563EB]">Shirva Police Station</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-blue-50/70 border-2 border-[#2563EB] text-xs text-[#1E1B4B] leading-relaxed my-1">
+              <strong>Problem Context:</strong> Many elderly residents in Shirva and coastal towns live alone while family members work abroad or in metropolitan cities. They face difficulties accessing verified daily assistance (medicines, groceries, household errands) and lack a secure mechanism during health or personal safety emergencies.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-1">
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-blue-100 text-[#2563EB] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">1</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Elder-First Accessible UX</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">High-contrast, large-button, voice-assisted request interface in English and Kannada tailored for seniors.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-blue-100 text-[#2563EB] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">2</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Police & Aadhaar Volunteer Verification</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Vetting module connected with local law enforcement (Shirva Police) to eliminate abuse and protect elderly safety.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-blue-100 text-[#2563EB] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">3</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">One-Tap SOS & 112 Dispatch</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Emergency SOS trigger dispatching instant live location, health summary, and alert broadcast to Shirva Police and family.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-blue-100 text-[#2563EB] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">4</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Family Remote Tracking Dashboard</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Overseas and outstation family members receive real-time notification logs of requested errands and verified volunteer check-ins.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-blue-50 border-2 border-[#1E1B4B] text-[11px] text-[#1E1B4B] font-mono flex items-center justify-between">
+              <span>💡 Sample Use Case: 74-year-old resident taps voice button for pharmacy delivery; verified local youth delivers with OTP confirmation.</span>
+              <span class="text-[#2563EB] font-black">Focus: Senior Dignity & Safety</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 07: PS 04 SWMS
+      {
+        title: "PS 04: SWMS (IAHV)",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div class="flex items-start justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded bg-[#EA580C] text-white font-mono text-xs font-black border border-[#1E1B4B]">PS 04</span>
+                  <span class="text-[#EA580C] font-mono text-xs font-bold uppercase tracking-wider">DECISION SUPPORT PLATFORM</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                  SWMS (Smart Waste Simulator)
+                </h2>
+                <p class="text-[#1E1B4B]/70 text-xs sm:text-sm font-semibold">
+                  20-Year Habitation Solid Waste Generation, Treatment & Resilience Modeling
+                </p>
+              </div>
+
+              <div class="flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-orange-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B]">
+                <img src="./src/assets/IAHV-Logo.png" alt="IAHV - Art of Living" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-orange-200" onerror="this.src='https://placehold.co/80x80/ea580c/ffffff?text=IAHV'" />
+                <div class="text-right">
+                  <div class="text-[9px] text-[#1E1B4B]/60 font-mono uppercase">Official Sponsor</div>
+                  <div class="text-xs font-black text-[#EA580C]">IAHV (Art of Living)</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-orange-50/70 border-2 border-[#EA580C] text-xs text-[#1E1B4B] leading-relaxed my-1">
+              <strong>Problem Context:</strong> Solid waste planning for growing habitations (wards, towns, coastal cities) fails because static planning neglects multi-decade demographic growth, economic surges, and extreme monsoon weather. SWMS provides a simulation decision-support engine across a 20-year horizon.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-1">
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-orange-100 text-[#EA580C] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">1</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">7-Parameter Habitation Modeling</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Incorporates Demography, Infrastructure, Industries, Natural Resources, Terrain, Economy, and Cultural Consumption factors.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-orange-100 text-[#EA580C] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">2</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">20-Year Forecasting & Landfill Projection</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Simulates long-range waste generation volumes, treatment plant capacities, and estimates exact landfill exhaustion timelines.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-orange-100 text-[#EA580C] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">3</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Disaster & Monsoon Stress-Testing</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Simulates scenario impacts during heavy rainfall, coastal floods, bridge collapses, and festival season waste volume surges.</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-lg bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-orange-100 text-[#EA580C] flex items-center justify-center font-black text-xs shrink-0 mt-0.5 border border-[#1E1B4B]">4</div>
+                <div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] uppercase tracking-wider">Conversational AI Query Interface</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5">Enables civic planners to ask natural-language questions: "What happens if composting increases by 30% over the next 5 years?"</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-orange-50 border-2 border-[#1E1B4B] text-[11px] text-[#1E1B4B] font-mono flex items-center justify-between">
+              <span>💡 Sample Use Case: Udupi Municipal Council models waste processing requirements during 2026-2046 considering beach tourism growth.</span>
+              <span class="text-[#EA580C] font-black">Focus: Sustainability & Simulation</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 08: Rules & Regulations
+      {
+        title: "Rules & Regulations",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                CHAMPIONSHIP CODE & SQUAD INTEGRITY
+              </div>
+              <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                Rules & Squad Regulations
+              </h2>
+              <p class="text-[#1E1B4B]/70 text-xs mt-0.5">
+                Strict adherence to engineering ethics, team discipline, and evaluation standards is required throughout HPL.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 my-2">
+              <div class="p-3 rounded-xl bg-amber-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="users" class="w-4 h-4 text-[#EA580C]"></i> 01. Strict Squad Size
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">Every squad must consist of <strong>exactly 5 members</strong>. No additions, substitutions, or drop-in changes are permitted post-shortlisting.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-blue-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="video" class="w-4 h-4 text-[#2563EB]"></i> 02. Attendance & Live Defense
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">All 5 squad members must be present during live panel reviews. Random questions may be directed to any member to test collective understanding.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-emerald-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="code-2" class="w-4 h-4 text-[#059669]"></i> 03. Originality & Open Source
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">Core solution logic must be built during the hackathon. Open-source frameworks/libraries are permitted with full attribution in the README.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-orange-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="clock" class="w-4 h-4 text-[#EA580C]"></i> 04. Punctual Submissions
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">Deliverables (code repository, demonstration video, deployment URL) must be submitted before deadline. Late submissions incur penalty points.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-purple-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="zap" class="w-4 h-4 text-[#7C3AED]"></i> 05. Live Runnable Demo
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">Figma mockups alone will not suffice for Round 2. Evaluators require a runnable software prototype demonstrating core functionality.</p>
+              </div>
+
+              <div class="p-3 rounded-xl bg-rose-50 border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B]">
+                <div class="flex items-center gap-2 text-[#1E1B4B] font-black text-xs mb-1">
+                  <i data-lucide="award" class="w-4 h-4 text-[#E11D48]"></i> 06. Jury Decision Finality
+                </div>
+                <p class="text-[11px] text-[#1E1B4B]/80 leading-snug">The scoring and technical recommendations of the evaluation jury and problem stakeholders are binding and final.</p>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-red-100 border-2 border-red-500 flex items-center gap-2.5 text-xs text-red-900 font-medium">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 shrink-0"></i>
+              <span><strong>Zero Tolerance Policy:</strong> Plagiarism, uncredited repository cloning, or submitting solutions built prior to HPL will lead to immediate disqualification.</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 09: Evaluation Criteria (4 Pillars @ 25%)
+      {
+        title: "Evaluation Pillars (25% x 4)",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                SCORING METHODOLOGY
+              </div>
+              <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                Evaluation Criteria (4 Pillars @ 25% Each)
+              </h2>
+              <p class="text-[#1E1B4B]/70 text-xs mt-0.5">
+                Jury evaluation is strictly balanced across four 25-point dimensions to reward well-rounded engineering.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3.5 my-2">
+              <div class="p-3.5 rounded-xl bg-blue-50 border-2 border-[#2563EB] shadow-[3px_3px_0px_#2563EB] flex flex-col justify-between">
+                <div>
+                  <div class="text-2xl font-black text-[#2563EB] font-display">25%</div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] mt-0.5 uppercase tracking-wider">Problem Understanding</h4>
+                  <ul class="mt-2.5 space-y-1.5 text-[11px] text-[#1E1B4B]/80 leading-normal">
+                    <li>• Accuracy in addressing pain points</li>
+                    <li>• Depth of domain research</li>
+                    <li>• Scope coverage against sponsor needs</li>
+                    <li>• Edge case anticipation</li>
+                  </ul>
+                </div>
+                <div class="mt-3 pt-2 border-t border-[#2563EB]/20 text-[10px] font-mono text-[#2563EB] font-bold">Max: 25 Points</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-emerald-50 border-2 border-[#059669] shadow-[3px_3px_0px_#059669] flex flex-col justify-between">
+                <div>
+                  <div class="text-2xl font-black text-[#059669] font-display">25%</div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] mt-0.5 uppercase tracking-wider">Architecture & Code</h4>
+                  <ul class="mt-2.5 space-y-1.5 text-[11px] text-[#1E1B4B]/80 leading-normal">
+                    <li>• Clean, modular code structure</li>
+                    <li>• Scalable database schema</li>
+                    <li>• API robustness & latency</li>
+                    <li>• Security & error handling</li>
+                  </ul>
+                </div>
+                <div class="mt-3 pt-2 border-t border-[#059669]/20 text-[10px] font-mono text-[#059669] font-bold">Max: 25 Points</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-purple-50 border-2 border-[#7C3AED] shadow-[3px_3px_0px_#7C3AED] flex flex-col justify-between">
+                <div>
+                  <div class="text-2xl font-black text-[#7C3AED] font-display">25%</div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] mt-0.5 uppercase tracking-wider">Innovation & UX</h4>
+                  <ul class="mt-2.5 space-y-1.5 text-[11px] text-[#1E1B4B]/80 leading-normal">
+                    <li>• Creative technical approaches</li>
+                    <li>• Delightful user interface</li>
+                    <li>• Accessibility for all users</li>
+                    <li>• Practicality in real deployment</li>
+                  </ul>
+                </div>
+                <div class="mt-3 pt-2 border-t border-[#7C3AED]/20 text-[10px] font-mono text-[#7C3AED] font-bold">Max: 25 Points</div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-amber-50 border-2 border-[#F59E0B] shadow-[3px_3px_0px_#F59E0B] flex flex-col justify-between">
+                <div>
+                  <div class="text-2xl font-black text-[#D97706] font-display">25%</div>
+                  <h4 class="text-xs font-black text-[#1E1B4B] mt-0.5 uppercase tracking-wider">Presentation & Q&A</h4>
+                  <ul class="mt-2.5 space-y-1.5 text-[11px] text-[#1E1B4B]/80 leading-normal">
+                    <li>• Clarity of live demonstration</li>
+                    <li>• Time management</li>
+                    <li>• Depth of technical responses</li>
+                    <li>• Team cohesion in Q&A</li>
+                  </ul>
+                </div>
+                <div class="mt-3 pt-2 border-t border-[#F59E0B]/30 text-[10px] font-mono text-[#D97706] font-bold">Max: 25 Points</div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[2.5px_2.5px_0px_#1E1B4B] flex items-center justify-between text-xs font-mono">
+              <span class="text-[#1E1B4B]">TOTAL SCORE = Problem Understanding (25) + Architecture (25) + Innovation (25) + Presentation (25)</span>
+              <span class="text-[#EA580C] font-black">= 100 POINTS</span>
+            </div>
+          </div>
+        `
+      },
+
+      // 10: Organizing Bodies (With Real Logos)
+      {
+        title: "Organizing Bodies",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                CHAMPIONSHIP ORGANIZERS
+              </div>
+              <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                Organizing Bodies & Technical Chapters
+              </h2>
+              <p class="text-[#1E1B4B]/70 text-xs mt-0.5">
+                Powered by an alliance of academic excellence, student developer clubs, and professional engineering societies.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 my-2">
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/smvitm.png" alt="SMVITM" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/1e1b4b/ffffff?text=SMVITM'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">SMVITM Bantakal</h4>
+                  <p class="text-[10px] text-[#2563EB] font-mono font-bold">Host & Academic Authority</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/code%20trooper.png" alt="Code Troopers" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/ea580c/ffffff?text=TROOPERS'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">Code Troopers</h4>
+                  <p class="text-[10px] text-[#EA580C] font-mono font-bold">Technical Engine & Mentorship</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/iste.png" alt="ISTE" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/059669/ffffff?text=ISTE'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">ISTE SMVITM</h4>
+                  <p class="text-[10px] text-[#059669] font-mono font-bold">Student Chapter & Outreach</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/ieee.png" alt="IEEE" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/2563eb/ffffff?text=IEEE'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">IEEE Student Branch</h4>
+                  <p class="text-[10px] text-[#2563EB] font-mono font-bold">Technical Standards & Review</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/Aikya%20logo_20260829_133319_0000.png" alt="Aikya Club" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/7c3aed/ffffff?text=AIKYA'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">Aikya Club</h4>
+                  <p class="text-[10px] text-[#7C3AED] font-mono font-bold">Social Outreach & Community</p>
+                </div>
+              </div>
+
+              <div class="p-3 rounded-xl bg-white border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-center gap-3">
+                <img src="./src/assets/ignite.jpeg" alt="Ignite" class="w-12 h-12 object-contain bg-white rounded-lg p-1 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/80x80/e11d48/ffffff?text=IGNITE'" />
+                <div>
+                  <h4 class="font-extrabold text-xs text-[#1E1B4B]">Ignite Incubation</h4>
+                  <p class="text-[10px] text-[#E11D48] font-mono font-bold">Innovation & Acceleration</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-white border-2 border-[#1E1B4B] text-xs text-[#1E1B4B]/80 text-center font-mono">
+              Collaboratively committed to elevating undergraduate engineering capability and civic problem-solving.
+            </div>
+          </div>
+        `
+      },
+
+      // 11: Problem Sponsors (With Real Logos)
+      {
+        title: "Problem Statement Sponsors",
+        render: () => `
+          <div class="flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center gap-2 text-[#EA580C] font-mono text-xs font-black tracking-widest uppercase">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                REAL-WORLD PROBLEM STAKEHOLDERS
+              </div>
+              <h2 class="text-2xl md:text-3xl font-black text-[#1E1B4B] uppercase tracking-tight mt-0.5 font-display">
+                Official Problem Statement Sponsors
+              </h2>
+              <p class="text-[#1E1B4B]/70 text-xs mt-0.5">
+                Distinguished institutional partners providing genuine challenge statements, domain guidance, and deployment pilots.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 my-2">
+              <div class="p-3.5 rounded-xl bg-purple-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3.5">
+                <img src="./src/assets/sdm.png" alt="SDM College of Ayurveda" class="w-14 h-14 object-contain bg-white rounded-xl p-1 shrink-0 border border-purple-200" onerror="this.src='https://placehold.co/80x80/7c3aed/ffffff?text=SDM'" />
+                <div>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-purple-200 text-[#5B21B6] font-black">PS 01 STAKEHOLDER</span>
+                  <h4 class="font-extrabold text-sm text-[#1E1B4B] mt-0.5">SDM College of Ayurveda, Udupi</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Sponsor for <strong>AyurEssence</strong>. Providing classical Ayurvedic literature, diagnostic traits, and doctor clinical feedback.</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-emerald-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3.5">
+                <img src="./src/assets/smvitm.png" alt="SMVITM Bantakal" class="w-14 h-14 object-contain bg-white rounded-xl p-1 shrink-0 border border-emerald-200" onerror="this.src='https://placehold.co/80x80/059669/ffffff?text=SMVITM'" />
+                <div>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-200 text-[#065F46] font-black">PS 02 STAKEHOLDER</span>
+                  <h4 class="font-extrabold text-sm text-[#1E1B4B] mt-0.5">SMVITM Bantakal (Transport Dept)</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Sponsor for <strong>SMARTBUS</strong>. Providing college fleet route coordinates, stop locations, and test validation on campus routes.</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-blue-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3.5">
+                <img src="./src/assets/shirva.png" alt="Shirva Police" class="w-14 h-14 object-contain bg-white rounded-xl p-1 shrink-0 border border-blue-200" onerror="this.src='https://placehold.co/80x80/2563eb/ffffff?text=POLICE'" />
+                <div>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-blue-200 text-[#1E40AF] font-black">PS 03 STAKEHOLDER</span>
+                  <h4 class="font-extrabold text-sm text-[#1E1B4B] mt-0.5">Shirva Police Station</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Sponsor for <strong>Sahayak</strong>. Providing police verification protocol requirements and 112 emergency routing standards.</p>
+                </div>
+              </div>
+
+              <div class="p-3.5 rounded-xl bg-orange-50 border-2 border-[#1E1B4B] shadow-[3px_3px_0px_#1E1B4B] flex items-start gap-3.5">
+                <img src="./src/assets/IAHV-Logo.png" alt="IAHV - Art of Living" class="w-14 h-14 object-contain bg-white rounded-xl p-1 shrink-0 border border-orange-200" onerror="this.src='https://placehold.co/80x80/ea580c/ffffff?text=IAHV'" />
+                <div>
+                  <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-orange-200 text-[#9A3412] font-black">PS 04 STAKEHOLDER</span>
+                  <h4 class="font-extrabold text-sm text-[#1E1B4B] mt-0.5">IAHV (Art of Living)</h4>
+                  <p class="text-[11px] text-[#1E1B4B]/80 mt-0.5 leading-snug">Sponsor for <strong>SWMS</strong>. Providing ecological sustainability benchmarks, 7 habitation parameter guidelines, and simulation goals.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-amber-100 border-2 border-[#1E1B4B] text-xs text-[#1E1B4B] text-center font-mono font-bold">
+              ⭐ Winning squads will be offered official mentorship and opportunities to pilot their solution with the respective stakeholder!
+            </div>
+          </div>
+        `
+      },
+
+      // 12: Grand Finale & Call to Action (With Champions Trophy Artwork)
+      {
+        title: "Grand Finale & Next Steps",
+        render: () => `
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center h-full my-auto">
+            <div class="lg:col-span-7 flex flex-col justify-center text-left">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border-2 border-[#1E1B4B] text-[#1E1B4B] text-xs font-black uppercase tracking-widest mb-3 shadow-[2px_2px_0px_#1E1B4B] w-fit">
+                THE GRAND FINALE AWAITS
+              </div>
+              <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-[#1E1B4B] uppercase tracking-tight font-display">
+                STEP INTO THE ARENA
+              </h2>
+              <p class="mt-2 text-base sm:text-lg text-[#EA580C] font-mono font-black">
+                “CODE TODAY. IMPACT TOMORROW.”
+              </p>
+              <p class="mt-2 text-xs sm:text-sm text-[#1E1B4B]/80 max-w-xl leading-relaxed">
+                Build with rigor, test with passion, and present with conviction. The championship trophy, ₹30,000+ prize pool, and real-world impact are yours to seize!
+              </p>
+              <div class="mt-4 p-3.5 rounded-xl bg-blue-50 border-3 border-[#2563EB] shadow-[3px_3px_0px_#2563EB] text-[#1E1B4B] text-xs font-mono max-w-lg w-full">
+                <div class="text-[#2563EB] font-black text-sm mb-0.5">NEXT IMMEDIATE CHECKPOINT:</div>
+                <div class="font-bold text-sm">Saturday, 12th September @ 5:30 PM</div>
+                <div class="text-[#1E1B4B]/80 text-[11px] mt-0.5">Part 1 Evaluation 1: Deliverable Video & Code Walkthrough Presentation</div>
+              </div>
+              <div class="mt-3 text-xs text-[#1E1B4B]/60 font-mono">
+                Questions? Contact: hpl@sode-edu.in | Discord Support Channel Active
+              </div>
+            </div>
+            <div class="lg:col-span-5 flex justify-center">
+              <div class="relative w-full max-w-xs rounded-xl overflow-hidden border-3 border-[#1E1B4B] shadow-[6px_6px_0px_#1E1B4B] bg-[#FAF6EE]">
+                <img src="./src/assets/hpl_timeline_champions.jpg" alt="Champions Trophy" class="w-full h-auto object-cover" onerror="this.src='https://placehold.co/320x240/1e1b4b/f59e0b?text=CHAMPIONS+TROPHY'" />
+                <div class="p-2.5 bg-amber-400 border-t-2 border-[#1E1B4B] text-center">
+                  <span class="text-xs font-mono font-black text-[#1E1B4B] uppercase">🏆 Championship Trophy & Glory</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+      }
+    ];
+
+    let currentSlide = 0;
+    const totalSlides = slidesData.length;
+
+    function renderSlide(index) {
+      currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
+      const slide = slidesData[currentSlide];
+      const container = document.getElementById('slideContent');
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(6px)';
+
+      setTimeout(() => {
+        container.innerHTML = slide.render();
+        lucide.createIcons();
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+      }, 120);
+
+      document.getElementById('slideCounter').innerText = `SLIDE ${String(currentSlide + 1).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+      document.getElementById('slideFooterCounter').innerText = `SLIDE ${currentSlide + 1} OF ${totalSlides}`;
+      document.getElementById('progressBar').style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+
+      document.getElementById('prevBtn').disabled = currentSlide === 0;
+      document.getElementById('prevBtn').style.opacity = currentSlide === 0 ? '0.4' : '1';
+      document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+      document.getElementById('nextBtn').style.opacity = currentSlide === totalSlides - 1 ? '0.4' : '1';
+
+      renderDots();
+    }
+
+    function renderDots() {
+      const container = document.getElementById('dotsContainer');
+      container.innerHTML = '';
+      slidesData.forEach((_, idx) => {
+        const dot = document.createElement('button');
+        dot.className = `h-3 rounded-full border border-[#1E1B4B] transition-all duration-300 ${
+          currentSlide === idx 
+            ? 'w-8 bg-amber-400 shadow-[2px_2px_0px_#1E1B4B]' 
+            : 'w-3 bg-white hover:bg-amber-200'
+        }`;
+        dot.onclick = () => renderSlide(idx);
+        container.appendChild(dot);
+      });
+    }
+
+    function renderOverviewGrid() {
+      const grid = document.getElementById('overviewGrid');
+      grid.innerHTML = '';
+      slidesData.forEach((slide, idx) => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl cursor-pointer border-2 transition-all transform hover:scale-102 ${
+          currentSlide === idx 
+            ? 'border-amber-400 bg-amber-500/30 shadow-[4px_4px_0px_#000]' 
+            : 'border-white/20 bg-white/5 hover:border-white/40'
+        }`;
+        card.innerHTML = `
+          <span class="text-xs font-mono font-black text-amber-400">SLIDE ${String(idx + 1).padStart(2, '0')}</span>
+          <p class="mt-1 font-bold text-sm text-white line-clamp-2">${slide.title}</p>
+        `;
+        card.onclick = () => {
+          renderSlide(idx);
+          toggleOverview();
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) renderSlide(currentSlide + 1);
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) renderSlide(currentSlide - 1);
+    }
+
+    function toggleOverview() {
+      const modal = document.getElementById('overviewModal');
+      const isHidden = modal.classList.contains('hidden');
+      if (isHidden) {
+        renderOverviewGrid();
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen().catch(err => console.log(err));
+      }
+    }
+
+    /**
+     * Download PowerPoint .pptx File
+     */
+    async function downloadPptx() {
+      const btnText = document.getElementById('downloadBtnText');
+      try {
+        btnText.innerText = 'Generating...';
+
+        const pptx = new PptxGenJS();
+        pptx.layout = 'LAYOUT_16x9';
+        pptx.author = 'SMVITM & Code Troopers';
+        pptx.company = 'Hackathon Premier League';
+        pptx.title = 'HPL 2026 Official Round 2 Presentation Deck';
+
+        const bgPaper = { color: 'FAF6EE' };
+        const navyInk = '1E1B4B';
+        const amberGold = 'F59E0B';
+        const royalBlue = '2563EB';
+        const emeraldGreen = '059669';
+        const purpleViolet = '7C3AED';
+        const vividOrange = 'EA580C';
+
+        // Slide 1
+        const s1 = pptx.addSlide();
+        s1.background = bgPaper;
+        s1.addText('HACKATHON PREMIER LEAGUE 2026', { x: 0.8, y: 1.8, w: 11.7, fontSize: 36, bold: true, color: navyInk });
+        s1.addText('“CODE TODAY. IMPACT TOMORROW.”', { x: 0.8, y: 2.7, w: 11.7, fontSize: 22, bold: true, color: amberGold });
+        s1.addText('Organized by SMVITM Bantakal in association with Code Troopers • ISTE • IEEE • Aikya • Ignite', { x: 0.8, y: 3.8, w: 11.7, fontSize: 13, color: '4B5563' });
+        s1.addText('🏆 ₹30,000+ Prize Pool  •  ⚡ 4 Real Problem Statements  •  🔥 3-Week Progressive Tournament', { x: 0.8, y: 5.0, w: 11.7, fontSize: 13, bold: true, color: navyInk });
+
+        // Slide 2
+        const s2 = pptx.addSlide();
+        s2.background = bgPaper;
+        s2.addText('ABOUT HACKATHON PREMIER LEAGUE', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s2.addText('1. Real Stakeholders: Problems from Shirva Police, SMVITM Transit, SDM Ayurveda, and IAHV.\n2. 3-Stage League: Video Pitch Screening → Prototype Mentoring → Auditorium Finals.\n3. Deep Mentorship: Software architects provide direct code reviews and architecture support.\n\nStrict 5 Members per squad • ₹30,000+ Prize Pool', { x: 0.8, y: 1.8, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 3
+        const s3 = pptx.addSlide();
+        s3.background = bgPaper;
+        s3.addText('ROUND 2 SPRINT TIMELINE & PRESENTATIONS', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s3.addText('CRITICAL: First Presentation Starts Saturday, 12th September at 5:30 PM!', { x: 0.8, y: 1.2, w: 11.7, fontSize: 14, bold: true, color: 'DC2626' });
+        s3.addText('• 08 SEP: Shortlist & Inauguration\n• 12 SEP (5:30 PM): Part 1 Evaluation 1 (First Presentation with Video Deliverable & Live Q&A)\n• 16-23 SEP: Evaluations 2 & Part 2 Mid-Sprint Review\n• 26 & 28 SEP: Playoffs & Auditorium Grand Finale', { x: 0.8, y: 2.0, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 4
+        const s4 = pptx.addSlide();
+        s4.background = bgPaper;
+        s4.addText('PS 01: SAHAYAK (SHIRVA POLICE STATION)', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: royalBlue });
+        s4.addText('A Community Assistance Platform for Senior Citizens\n\n1. Voice-First Access: Phone call / IVR channel with zero app learning curve for seniors.\n2. Shirva Police Verification Workflow: Multi-step KYC and police admin review portal.\n3. Intelligent Volunteer Matching: Proximity, availability, and skill dispatch.\n4. Emergency Escalation: Seamless automated routing to 112 / Police desk.', { x: 0.8, y: 1.6, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 5
+        const s5 = pptx.addSlide();
+        s5.background = bgPaper;
+        s5.addText('PS 02: SMARTBUS (SMVITM BANTAKAL)', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: emeraldGreen });
+        s5.addText('Intelligent College Bus Tracking & Notification System\n\n1. Driver Smartphone GPS Beacon: 1-tap route trip tracking without dedicated hardware.\n2. Multi-Tier Geofencing: Proximity notifications to waiting students at 1km, 500m, 200m.\n3. Dynamic ETA Engine: Real-time arrival calculation adjusting for halts and traffic.\n4. Fleet Command Hub: Administrative dashboard for route and delay telemetry.', { x: 0.8, y: 1.6, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 6
+        const s6 = pptx.addSlide();
+        s6.background = bgPaper;
+        s6.addText('PS 03: AYURESSENCE (SDM COLLEGE OF AYURVEDA)', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: purpleViolet });
+        s6.addText('Intelligent Ayurvedic Prakriti Assessment Platform\n\n1. Classical Questionnaire: Standardized questions covering anatomical & physiological traits.\n2. Clinical Observations: Doctor module for pulse (Nadi), tongue, and skin assessment.\n3. Quantitative Dosha Engine: Normalized calculation of Vata, Pitta, Kapha breakdown.\n4. Evidence-Referenced Reports: Classical treatise citations (Charaka & Sushruta Samhita).', { x: 0.8, y: 1.6, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 7
+        const s7 = pptx.addSlide();
+        s7.background = bgPaper;
+        s7.addText('PS 04: SWMS (IAHV ART OF LIVING)', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: vividOrange });
+        s7.addText('Smart Waste Management Simulator\n\n1. 7-Parameter Habitation Model: Demography, Infrastructure, Industries, Resources, Terrain, Economy, Culture.\n2. 20-Year Forecasting: Long-range waste volume & landfill exhaustion timeline.\n3. Extreme Condition Testing: Flood and monsoon disruption stress testing.\n4. Conversational AI Interface: Natural-language query interface for municipal planners.', { x: 0.8, y: 1.6, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 8
+        const s8 = pptx.addSlide();
+        s8.background = bgPaper;
+        s8.addText('RULES & SQUAD REGULATIONS', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s8.addText('1. Strict 5-member roster locked upon shortlisting.\n2. Mandatory live attendance for all 5 squad members in reviews.\n3. Original codebase written during HPL; open-source libraries permitted with attribution.\n4. Deliverables submitted strictly before deadline.\n5. Runnable software prototype required for evaluation, not mockups.\n6. Zero tolerance for plagiarism.', { x: 0.8, y: 1.8, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 9
+        const s9 = pptx.addSlide();
+        s9.background = bgPaper;
+        s9.addText('EVALUATION CRITERIA (4 PILLARS @ 25% EACH)', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s9.addText('• Problem Understanding (25%): Domain research, pain points accuracy, edge cases.\n• Architecture & Code Quality (25%): Clean code, scalable DB, robust APIs.\n• Innovation & User Experience (25%): Creative technology, delightful accessible UX.\n• Presentation & Q&A Defense (25%): Demo clarity, time discipline, technical defense.\n\nTotal Score = 100 Points', { x: 0.8, y: 1.8, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 10
+        const s10 = pptx.addSlide();
+        s10.background = bgPaper;
+        s10.addText('ORGANIZING BODIES & PARTNERS', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s10.addText('• SMVITM Bantakal — Host Institution & Academic Authority\n• Code Troopers — Technical Engine, Platform Architecture & Mentorship\n• ISTE SMVITM Student Chapter — Event Coordination & Outreach\n• IEEE Student Branch — Technical Standards & Review\n• Aikya Club — Social Responsibility & Community\n• Ignite — Innovation & Incubation Partner', { x: 0.8, y: 1.8, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 11
+        const s11 = pptx.addSlide();
+        s11.background = bgPaper;
+        s11.addText('OFFICIAL PROBLEM STATEMENT SPONSORS', { x: 0.8, y: 0.6, w: 11.7, fontSize: 24, bold: true, color: navyInk });
+        s11.addText('• Shirva Police Station (PS 01: Sahayak) — Community Safety & Senior Citizen Welfare\n• SMVITM Bantakal Transport Dept (PS 02: SMARTBUS) — Campus Transit & Geofencing\n• SDM College of Ayurveda, Udupi (PS 03: AyurEssence) — Traditional Science & Digital Health\n• IAHV Art of Living (PS 04: SWMS) — Ecological Sustainability & 20-Year Waste Modeling', { x: 0.8, y: 1.8, w: 11.7, fontSize: 13, color: navyInk });
+
+        // Slide 12
+        const s12 = pptx.addSlide();
+        s12.background = bgPaper;
+        s12.addText('STEP INTO THE ARENA — HPL 2026', { x: 0.8, y: 1.5, w: 11.7, fontSize: 32, bold: true, color: navyInk });
+        s12.addText('“CODE TODAY. IMPACT TOMORROW.”', { x: 0.8, y: 2.4, w: 11.7, fontSize: 22, bold: true, color: amberGold });
+        s12.addText('NEXT IMMEDIATE CHECKPOINT:\nSaturday, 12th September @ 5:30 PM\nPart 1 Evaluation 1: Deliverable Video & Code Walkthrough Presentation\n\n₹30,000+ Prize Pool  •  Championship Trophy  •  Incubation Pilots', { x: 0.8, y: 3.4, w: 11.7, fontSize: 14, color: navyInk });
+
+        await pptx.writeFile({ fileName: 'HPL_2026_Round2_Official_Presentation.pptx' });
+        btnText.innerText = 'Download PPTX';
+      } catch (err) {
+        console.error(err);
+        btnText.innerText = 'Download PPTX';
+        alert('Could not download PPTX automatically. You can also print/save as PDF using the PDF button.');
+      }
+    }
+
+    // Keyboard bindings
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        renderSlide(0);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        renderSlide(totalSlides - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (e.key === 'o' || e.key === 'O') {
+        e.preventDefault();
+        toggleOverview();
+      } else if (e.key === 'Escape') {
+        document.getElementById('overviewModal').classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      renderSlide(0);
+    });
+  </script>
+</body>
+</html>

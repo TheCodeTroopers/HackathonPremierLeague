@@ -18,7 +18,8 @@ import { FAQPage } from './components/pages/FAQPage';
 import { RegisterPage } from './components/pages/RegisterPage';
 import { SponsorsPage } from './components/pages/SponsorsPage';
 import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage';
-import { ContactPage } from './components/pages/ContactPage';
+import { PresentationPage } from './components/pages/PresentationPage';
+import { ContactPage, ShortlistedPage } from './components/pages/ContactPage';
 import { AdminPage } from './components/pages/AdminPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
@@ -29,7 +30,7 @@ const getInitialPage = (): PageRoute => {
     const rawHash = window.location.hash.replace('#', '') as PageRoute;
     const validPages: PageRoute[] = [
       'home', 'how-it-works', 'match-day', 'squads',
-      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact', 'admin'
+      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin'
     ];
     if (validPages.includes(rawHash)) {
       return rawHash;
@@ -72,7 +73,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'contact', 'admin'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'contact', 'admin'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -114,8 +115,8 @@ export function App() {
       {/* Unique Animated Mouse Cursor & Scroll Indicator */}
       <CustomCursor />
 
-      {/* Top Sticky Header (Hidden on Admin portal for clean workspace view) */}
-      {activePage !== 'admin' && (
+      {/* Top Sticky Header (Hidden on Admin portal & Presentation mode for clean workspace view) */}
+      {activePage !== 'admin' && activePage !== 'presentation' && (
         <Navbar activePage={activePage} onNavigate={handleNavigate} />
       )}
 
@@ -155,8 +156,14 @@ export function App() {
           {activePage === 'sponsors' && (
             <SponsorsPage onNavigate={handleNavigate} />
           )}
-          {activePage === 'problem-statements' && (
+          {(activePage === 'problem-statements' || activePage === 'round2' || activePage === 'reveal') && (
             <ProblemStatementsPage onNavigate={handleNavigate} />
+          )}
+          {activePage === 'presentation' && (
+            <PresentationPage onNavigate={handleNavigate} />
+          )}
+          {activePage === 'shortlisted' && (
+            <ShortlistedPage onNavigate={handleNavigate} />
           )}
           {activePage === 'contact' && (
             <ContactPage onNavigate={handleNavigate} />
@@ -170,8 +177,8 @@ export function App() {
         </PageTransition>
       </main>
 
-      {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal & Timeline) */}
-      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && (
+      {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal, Timeline & Presentation) */}
+      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && activePage !== 'presentation' && (
         <Footer onNavigate={handleNavigate} />
       )}
     </div>
