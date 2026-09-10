@@ -31,7 +31,8 @@ import {
     ChevronRight,
     Menu,
     X,
-    User
+    User,
+    AlertTriangle
 } from 'lucide-react';
 import { PageRoute } from '../../types';
 import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
