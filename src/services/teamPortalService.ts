@@ -48,7 +48,7 @@ export const OFFICIAL_QUALIFIED_TEAMS: QualifiedTeamRecord[] = [
     { rank: 17, squadId: 'HPL-R2-17', teamName: 'Code Raiders', leaderEmail: 'akash.23cs008@sode-edu.in', initialPassword: 'HPL17-CODE!' },
     { rank: 18, squadId: 'HPL-R2-18', teamName: 'Hackblaze', leaderEmail: 'suhas.24cs037@sode-edu.in', initialPassword: 'HPL18-HACK!' },
     { rank: 19, squadId: 'HPL-R2-19', teamName: 'NoobScripterS', leaderEmail: 'sathyendra.23cs140@sode-edu.in', initialPassword: 'HPL19-NOOB!' },
-    { rank: 20, squadId: 'HPL-R2-20', teamName: 'Code Worrior', leaderEmail: 'niha.23cs081@sode-edu.in', initialPassword: 'HPL20-CODE!' },
+    { rank: 20, squadId: 'HPL-R2-20', teamName: 'Code Warriors', leaderEmail: 'niha.23cs081@sode-edu.in', initialPassword: 'HPL20-CODE!' },
     { rank: 21, squadId: 'HPL-R2-21', teamName: 'Tech Hive', leaderEmail: 'samanvitha.23cs132@sode-edu.in', initialPassword: 'HPL21-TECH!' },
     { rank: 22, squadId: 'HPL-R2-22', teamName: 'Innovators', leaderEmail: 'swati.25ai047@sode-edu.in', initialPassword: 'HPL22-INNO!' },
     { rank: 23, squadId: 'HPL-R2-23', teamName: 'tech avenue', leaderEmail: 'sujal.23ad053@sode-edu.in', initialPassword: 'HPL23-TECHA!' },
