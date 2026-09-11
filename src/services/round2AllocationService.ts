@@ -4,6 +4,7 @@ import {
   findQualifiedTeamByName, 
   findQualifiedTeamByEmail,
   findQualifiedTeamBySquadId,
+  getCustomStoredPassword,
   QualifiedTeamRecord
 } from './teamPortalService';
 
@@ -34,6 +35,7 @@ export interface Round2PsSelectionRow {
   ps_code?: string;
   locked_at?: string;
   rank?: number;
+  team_password?: string;
 }
 
 export interface LockedTeamRecord {
@@ -172,8 +174,23 @@ export async function saveRound2TeamRoster(
       .upsert(payload, { onConflict: 'leader_email' });
 
     if (error) {
-      console.error('[HPL] saveRound2TeamRoster error:', error.message);
-      return { success: false, error: error.message };
+      console.warn('[HPL] saveRound2TeamRoster upsert notice, trying fallback:', error.message);
+      const { data: existingRows } = await supabase
+        .from('round2_ps_selections')
+        .select('id')
+        .or(`squad_id.eq.${payload.squad_id},leader_email.eq.${cleanEmail}`)
+        .limit(1);
+
+      if (existingRows && existingRows.length > 0) {
+        await supabase
+          .from('round2_ps_selections')
+          .update(payload)
+          .eq('id', existingRows[0].id);
+      } else {
+        await supabase
+          .from('round2_ps_selections')
+          .insert([payload]);
+      }
     }
 
     console.log(`[HPL] ✅ Saved team roster to round2_ps_selections for ${roster.team_name}`);
@@ -242,37 +259,46 @@ export function calculateStrictAllocations(
     'ps-04': [],
   };
 
-  const processedSquads = new Set<string>();
+  // 1. Group by team squadId to resolve each team's latest valid PS selection from DB rows
+  const latestSelectionBySquad = new Map<string, { team: QualifiedTeamRecord; ps: Round2ProblemStatement; lockedAt: number }>();
 
-  // Build candidates from the dedicated round2_ps_selections rows
   dbRows.forEach(row => {
+    if (!row.ps_id) return;
     const ps = ROUND2_PROBLEM_STATEMENTS.find(p => p.id === row.ps_id);
-    if (!ps || !candidatesByPs[ps.id]) return;
+    if (!ps) return;
 
     const team = findQualifiedTeamBySquadId(row.squad_id) ||
                  findQualifiedTeamByEmail(row.leader_email) ||
                  findQualifiedTeamByName(row.team_name);
-    if (!team || processedSquads.has(team.squadId)) return;
+    if (!team) return;
 
     const lockedAt = row.locked_at ? new Date(row.locked_at).getTime() : Date.now();
-    candidatesByPs[ps.id].push({ team, ps, lockedAt });
-    processedSquads.add(team.squadId);
+    const existing = latestSelectionBySquad.get(team.squadId);
+    if (!existing || lockedAt >= existing.lockedAt) {
+      latestSelectionBySquad.set(team.squadId, { team, ps, lockedAt });
+    }
   });
 
-  // Fallback: If localStorage selections are provided, also incorporate them
+  // Fallback: If localStorage selections are provided, incorporate any teams not yet in DB
   if (_unused && typeof _unused === 'object') {
     Object.entries(_unused).forEach(([key, psId]) => {
-      const team = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-      if (!team || processedSquads.has(team.squadId)) return;
+      const team = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key) || findQualifiedTeamByEmail(key);
+      if (!team || latestSelectionBySquad.has(team.squadId)) return;
 
       const normalizedPsId = psId.replace('track-', 'ps-');
       const ps = ROUND2_PROBLEM_STATEMENTS.find(p => p.id === normalizedPsId);
-      if (ps && candidatesByPs[ps.id]) {
-        candidatesByPs[ps.id].push({ team, ps, lockedAt: Date.now() });
-        processedSquads.add(team.squadId);
+      if (ps) {
+        latestSelectionBySquad.set(team.squadId, { team, ps, lockedAt: Date.now() });
       }
     });
   }
+
+  // 2. Populate candidates for each problem statement
+  latestSelectionBySquad.forEach(({ team, ps, lockedAt }) => {
+    if (candidatesByPs[ps.id]) {
+      candidatesByPs[ps.id].push({ team, ps, lockedAt });
+    }
+  });
 
   const lockedMap: Record<string, LockedTeamRecord> = {};
   const overflowMap: Record<string, OverflowTeamRecord> = { ...existingOverflow };
@@ -413,6 +439,7 @@ export async function lockProblemStatementSelection(
   window.dispatchEvent(new Event('hpl-selection-update'));
 
   // 4. Upsert into `round2_ps_selections` — the dedicated Round 2 table
+  const customHashedPassword = getCustomStoredPassword(team.squadId);
   const row: Round2PsSelectionRow = {
     squad_id: team.squadId,
     team_name: team.teamName,
@@ -422,6 +449,7 @@ export async function lockProblemStatementSelection(
     ps_code: ps.psCode,
     locked_at: new Date().toISOString(),
     rank: team.rank,
+    ...(customHashedPassword ? { team_password: customHashedPassword } : {}),
   };
 
   try {
@@ -430,13 +458,29 @@ export async function lockProblemStatementSelection(
       .upsert(row, { onConflict: 'leader_email' });
 
     if (upsertError) {
-      console.error('[HPL] round2_ps_selections upsert failed:', upsertError.message, upsertError.code);
-      // Still return success — localStorage has it saved
+      console.warn('[HPL] round2_ps_selections upsert notice, trying fallback:', upsertError.message);
+      const { data: existingRows } = await supabase
+        .from('round2_ps_selections')
+        .select('id')
+        .or(`squad_id.eq.${row.squad_id},leader_email.eq.${row.leader_email}`)
+        .limit(1);
+
+      if (existingRows && existingRows.length > 0) {
+        await supabase
+          .from('round2_ps_selections')
+          .update(row)
+          .eq('id', existingRows[0].id);
+      } else {
+        await supabase
+          .from('round2_ps_selections')
+          .insert([row]);
+      }
+      console.log(`[HPL] ✅ Round 2 PS locked in DB via fallback: ${team.teamName} → ${ps.title}`);
     } else {
       console.log(`[HPL] ✅ Round 2 PS locked in DB: ${team.teamName} → ${ps.title}`);
     }
   } catch (err) {
-    console.error('[HPL] round2_ps_selections upsert exception:', err);
+    console.error('[HPL] round2_ps_selections lock exception:', err);
   }
 
   return { success: true };

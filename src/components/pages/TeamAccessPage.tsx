@@ -39,6 +39,8 @@ import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
 import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
 import { 
     changeTeamPassword, 
+    fetchTeamPasswordFromDB,
+    verifyTeamPassword,
     findTeamRegistration, 
     findTeamRegistrationByEmail,
     getTeamPassword, 
@@ -181,6 +183,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     // Settings (Change Password)
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Problem Statement selection state
@@ -298,7 +301,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     window.addEventListener('hpl-selection-update', handleSync);
 
     // Fetch REAL Round 2 PS selections from the dedicated Supabase table
-    (async () => {
+    const fetchLiveDbSelections = async () => {
         try {
             const dbRows = await fetchRound2PsSelectionsFromDB();
             if (dbRows.length > 0) {
@@ -315,9 +318,13 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
         } catch (e) {
             console.warn('[HPL] Could not sync round2_ps_selections:', e);
         }
-    })();
+    };
+
+    fetchLiveDbSelections();
+    const pollTimer = setInterval(fetchLiveDbSelections, 4000);
 
     return () => {
+        clearInterval(pollTimer);
         window.removeEventListener('storage', handleSync);
         window.removeEventListener('hpl-selection-update', handleSync);
     };
@@ -376,12 +383,12 @@ const allocationState = useMemo(() => {
 
             // 2. Validate Password against assigned password or updated password
             const currentSquadId = `HPL-R2-${String(qualified.rank).padStart(2, '0')}`;
+            await fetchTeamPasswordFromDB(currentSquadId, cleanEmail);
             const expectedPassword = getTeamPassword(currentSquadId, qualified.teamName);
 
-            const cleanInputPassword = loginPassword.trim();
-            const cleanExpectedPassword = (expectedPassword || '').trim();
+            const isPasswordValid = await verifyTeamPassword(loginPassword, expectedPassword);
 
-            if (cleanInputPassword !== cleanExpectedPassword) {
+            if (!isPasswordValid) {
                 setLoginError('Incorrect password. Please enter the team password provided or your updated password from settings.');
                 setIsLoggingIn(false);
                 return;
@@ -447,7 +454,7 @@ const allocationState = useMemo(() => {
     };
 
     // Handle Password Change
-    const handlePasswordChange = (e: React.FormEvent) => {
+    const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
         setPasswordMessage(null);
 
@@ -462,13 +469,24 @@ const allocationState = useMemo(() => {
             return;
         }
 
-        changeTeamPassword(team.squadId, newPassword);
-        setNewPassword('');
-        setConfirmPassword('');
-        setPasswordMessage({ 
-            type: 'success', 
-            text: 'Password updated successfully! You can now use your new password.' 
-        });
+        setIsChangingPassword(true);
+        try {
+            await changeTeamPassword(team.squadId, newPassword);
+            setNewPassword('');
+            setConfirmPassword('');
+            setPasswordMessage({ 
+                type: 'success', 
+                text: 'Password updated successfully! It has been saved in the system and you can use it to log in from any device.' 
+            });
+        } catch (err) {
+            console.error('Password change error:', err);
+            setPasswordMessage({ 
+                type: 'error', 
+                text: 'Could not update password. Please check your connection and try again.' 
+            });
+        } finally {
+            setIsChangingPassword(false);
+        }
     };
 
     // Save Selected Problem Statement
@@ -1879,9 +1897,10 @@ const allocationState = useMemo(() => {
 
                                             <button 
                                                 type="submit" 
-                                                className="rounded-xl bg-[#1E1B4B] px-6 py-3 text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] transition-colors cursor-pointer shadow-[2px_2px_0px_#1E1B4B]"
+                                                disabled={isChangingPassword}
+                                                className="rounded-xl bg-[#1E1B4B] px-6 py-3 text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] transition-colors cursor-pointer shadow-[2px_2px_0px_#1E1B4B] disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                Update Password
+                                                {isChangingPassword ? 'Updating Password...' : 'Update Password'}
                                             </button>
                                         </form>
                                     </div>

@@ -213,17 +213,170 @@ export function getTeamPassword(squadIdOrEmail: string, teamName?: string): stri
     return `HPL${rank}-${teamCode}!`;
 }
 
-export function changeTeamPassword(squadId: string, newPassword: string) {
+/**
+ * Hashes a plaintext password using SHA-256 via Web Crypto API.
+ */
+export async function hashPassword(password: string): Promise<string> {
+    const clean = (password || '').trim();
+    if (!clean) return '';
+    const msgBuffer = new TextEncoder().encode(clean);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Returns true if the string appears to be a 64-character SHA-256 hex string.
+ */
+export function isSha256Hash(val: string): boolean {
+    return /^[a-f0-9]{64}$/i.test((val || '').trim());
+}
+
+/**
+ * Verifies an entered password against a stored password (which may be a SHA-256 hash or plaintext legacy/default).
+ */
+export async function verifyTeamPassword(
+    inputPassword: string,
+    storedOrExpectedPassword: string
+): Promise<boolean> {
+    const cleanInput = (inputPassword || '').trim();
+    const cleanStored = (storedOrExpectedPassword || '').trim();
+    if (!cleanInput || !cleanStored) return false;
+
+    // 1. Direct plaintext match (for official default passwords e.g. HPL01-APEX! or legacy unhashed)
+    if (cleanInput === cleanStored) {
+        return true;
+    }
+
+    // 2. Cryptographic SHA-256 hash match
+    try {
+        const inputHash = await hashPassword(cleanInput);
+        if (inputHash.toLowerCase() === cleanStored.toLowerCase()) {
+            return true;
+        }
+    } catch (e) {
+        console.warn('Hash computation failed:', e);
+    }
+
+    return false;
+}
+
+export function getCustomStoredPassword(squadId: string): string | null {
     const credentials = readCredentials();
-    credentials[squadId] = newPassword;
-    // Also save by alternate keys (e.g. normalized squadId and teamName) for robust lookup
+    const cleanKey = (squadId || '').trim().toLowerCase();
+    if (credentials[squadId]) return credentials[squadId];
+    if (credentials[cleanKey]) return credentials[cleanKey];
     const record = findQualifiedTeamBySquadId(squadId);
     if (record) {
-        credentials[record.squadId] = newPassword;
-        credentials[record.teamName] = newPassword;
-        credentials[record.leaderEmail.toLowerCase()] = newPassword;
+        if (credentials[record.leaderEmail.toLowerCase()]) return credentials[record.leaderEmail.toLowerCase()];
+        if (credentials[record.squadId]) return credentials[record.squadId];
+        if (credentials[record.teamName]) return credentials[record.teamName];
+    }
+    return null;
+}
+
+export async function changeTeamPassword(squadId: string, newPassword: string): Promise<boolean> {
+    const cleanPassword = newPassword.trim();
+    const hashedPassword = await hashPassword(cleanPassword);
+    const credentials = readCredentials();
+    credentials[squadId] = hashedPassword;
+    
+    // Also save by alternate keys (e.g. normalized squadId, teamName, email) for robust lookup
+    const record = findQualifiedTeamBySquadId(squadId);
+    if (record) {
+        credentials[record.squadId] = hashedPassword;
+        credentials[record.teamName] = hashedPassword;
+        credentials[record.leaderEmail.toLowerCase()] = hashedPassword;
     }
     writeCredentials(credentials);
+
+    // Persist to Supabase backend table `round2_ps_selections` (HASHED!)
+    try {
+        const cleanEmail = record ? record.leaderEmail.toLowerCase().trim() : '';
+        const filter = cleanEmail 
+            ? `squad_id.eq.${squadId},leader_email.eq.${cleanEmail}` 
+            : `squad_id.eq.${squadId}`;
+
+        // 1. Check if a row already exists in round2_ps_selections
+        const { data: existingRows } = await supabase
+            .from('round2_ps_selections')
+            .select('id')
+            .or(filter)
+            .limit(1);
+
+        if (existingRows && existingRows.length > 0) {
+            // Update existing row with HASHED password
+            await supabase
+                .from('round2_ps_selections')
+                .update({ team_password: hashedPassword })
+                .eq('id', existingRows[0].id);
+        } else {
+            // No row exists yet (e.g. changed password before selecting PS) -> insert new row with HASH
+            const newRow: any = {
+                squad_id: squadId,
+                team_password: hashedPassword
+            };
+            if (record) {
+                newRow.team_name = record.teamName;
+                newRow.leader_email = cleanEmail;
+                newRow.rank = record.rank;
+            }
+            const { error: insertErr } = await supabase
+                .from('round2_ps_selections')
+                .insert([newRow]);
+
+            if (insertErr) {
+                // If conflict or constraint, fallback to update
+                await supabase
+                    .from('round2_ps_selections')
+                    .update({ team_password: hashedPassword })
+                    .or(filter);
+            }
+        }
+
+        console.log(`[HPL] ✅ Hashed password updated in Supabase round2_ps_selections for squad ${squadId}`);
+        return true;
+    } catch (err) {
+        console.warn('[HPL] Could not sync changed password to Supabase:', err);
+        return false;
+    }
+}
+
+/**
+ * Fetch changed team password from Supabase if it was updated in the backend.
+ * Caches it locally so that subsequent lookups are instant.
+ */
+export async function fetchTeamPasswordFromDB(squadId: string, email?: string): Promise<string | null> {
+    try {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const filter = cleanEmail 
+            ? `squad_id.eq.${squadId},leader_email.eq.${cleanEmail}` 
+            : `squad_id.eq.${squadId}`;
+
+        const { data, error } = await supabase
+            .from('round2_ps_selections')
+            .select('team_password')
+            .or(filter)
+            .not('team_password', 'is', null)
+            .limit(1);
+
+        if (!error && data && data.length > 0 && data[0].team_password) {
+            const pwd = data[0].team_password;
+            const credentials = readCredentials();
+            credentials[squadId] = pwd;
+            if (cleanEmail) credentials[cleanEmail] = pwd;
+            const record = findQualifiedTeamBySquadId(squadId);
+            if (record) {
+                credentials[record.teamName] = pwd;
+                credentials[record.squadId] = pwd;
+            }
+            writeCredentials(credentials);
+            return pwd;
+        }
+    } catch (e) {
+        // Safe fallback if column does not exist or network unavailable
+    }
+    return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

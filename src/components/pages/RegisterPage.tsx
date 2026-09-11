@@ -21,6 +21,8 @@ import { SHORTLISTED_TEAMS_DATA } from '../../data/hplData';
 import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
 import { 
   changeTeamPassword, 
+  fetchTeamPasswordFromDB,
+  verifyTeamPassword,
   findTeamRegistration, 
   findTeamRegistrationByEmail, 
   getTeamPassword, 
@@ -179,7 +181,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
     window.addEventListener('hpl-selection-update', sync);
 
     // Fetch live tracks from round2_ps_selections table across all teams
-    (async () => {
+    const fetchLiveSelections = async () => {
       try {
         const dbRows = await fetchRound2PsSelectionsFromDB();
         if (dbRows.length > 0) {
@@ -196,9 +198,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       } catch (e) {
         console.warn('Could not sync round2_ps_selections:', e);
       }
-    })();
+    };
+
+    fetchLiveSelections();
+    const pollInterval = setInterval(fetchLiveSelections, 4000);
 
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('storage', sync);
       window.removeEventListener('hpl-selection-update', sync);
     };
@@ -277,11 +283,11 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
       }
 
       // 3. Verify password with whitespace trimming
+      await fetchTeamPasswordFromDB(squadId, cleanEmail);
       const expectedPassword = getTeamPassword(squadId, officialName);
-      const cleanInputPassword = passwordInput.trim();
-      const cleanExpectedPassword = (expectedPassword || '').trim();
+      const isPasswordValid = await verifyTeamPassword(passwordInput, expectedPassword);
 
-      if (cleanInputPassword !== cleanExpectedPassword) {
+      if (!isPasswordValid) {
         setAuthError('Invalid team password. Please enter the team password provided to your team leader.');
         setIsVerifying(false);
         return;
