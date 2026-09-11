@@ -169,7 +169,34 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   // Breakdown drawer tab: 'locked' or 'overflow'
   const [breakdownTab, setBreakdownTab] = useState<'locked' | 'overflow'>('locked');
+  const [round2SearchQuery, setRound2SearchQuery] = useState<string>('');
   const [isEnforcingCap, setIsEnforcingCap] = useState<boolean>(false);
+
+  // Filtered lists for Round 2 Allocation Breakdown table
+  const filteredLockedList = useMemo(() => {
+    const q = round2SearchQuery.toLowerCase().trim();
+    const list = Object.values(round2TeamLockMap);
+    if (!q) return list;
+    return list.filter(item =>
+      item.teamName.toLowerCase().includes(q) ||
+      item.leaderEmail.toLowerCase().includes(q) ||
+      item.squadId.toLowerCase().includes(q) ||
+      item.psTitle.toLowerCase().includes(q) ||
+      item.psCode.toLowerCase().includes(q)
+    );
+  }, [round2TeamLockMap, round2SearchQuery]);
+
+  const filteredOverflowList = useMemo(() => {
+    const q = round2SearchQuery.toLowerCase().trim();
+    if (!q) return overflowTeamsList;
+    return overflowTeamsList.filter(item =>
+      item.teamName.toLowerCase().includes(q) ||
+      item.leaderEmail.toLowerCase().includes(q) ||
+      item.squadId.toLowerCase().includes(q) ||
+      item.originalPsTitle.toLowerCase().includes(q) ||
+      item.originalPsCode.toLowerCase().includes(q)
+    );
+  }, [overflowTeamsList, round2SearchQuery]);
 
   // Admin action: Enforce 10-cap and sync overflow teams
   const handleEnforceCapAndSync = async () => {
@@ -502,12 +529,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   // Filter and Search Processing
   const filteredSubmissions = useMemo(() => {
     return enrichedSubmissions.filter(item => {
-      // Search matching team name, leader name, email, or college
+      // Search matching team name, leader name, email (leader or members), squad ID, or college
       const q = searchQuery.toLowerCase().trim();
+      const qualified = findQualifiedTeamByEmail(item.leader_email || '') || findQualifiedTeamByName(item.team_name || '');
       const matchQuery = !q || 
         item.team_name.toLowerCase().includes(q) ||
         item.team_leader_name.toLowerCase().includes(q) ||
         item.leader_email.toLowerCase().includes(q) ||
+        (item.member2_email && item.member2_email.toLowerCase().includes(q)) ||
+        (item.member3_email && item.member3_email.toLowerCase().includes(q)) ||
+        (item.member4_email && item.member4_email.toLowerCase().includes(q)) ||
+        (item.member5_email && item.member5_email.toLowerCase().includes(q)) ||
+        (item.college && item.college.toLowerCase().includes(q)) ||
+        (qualified?.squadId && qualified.squadId.toLowerCase().includes(q)) ||
         (item.project_idea && item.project_idea.toLowerCase().includes(q));
 
       // Track / PS filter (Round 2 problem statements)
@@ -780,7 +814,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search team name or leader..."
+                placeholder="Search team name or email..."
                 className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#1E1B4B]/15 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] shadow-2xs text-[#1E1B4B]"
               />
               {searchQuery && (
@@ -1062,32 +1096,56 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               </summary>
 
               <div className="p-4 bg-white border-t border-slate-200 space-y-4">
-                {/* Tabs switcher between Locked Teams and Overflow Teams */}
-                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
-                  <button
-                    type="button"
-                    onClick={() => setBreakdownTab('locked')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
-                      breakdownTab === 'locked'
-                        ? 'bg-[#1E1B4B] text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    Locked Teams ({allocationState.totalLocked} / 40)
-                  </button>
+                {/* Tabs switcher between Locked Teams and Overflow Teams + Search */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownTab('locked')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
+                        breakdownTab === 'locked'
+                          ? 'bg-[#1E1B4B] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Locked Teams ({allocationState.totalLocked} / 40)
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setBreakdownTab('overflow')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
-                      breakdownTab === 'overflow'
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
-                    }`}
-                  >
-                    <span>⚠️ Overflow Teams ({overflowTeamsList.length})</span>
-                    <span className="px-1.5 py-0.2 rounded-full bg-white/30 text-[10px] font-mono">1-Time Selection</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownTab('overflow')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
+                        breakdownTab === 'overflow'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                      }`}
+                    >
+                      <span>⚠️ Overflow Teams ({overflowTeamsList.length})</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-white/30 text-[10px] font-mono">1-Time Selection</span>
+                    </button>
+                  </div>
+
+                  {/* Search Bar for Round 2 Allocation Breakdown */}
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={round2SearchQuery}
+                      onChange={(e) => setRound2SearchQuery(e.target.value)}
+                      placeholder="Search team name or email..."
+                      className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-[#1E1B4B] placeholder:text-slate-400"
+                    />
+                    {round2SearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setRound2SearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                        title="Clear search"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* TAB 1: LOCKED TEAMS (STRICTLY <= 10 PER TRACK) */}
@@ -1096,6 +1154,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     {Object.keys(round2TeamLockMap).length === 0 ? (
                       <p className="text-xs text-slate-400 font-sans text-center py-4">
                         No teams have locked a problem statement yet.
+                      </p>
+                    ) : filteredLockedList.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No locked teams match &ldquo;{round2SearchQuery}&rdquo;.
                       </p>
                     ) : (
                       <div className="overflow-x-auto">
@@ -1110,7 +1172,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {Object.values(round2TeamLockMap).map((item) => (
+                            {filteredLockedList.map((item) => (
                               <tr key={item.squadId} className="hover:bg-slate-50/80 transition-colors">
                                 <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
                                   #{String(item.rank).padStart(2, '0')} • {item.squadId}
@@ -1166,6 +1228,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       <p className="text-xs text-slate-400 font-sans text-center py-4">
                         No overflow teams. All locked teams are within the 10-team cap!
                       </p>
+                    ) : filteredOverflowList.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No overflow teams match &ldquo;{round2SearchQuery}&rdquo;.
+                      </p>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs border-collapse">
@@ -1180,7 +1246,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {overflowTeamsList.map((overflow) => (
+                            {filteredOverflowList.map((overflow) => (
                               <tr key={overflow.squadId} className="hover:bg-amber-50/40 transition-colors">
                                 <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
                                   #{String(overflow.rank).padStart(2, '0')} • {overflow.squadId}
@@ -1231,7 +1297,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            {/* Search Bar: team name or email */}
+            <div className="relative w-full sm:w-72 md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search team name or email..."
+                className="w-full pl-9 pr-8 py-2 text-xs bg-[#FDFBF7] border border-[#1E1B4B]/20 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-[#1E1B4B] shadow-2xs placeholder:text-slate-400"
+              />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
             {/* Filter 1: Problem Statements dropdown */}
             <div className="relative">
               <select
@@ -1307,7 +1395,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   <th className="py-3.5 px-4">Team Name</th>
                   <th className="py-3.5 px-4">Problem Statement</th>
                   <th className="py-3.5 px-4">Team Leader</th>
-                  <th className="py-3.5 px-4">Submitted On</th>
+                  <th className="py-3.5 px-4">PS Locked On</th>
                   <th className="py-3.5 px-4 text-center">Status</th>
                   <th className="py-3.5 px-4 text-center">Action</th>
                 </tr>
@@ -1394,16 +1482,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           </div>
                         </td>
 
-                        {/* 5. Submitted Date & Time */}
+                        {/* 5. PS Locked On Date & Time */}
                         <td className="py-4 px-4">
-                          <div className="space-y-0.5">
-                            <span className="font-display font-bold text-xs text-[#1E1B4B] block whitespace-nowrap">
-                              {dateStr}
+                          {item.track ? (
+                            <div className="space-y-0.5">
+                              <span className="font-display font-bold text-xs text-[#1E1B4B] block whitespace-nowrap">
+                                {dateStr}
+                              </span>
+                              <span className="text-[11px] font-mono text-slate-400 block whitespace-nowrap">
+                                {timeStr}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200">
+                              <Clock className="w-3 h-3" />
+                              Not selected yet
                             </span>
-                            <span className="text-[11px] font-mono text-slate-400 block whitespace-nowrap">
-                              {timeStr}
-                            </span>
-                          </div>
+                          )}
                         </td>
 
                         {/* 6. Status Pill Badge from Mockup */}
@@ -1530,8 +1625,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   {activeModalItem.team_name}
                 </h2>
                 <p className="text-xs font-sans text-slate-600">
-                  {activeModalItem.track}
+                  {activeModalItem.track || 'No Problem Statement selected yet'}
                 </p>
+                {activeModalItem.track && activeModalItem.created_at && (
+                  <p className="text-[11px] font-mono text-slate-400 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                    PS Locked: {formatSubmissionDate(activeModalItem.created_at).dateStr} at {formatSubmissionDate(activeModalItem.created_at).timeStr}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setActiveModalItem(null)}

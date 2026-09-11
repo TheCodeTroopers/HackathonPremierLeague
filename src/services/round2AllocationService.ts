@@ -256,7 +256,7 @@ export function calculateStrictAllocations(
       return a.team.rank - b.team.rank;
     });
 
-    list.forEach(({ team, ps }, idx) => {
+    list.forEach(({ team, ps, lockedAt }, idx) => {
       if (idx < STRICT_CAP_PER_TRACK) {
         lockedMap[team.squadId] = {
           squadId: team.squadId,
@@ -266,6 +266,7 @@ export function calculateStrictAllocations(
           psId: ps.id,
           psTitle: ps.title,
           psCode: ps.psCode,
+          lockedAt: lockedAt ? new Date(lockedAt).toISOString() : undefined,
         };
         trackCounts[ps.id]++;
 
