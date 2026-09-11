@@ -173,8 +173,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activePage, onNavigate }) => {
 
         {/* Right: Floating MENU Pill & Shortlisted CTA */}
         <div className="flex items-center gap-2.5 sm:gap-3 pointer-events-auto">
-          {/* Register / Squad Profile CTA Capsule (Visible only at top) */}
-          <div className={`transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden sm:flex items-center'}`}>
+          {/* Register / Squad Profile CTA Capsule */}
+          <div className="flex items-center transition-all duration-300">
             <button
               onClick={() => {
                 if (hasSession) {
