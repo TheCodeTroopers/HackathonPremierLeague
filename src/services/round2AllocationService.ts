@@ -118,6 +118,42 @@ export async function fetchMyRound2PsSelection(leaderEmail: string): Promise<Rou
 }
 
 /**
+ * Fetch the full roster (member names/emails) saved to round2_ps_selections.
+ * Used as a fallback when the `registrations` table has no matching record.
+ * Tries by squadId first, then by leaderEmail.
+ */
+export async function fetchMyRound2Roster(
+  squadId: string,
+  leaderEmail: string
+): Promise<Round2PsSelectionRow | null> {
+  try {
+    const cleanEmail = leaderEmail.trim().toLowerCase();
+    // Try by squad_id first (most reliable)
+    if (squadId) {
+      const { data, error } = await supabase
+        .from('round2_ps_selections')
+        .select('squad_id, team_name, leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email')
+        .ilike('squad_id', squadId.trim())
+        .maybeSingle();
+      if (!error && data) return data as Round2PsSelectionRow;
+    }
+    // Fallback: by email
+    if (cleanEmail) {
+      const { data, error } = await supabase
+        .from('round2_ps_selections')
+        .select('squad_id, team_name, leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email')
+        .ilike('leader_email', cleanEmail)
+        .maybeSingle();
+      if (!error && data) return data as Round2PsSelectionRow;
+    }
+    return null;
+  } catch (err) {
+    console.error('[HPL] fetchMyRound2Roster exception:', err);
+    return null;
+  }
+}
+
+/**
  * Upsert team roster and details directly to `round2_ps_selections`.
  * Invoked when team clicks "Save Team Details" / "Next".
  */

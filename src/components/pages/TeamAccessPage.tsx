@@ -62,6 +62,7 @@ import {
     readRawSelections,
     fetchRound2PsSelectionsFromDB,
     fetchMyRound2PsSelection,
+    fetchMyRound2Roster,
     saveRound2TeamRoster,
     STRICT_CAP_PER_TRACK 
 } from '../../services/round2AllocationService';
@@ -217,25 +218,59 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                         setMember5Name(reg.member5_name || '');
                         setMember5Email(reg.member5_email || '');
                     } else {
-                        // Fallback so it NEVER displays "0 team members" and editing is immediately functional
-                        const fallbackReg: TeamRegistration = {
-                            id: `fallback-${team.squadId}`,
-                            team_name: team.name,
-                            team_leader_name: 'Team Leader',
-                            leader_email: effectiveEmail,
-                            leader_phone: '',
-                            college: 'SMVITM / Associated Institution',
-                            team_size: 4,
-                            member2_name: '',
-                            member2_email: '',
-                            member3_name: '',
-                            member3_email: '',
-                            member4_name: '',
-                            member4_email: '',
-                            member5_name: '',
-                            member5_email: ''
-                        };
-                        setRegistration(fallbackReg);
+                        // registrations table has no record — try round2_ps_selections as fallback
+                        // This is where data lands when teams save via the Team Members tab
+                        const psRow = await fetchMyRound2Roster(team.squadId, effectiveEmail);
+                        if (psRow && isMounted) {
+                            const fallbackFromPs: TeamRegistration = {
+                                id: `fallback-${team.squadId}`,
+                                team_name: psRow.team_name || team.name,
+                                team_leader_name: psRow.leader_name || 'Team Leader',
+                                leader_email: psRow.leader_email || effectiveEmail,
+                                leader_phone: psRow.leader_phone || '',
+                                college: psRow.college || 'SMVITM / Associated Institution',
+                                team_size: psRow.team_size || 4,
+                                member2_name: psRow.member2_name || '',
+                                member2_email: psRow.member2_email || '',
+                                member3_name: psRow.member3_name || '',
+                                member3_email: psRow.member3_email || '',
+                                member4_name: psRow.member4_name || '',
+                                member4_email: psRow.member4_email || '',
+                                member5_name: psRow.member5_name || '',
+                                member5_email: psRow.member5_email || '',
+                            };
+                            setRegistration(fallbackFromPs);
+                            setCollegeName(fallbackFromPs.college || '');
+                            setLeaderPhone(fallbackFromPs.leader_phone || '');
+                            setMember2Name(fallbackFromPs.member2_name || '');
+                            setMember2Email(fallbackFromPs.member2_email || '');
+                            setMember3Name(fallbackFromPs.member3_name || '');
+                            setMember3Email(fallbackFromPs.member3_email || '');
+                            setMember4Name(fallbackFromPs.member4_name || '');
+                            setMember4Email(fallbackFromPs.member4_email || '');
+                            setMember5Name(fallbackFromPs.member5_name || '');
+                            setMember5Email(fallbackFromPs.member5_email || '');
+                        } else if (isMounted) {
+                            // No data anywhere — provide a blank editable fallback
+                            const blankFallback: TeamRegistration = {
+                                id: `fallback-${team.squadId}`,
+                                team_name: team.name,
+                                team_leader_name: 'Team Leader',
+                                leader_email: effectiveEmail,
+                                leader_phone: '',
+                                college: 'SMVITM / Associated Institution',
+                                team_size: 4,
+                                member2_name: '',
+                                member2_email: '',
+                                member3_name: '',
+                                member3_email: '',
+                                member4_name: '',
+                                member4_email: '',
+                                member5_name: '',
+                                member5_email: ''
+                            };
+                            setRegistration(blankFallback);
+                        }
                     }
                 }
             } catch (err) {
@@ -539,9 +574,10 @@ const allocationState = useMemo(() => {
                 rank: team.rank,
             });
 
-            if (!rosterRes.success && saveError) {
-                console.error('Failed to update roster in both tables:', rosterRes.error);
-                setRosterSaveMessage('Failed to update database record. Please try again.');
+            // Only show failure if round2_ps_selections (the reliable source) also failed
+            if (!rosterRes.success) {
+                console.error('Failed to save roster to round2_ps_selections:', rosterRes.error);
+                setRosterSaveMessage('Failed to save member details. Please check your connection and try again.');
             } else {
                 setRegistration(prev => ({
                     ...(prev || {}),
