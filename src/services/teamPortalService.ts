@@ -68,7 +68,8 @@ export const OFFICIAL_QUALIFIED_TEAMS: QualifiedTeamRecord[] = [
     { rank: 37, squadId: 'HPL-R2-37', teamName: 'phoenix', leaderEmail: 'sanjana.25cs095@sode-edu.in', initialPassword: 'HPL37-PHOE!' },
     { rank: 38, squadId: 'HPL-R2-38', teamName: 'hacksphere', leaderEmail: 'bhavana.23cs023@sode-edu.in', initialPassword: 'HPL38-HACK!' },
     { rank: 39, squadId: 'HPL-R2-39', teamName: 'pixel pioneers', leaderEmail: 'navaneeth.25cs060@sode-edu.in', initialPassword: 'HPL39-PIXE!' },
-    { rank: 40, squadId: 'HPL-R2-40', teamName: 'gramltel ai', leaderEmail: 'monisha.24ad022@sode-edu.in', initialPassword: 'HPL40-GRAM!' }
+    { rank: 40, squadId: 'HPL-R2-40', teamName: 'gramltel ai', leaderEmail: 'monisha.24ad022@sode-edu.in', initialPassword: 'HPL40-GRAM!' },
+    { rank: 41, squadId: 'HPL-R2-41', teamName: 'Dummy Test Team', leaderEmail: 'test@dummy.com', initialPassword: 'HPL41-DUMM!' }
 ];
 
 export function findQualifiedTeamByEmail(email: string): QualifiedTeamRecord | null {

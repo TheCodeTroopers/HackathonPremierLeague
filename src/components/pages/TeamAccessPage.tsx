@@ -160,11 +160,41 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                 return;
             }
             try {
-                const reg = await findTeamRegistration(team.name);
+                let reg = await findTeamRegistrationByEmail(team.leaderEmail);
+                if (!reg) {
+                    reg = await findTeamRegistration(team.name);
+                }
+                
+                if (!reg) {
+                    reg = {
+                        id: `reg-${team.squadId}`,
+                        team_name: team.name,
+                        team_leader_name: 'Team Leader',
+                        leader_email: team.leaderEmail,
+                        leader_phone: '',
+                        college: 'SMVITM / Associated Institution',
+                        team_size: 4,
+                        member2_name: 'Member 2',
+                        member2_email: '',
+                        member3_name: 'Member 3',
+                        member3_email: '',
+                        member4_name: 'Member 4',
+                        member4_email: ''
+                    };
+                }
+
                 if (isMounted) {
                     setRegistration(reg);
                     if (reg?.college) setCollegeName(reg.college);
                     if (reg?.leader_phone) setLeaderPhone(reg.leader_phone);
+                    if (reg?.member2_name) setMember2Name(reg.member2_name);
+                    if (reg?.member2_email) setMember2Email(reg.member2_email);
+                    if (reg?.member3_name) setMember3Name(reg.member3_name);
+                    if (reg?.member3_email) setMember3Email(reg.member3_email);
+                    if (reg?.member4_name) setMember4Name(reg.member4_name);
+                    if (reg?.member4_email) setMember4Email(reg.member4_email);
+                    if (reg?.member5_name) setMember5Name(reg.member5_name);
+                    if (reg?.member5_email) setMember5Email(reg.member5_email);
                 }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
@@ -271,6 +301,14 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                     setRegistration(found);
                     if (found.college) setCollegeName(found.college);
                     if (found.leader_phone) setLeaderPhone(found.leader_phone);
+                    if (found.member2_name) setMember2Name(found.member2_name);
+                    if (found.member2_email) setMember2Email(found.member2_email);
+                    if (found.member3_name) setMember3Name(found.member3_name);
+                    if (found.member3_email) setMember3Email(found.member3_email);
+                    if (found.member4_name) setMember4Name(found.member4_name);
+                    if (found.member4_email) setMember4Email(found.member4_email);
+                    if (found.member5_name) setMember5Name(found.member5_name);
+                    if (found.member5_email) setMember5Email(found.member5_email);
                 }
             } catch (err) {
                 console.warn('Could not fetch external registration:', err);
