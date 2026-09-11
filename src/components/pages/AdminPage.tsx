@@ -256,13 +256,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     try {
       const q = findQualifiedTeamBySquadId(squadIdToUnlock);
 
-      // Delete from round2_ps_selections
+      // UPDATE (not DELETE) — null out only the PS selection fields, preserving roster data
+      // This keeps member names, phone, college etc. intact so the team doesn't lose their details
       await supabase
         .from('round2_ps_selections')
-        .delete()
+        .update({ ps_id: null, ps_title: null, ps_code: null, locked_at: null })
         .eq('squad_id', squadIdToUnlock);
 
-      // Also clean localStorage
+      // Also clean localStorage PS selection keys
       const raw = localStorage.getItem('hpl-round2-ps-selections');
       const current = raw ? JSON.parse(raw) : {};
       delete current[squadIdToUnlock];

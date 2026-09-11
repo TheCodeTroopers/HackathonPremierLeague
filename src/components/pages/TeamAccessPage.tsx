@@ -61,7 +61,6 @@ import {
     readOverflowRecords, 
     readRawSelections,
     fetchRound2PsSelectionsFromDB,
-    fetchMyRound2PsSelection,
     fetchMyRound2Roster,
     saveRound2TeamRoster,
     STRICT_CAP_PER_TRACK 
