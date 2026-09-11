@@ -199,78 +199,83 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
             }
             try {
                 const effectiveEmail = team.leaderEmail || activeSession?.leaderEmail || '';
-                let reg = await findTeamRegistration(team.name, effectiveEmail);
-                if (!reg && effectiveEmail) {
-                    reg = await findTeamRegistrationByEmail(effectiveEmail);
+
+                // round2_ps_selections is the source of truth for the latest portal updates
+                // Always check it first, then fill any gaps from registrations
+                const psRow = await fetchMyRound2Roster(team.squadId, effectiveEmail);
+
+                // Also fetch the original registration record as a gap-filler
+                let regRow = await findTeamRegistration(team.name, effectiveEmail);
+                if (!regRow && effectiveEmail) {
+                    regRow = await findTeamRegistrationByEmail(effectiveEmail);
                 }
-                if (isMounted) {
-                    if (reg) {
-                        setRegistration(reg);
-                        setCollegeName(reg.college || '');
-                        setLeaderPhone(reg.leader_phone || '');
-                        setMember2Name(reg.member2_name || '');
-                        setMember2Email(reg.member2_email || '');
-                        setMember3Name(reg.member3_name || '');
-                        setMember3Email(reg.member3_email || '');
-                        setMember4Name(reg.member4_name || '');
-                        setMember4Email(reg.member4_email || '');
-                        setMember5Name(reg.member5_name || '');
-                        setMember5Email(reg.member5_email || '');
-                    } else {
-                        // registrations table has no record — try round2_ps_selections as fallback
-                        // This is where data lands when teams save via the Team Members tab
-                        const psRow = await fetchMyRound2Roster(team.squadId, effectiveEmail);
-                        if (psRow && isMounted) {
-                            const fallbackFromPs: TeamRegistration = {
-                                id: `fallback-${team.squadId}`,
-                                team_name: psRow.team_name || team.name,
-                                team_leader_name: psRow.leader_name || 'Team Leader',
-                                leader_email: psRow.leader_email || effectiveEmail,
-                                leader_phone: psRow.leader_phone || '',
-                                college: psRow.college || 'SMVITM / Associated Institution',
-                                team_size: psRow.team_size || 4,
-                                member2_name: psRow.member2_name || '',
-                                member2_email: psRow.member2_email || '',
-                                member3_name: psRow.member3_name || '',
-                                member3_email: psRow.member3_email || '',
-                                member4_name: psRow.member4_name || '',
-                                member4_email: psRow.member4_email || '',
-                                member5_name: psRow.member5_name || '',
-                                member5_email: psRow.member5_email || '',
-                            };
-                            setRegistration(fallbackFromPs);
-                            setCollegeName(fallbackFromPs.college || '');
-                            setLeaderPhone(fallbackFromPs.leader_phone || '');
-                            setMember2Name(fallbackFromPs.member2_name || '');
-                            setMember2Email(fallbackFromPs.member2_email || '');
-                            setMember3Name(fallbackFromPs.member3_name || '');
-                            setMember3Email(fallbackFromPs.member3_email || '');
-                            setMember4Name(fallbackFromPs.member4_name || '');
-                            setMember4Email(fallbackFromPs.member4_email || '');
-                            setMember5Name(fallbackFromPs.member5_name || '');
-                            setMember5Email(fallbackFromPs.member5_email || '');
-                        } else if (isMounted) {
-                            // No data anywhere — provide a blank editable fallback
-                            const blankFallback: TeamRegistration = {
-                                id: `fallback-${team.squadId}`,
-                                team_name: team.name,
-                                team_leader_name: 'Team Leader',
-                                leader_email: effectiveEmail,
-                                leader_phone: '',
-                                college: 'SMVITM / Associated Institution',
-                                team_size: 4,
-                                member2_name: '',
-                                member2_email: '',
-                                member3_name: '',
-                                member3_email: '',
-                                member4_name: '',
-                                member4_email: '',
-                                member5_name: '',
-                                member5_email: ''
-                            };
-                            setRegistration(blankFallback);
-                        }
-                    }
+
+                if (!isMounted) return;
+
+                if (psRow) {
+                    // Build the registration object, preferring round2_ps_selections data
+                    // and using registrations only to fill fields that are still empty
+                    const merged: TeamRegistration = {
+                        id: regRow?.id || `fallback-${team.squadId}`,
+                        team_name: psRow.team_name || regRow?.team_name || team.name,
+                        team_leader_name: psRow.leader_name || regRow?.team_leader_name || 'Team Leader',
+                        leader_email: psRow.leader_email || regRow?.leader_email || effectiveEmail,
+                        leader_phone: psRow.leader_phone || regRow?.leader_phone || '',
+                        college: psRow.college || regRow?.college || 'SMVITM / Associated Institution',
+                        team_size: psRow.team_size || regRow?.team_size || 4,
+                        member2_name: psRow.member2_name || regRow?.member2_name || '',
+                        member2_email: psRow.member2_email || regRow?.member2_email || '',
+                        member3_name: psRow.member3_name || regRow?.member3_name || '',
+                        member3_email: psRow.member3_email || regRow?.member3_email || '',
+                        member4_name: psRow.member4_name || regRow?.member4_name || '',
+                        member4_email: psRow.member4_email || regRow?.member4_email || '',
+                        member5_name: psRow.member5_name || regRow?.member5_name || '',
+                        member5_email: psRow.member5_email || regRow?.member5_email || '',
+                    };
+                    setRegistration(merged);
+                    setCollegeName(merged.college || '');
+                    setLeaderPhone(merged.leader_phone || '');
+                    setMember2Name(merged.member2_name || '');
+                    setMember2Email(merged.member2_email || '');
+                    setMember3Name(merged.member3_name || '');
+                    setMember3Email(merged.member3_email || '');
+                    setMember4Name(merged.member4_name || '');
+                    setMember4Email(merged.member4_email || '');
+                    setMember5Name(merged.member5_name || '');
+                    setMember5Email(merged.member5_email || '');
+                } else if (regRow) {
+                    // No round2_ps_selections row — use registrations only
+                    setRegistration(regRow);
+                    setCollegeName(regRow.college || '');
+                    setLeaderPhone(regRow.leader_phone || '');
+                    setMember2Name(regRow.member2_name || '');
+                    setMember2Email(regRow.member2_email || '');
+                    setMember3Name(regRow.member3_name || '');
+                    setMember3Email(regRow.member3_email || '');
+                    setMember4Name(regRow.member4_name || '');
+                    setMember4Email(regRow.member4_email || '');
+                    setMember5Name(regRow.member5_name || '');
+                    setMember5Email(regRow.member5_email || '');
+                } else {
+                    // No data anywhere — blank editable fallback
+                    const blankFallback: TeamRegistration = {
+                        id: `fallback-${team.squadId}`,
+                        team_name: team.name,
+                        team_leader_name: 'Team Leader',
+                        leader_email: effectiveEmail,
+                        leader_phone: '',
+                        college: 'SMVITM / Associated Institution',
+                        team_size: 4,
+                        member2_name: '',
+                        member2_email: '',
+                        member3_name: '',
+                        member3_email: '',
+                        member4_name: '',
+                        member4_email: '',
+                        member5_name: '',
+                        member5_email: ''
+                    };
+                    setRegistration(blankFallback);
                 }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
@@ -281,6 +286,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
         loadRegistration();
         return () => { isMounted = false; };
     }, [team?.name, team?.squadId, team?.leaderEmail, activeSession?.leaderEmail]);
+
 
     // Keep selections synced across tabs and fetch from Supabase registrations
     useEffect(() => {
