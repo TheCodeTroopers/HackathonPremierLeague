@@ -91,31 +91,81 @@ export function findQualifiedTeamBySquadId(squadId: string): QualifiedTeamRecord
 export function findQualifiedTeamByName(name: string): QualifiedTeamRecord | null {
     if (!name) return null;
     const cleanName = name.trim().toLowerCase();
-    return OFFICIAL_QUALIFIED_TEAMS.find(t => t.teamName.toLowerCase() === cleanName) || null;
+    const normName = cleanName.replace(/[^a-zA-Z0-9]/g, '');
+    return OFFICIAL_QUALIFIED_TEAMS.find(t => {
+        const tClean = t.teamName.toLowerCase();
+        const tNorm = tClean.replace(/[^a-zA-Z0-9]/g, '');
+        return tClean === cleanName || tNorm === normName;
+    }) || null;
 }
 
 const CREDENTIALS_KEY = 'hpl-round2-team-credentials';
 type CredentialMap = Record<string, string>;
 
-export async function findTeamRegistration(teamName: string): Promise<TeamRegistration | null> {
-    const { data, error } = await supabase
-        .from('registrations')
-        .select('id, team_name, team_leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email, project_idea, github_org')
-        .ilike('team_name', teamName)
-        .maybeSingle();
+export async function findTeamRegistration(teamName: string, leaderEmail?: string): Promise<TeamRegistration | null> {
+    if (leaderEmail) {
+        try {
+            const byEmail = await findTeamRegistrationByEmail(leaderEmail);
+            if (byEmail) return byEmail;
+        } catch {
+            // continue to name lookup
+        }
+    }
 
-    if (error) throw error;
-    return data as TeamRegistration | null;
+    if (!teamName) return null;
+
+    try {
+        const { data, error } = await supabase
+            .from('registrations')
+            .select('id, team_name, team_leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email, project_idea, github_org')
+            .ilike('team_name', teamName.trim())
+            .maybeSingle();
+
+        if (!error && data) return data as TeamRegistration;
+    } catch {
+        // continue to normalized search
+    }
+
+    // Normalized lookup (handles missing spaces or slight typos like Vajra Yield vs VajraYield)
+    try {
+        const norm = teamName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const { data: allTeams } = await supabase
+            .from('registrations')
+            .select('id, team_name, team_leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email, project_idea, github_org');
+        
+        if (allTeams && allTeams.length > 0) {
+            const matched = allTeams.find((r: any) => {
+                const rNorm = (r.team_name || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                return rNorm === norm || (leaderEmail && (r.leader_email || '').toLowerCase() === leaderEmail.toLowerCase());
+            });
+            if (matched) return matched as TeamRegistration;
+        }
+    } catch (e) {
+        console.warn('Normalized team lookup error:', e);
+    }
+
+    return null;
 }
 
 export async function findTeamRegistrationByEmail(email: string): Promise<TeamRegistration | null> {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
     const { data, error } = await supabase
         .from('registrations')
         .select('id, team_name, team_leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email, project_idea, github_org')
-        .ilike('leader_email', email)
+        .ilike('leader_email', cleanEmail)
         .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+        // In case multiple rows exist (e.g. duplicates), return the latest one
+        const { data: list } = await supabase
+            .from('registrations')
+            .select('id, team_name, team_leader_name, leader_email, leader_phone, college, team_size, member2_name, member2_email, member3_name, member3_email, member4_name, member4_email, member5_name, member5_email, project_idea, github_org')
+            .ilike('leader_email', cleanEmail)
+            .order('created_at', { ascending: false });
+        if (list && list.length > 0) return list[0] as TeamRegistration;
+        return null;
+    }
     return data as TeamRegistration | null;
 }
 

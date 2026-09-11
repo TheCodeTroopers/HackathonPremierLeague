@@ -29,7 +29,13 @@ import {
   FileText,
   Filter,
   Check,
-  Menu
+  Menu,
+  Lock,
+  Unlock,
+  RotateCcw,
+  AlertTriangle,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { AdminTeamEvalIllustration, AdminClipboardDoodle } from '../illustrations/AdminIllustration';
 import { AdminLoginGate } from '../auth/AdminLoginGate';
@@ -38,9 +44,18 @@ import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
 import { 
   OFFICIAL_QUALIFIED_TEAMS, 
   findQualifiedTeamBySquadId, 
-  findQualifiedTeamByName 
+  findQualifiedTeamByName, 
+  findQualifiedTeamByEmail 
 } from '../../services/teamPortalService';
-import { Lock, Unlock, RotateCcw, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { 
+  calculateStrictAllocations, 
+  syncCapEnforcementToSupabase, 
+  saveOverflowRecords, 
+  SELECTIONS_KEY, 
+  STRICT_CAP_PER_TRACK,
+  AllocationState,
+  OverflowTeamRecord
+} from '../../services/round2AllocationService';
 
 export interface RegistrationRecord {
   id: string;
@@ -117,27 +132,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }
   }, [statusOverrides]);
 
-  // Round 2 Problem Statement Locks state & listeners
-  const [round2Selections, setRound2Selections] = useState<Record<string, string>>(() => {
-    try {
-      const raw = localStorage.getItem('hpl-round2-ps-selections');
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+  // Round 2 Problem Statement — fetch from dedicated DB table (the ONLY source of truth)
+  const [round2DbRows, setRound2DbRows] = useState<import('../../services/round2AllocationService').Round2PsSelectionRow[]>([]);
   const [resetFeedbackMsg, setResetFeedbackMsg] = useState<string>('');
 
-  const refreshRound2Locks = useCallback(() => {
+  const refreshRound2Locks = useCallback(async () => {
     try {
-      const raw = localStorage.getItem('hpl-round2-ps-selections');
-      setRound2Selections(raw ? JSON.parse(raw) : {});
-    } catch {
-      setRound2Selections({});
+      const { fetchRound2PsSelectionsFromDB } = await import('../../services/round2AllocationService');
+      const rows = await fetchRound2PsSelectionsFromDB();
+      setRound2DbRows(rows);
+    } catch (err) {
+      console.error('[HPL] refreshRound2Locks failed:', err);
     }
   }, []);
 
+  // Fetch on mount and listen for updates
   useEffect(() => {
+    refreshRound2Locks();
     const handleStorage = () => refreshRound2Locks();
     window.addEventListener('storage', handleStorage);
     window.addEventListener('hpl-selection-update', handleStorage);
@@ -147,81 +158,123 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     };
   }, [refreshRound2Locks]);
 
-  // Derive which official teams have locked what
-  const round2TeamLockMap = useMemo(() => {
-    const map: Record<string, { squadId: string; teamName: string; psId: string; psTitle: string }> = {};
-    Object.entries(round2Selections).forEach(([key, psId]) => {
-      const team = findQualifiedTeamBySquadId(key) || findQualifiedTeamByName(key);
-      if (team && !map[team.squadId]) {
-        const ps = ROUND2_PROBLEM_STATEMENTS.find(p => p.id === psId);
-        map[team.squadId] = {
-          squadId: team.squadId,
-          teamName: team.teamName,
-          psId: psId,
-          psTitle: ps ? ps.title : psId
-        };
-      }
-    });
-    return map;
-  }, [round2Selections]);
+  // Strictly capped allocations from real DB data
+  const allocationState: AllocationState = useMemo(() => {
+    return calculateStrictAllocations(round2DbRows, {});
+  }, [round2DbRows]);
 
-  const round2TrackCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      'ps-01': 0,
-      'ps-02': 0,
-      'ps-03': 0,
-      'ps-04': 0
-    };
-    Object.values(round2TeamLockMap).forEach(item => {
-      const normalizedPsId = item.psId.replace('track-', 'ps-');
-      if (counts[normalizedPsId] !== undefined) {
-        counts[normalizedPsId]++;
-      } else {
-        counts[item.psId] = (counts[item.psId] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [round2TeamLockMap]);
+  const round2TeamLockMap = allocationState.lockedMap;
+  const round2TrackCounts = allocationState.trackCounts;
+  const overflowTeamsList = allocationState.overflowList;
 
-  // Admin action: Reset ALL Round 2 locks
-  const handleResetAllRound2Locks = () => {
+  // Breakdown drawer tab: 'locked' or 'overflow'
+  const [breakdownTab, setBreakdownTab] = useState<'locked' | 'overflow'>('locked');
+  const [round2SearchQuery, setRound2SearchQuery] = useState<string>('');
+  const [isEnforcingCap, setIsEnforcingCap] = useState<boolean>(false);
+
+  // Filtered lists for Round 2 Allocation Breakdown table
+  const filteredLockedList = useMemo(() => {
+    const q = round2SearchQuery.toLowerCase().trim();
+    const list = Object.values(round2TeamLockMap);
+    if (!q) return list;
+    return list.filter(item =>
+      item.teamName.toLowerCase().includes(q) ||
+      item.leaderEmail.toLowerCase().includes(q) ||
+      item.squadId.toLowerCase().includes(q) ||
+      item.psTitle.toLowerCase().includes(q) ||
+      item.psCode.toLowerCase().includes(q)
+    );
+  }, [round2TeamLockMap, round2SearchQuery]);
+
+  const filteredOverflowList = useMemo(() => {
+    const q = round2SearchQuery.toLowerCase().trim();
+    if (!q) return overflowTeamsList;
+    return overflowTeamsList.filter(item =>
+      item.teamName.toLowerCase().includes(q) ||
+      item.leaderEmail.toLowerCase().includes(q) ||
+      item.squadId.toLowerCase().includes(q) ||
+      item.originalPsTitle.toLowerCase().includes(q) ||
+      item.originalPsCode.toLowerCase().includes(q)
+    );
+  }, [overflowTeamsList, round2SearchQuery]);
+
+  // Admin action: Enforce 10-cap and sync overflow teams
+  const handleEnforceCapAndSync = async () => {
+    setIsEnforcingCap(true);
+    try {
+      // Sync overflow teams — removes them from round2_ps_selections so they can re-select
+      await syncCapEnforcementToSupabase(allocationState.overflowList);
+      saveOverflowRecords(allocationState.overflowMap);
+
+      window.dispatchEvent(new Event('hpl-selection-update'));
+      await refreshRound2Locks();
+
+      setResetFeedbackMsg(`Strict 10-team cap enforced! First 10 teams retained. ${allocationState.overflowList.length} overflow teams unlocked with one-time re-selection.`);
+      setTimeout(() => setResetFeedbackMsg(''), 5000);
+    } catch (err) {
+      console.error(err);
+      setResetFeedbackMsg('Failed to sync cap enforcement to Supabase.');
+    } finally {
+      setIsEnforcingCap(false);
+    }
+  };
+
+  // Admin action: Reset ALL Round 2 locks & Team Details (Full Fresh Start)
+  const handleResetAllRound2Locks = async () => {
     const confirmed = window.confirm(
-      'Are you sure you want to RESET ALL Round 2 Problem Statement Locks?\n\nThis will unlock every track for all 40 teams, allowing them to pick freshly. This action cannot be undone!'
+      '⚠️ COMPLETE FRESH START FOR ROUND 2\n\nAre you sure you want to RESET ALL Round 2 Problem Statement Locks and Team Details?\n\nThis will:\n1. Delete all Round 2 PS selections from Supabase (`round2_ps_selections`)\n2. Reset all team passwords to default\n3. Clear local test sessions so teams can log in and select freshly.\n\nThis action cannot be undone!'
     );
     if (!confirmed) return;
 
     try {
+      const { resetAllRound2Selections } = await import('../../services/round2AllocationService');
+      const ok = await resetAllRound2Selections();
+
+      // Clear all local selection, credential, and session keys
       localStorage.removeItem('hpl-round2-ps-selections');
+      localStorage.removeItem('hpl-round2-overflow-teams');
+      localStorage.removeItem('hpl-round2-team-credentials');
+      localStorage.removeItem('hpl-active-team-session');
+
       window.dispatchEvent(new Event('hpl-selection-update'));
-      setRound2Selections({});
-      setResetFeedbackMsg('All Round 2 Problem Statement locks have been completely reset!');
-      setTimeout(() => setResetFeedbackMsg(''), 4000);
+      window.dispatchEvent(new Event('hpl-team-session-update'));
+      await refreshRound2Locks();
+      await fetchSubmissions(true);
+
+      setResetFeedbackMsg(ok
+        ? '✅ Complete Fresh Start: All Round 2 PS selections & test data have been wiped!'
+        : 'Reset partially completed — check Supabase table.');
+      setTimeout(() => setResetFeedbackMsg(''), 5000);
     } catch (e) {
       console.error(e);
+      setResetFeedbackMsg('Error performing fresh reset.');
     }
   };
 
   // Admin action: Unlock single team
-  const handleUnlockSingleTeam = (squadIdToUnlock: string, teamNameToUnlock: string) => {
+  const handleUnlockSingleTeam = async (squadIdToUnlock: string, teamNameToUnlock: string) => {
     try {
+      const q = findQualifiedTeamBySquadId(squadIdToUnlock);
+
+      // Delete from round2_ps_selections
+      await supabase
+        .from('round2_ps_selections')
+        .delete()
+        .eq('squad_id', squadIdToUnlock);
+
+      // Also clean localStorage
       const raw = localStorage.getItem('hpl-round2-ps-selections');
       const current = raw ? JSON.parse(raw) : {};
-      const q = findQualifiedTeamBySquadId(squadIdToUnlock);
-      
-      // Clean all possible alias keys
       delete current[squadIdToUnlock];
-      delete current[squadIdToUnlock.toLowerCase()];
-      delete current[teamNameToUnlock];
-      delete current[teamNameToUnlock.toLowerCase()];
       if (q) {
-        delete current[q.squadId];
         delete current[q.teamName];
         delete current[`squad-${q.rank}`];
         delete current[q.leaderEmail.toLowerCase()];
       }
       localStorage.setItem('hpl-round2-ps-selections', JSON.stringify(current));
       window.dispatchEvent(new Event('hpl-selection-update'));
-      setRound2Selections(current);
+      await refreshRound2Locks();
+
       setResetFeedbackMsg(`Unlocked Problem Statement for ${teamNameToUnlock}!`);
       setTimeout(() => setResetFeedbackMsg(''), 3000);
     } catch (e) {
@@ -390,17 +443,37 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      refreshRound2Locks();
     }
-  }, []);
+  }, [refreshRound2Locks]);
 
   // Initial load on mount
   useEffect(() => {
     fetchSubmissions(false);
   }, [fetchSubmissions]);
 
-  // Combined records with status overrides
+  // Combined records with status overrides, strictly deduplicated to exactly the 40 shortlisted qualified teams!
+  // Shows ONLY the 40 shortlisted teams (1 entry per team) and their newly selected Round 2 problem statement!
   const enrichedSubmissions = useMemo(() => {
-    return submissions.map((sub, index) => {
+    // 1. Group submissions by squadId and keep only the latest submission per team
+    const seenSquads = new Set<string>();
+    const deduplicatedSubmissions: RegistrationRecord[] = [];
+
+    // Sort submissions by created_at descending so we pick the newest if there are duplicates
+    const sortedSubmissions = [...submissions].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    for (const sub of sortedSubmissions) {
+      const qualified = findQualifiedTeamByEmail(sub.leader_email || '') ||
+                        findQualifiedTeamByName(sub.team_name || '');
+      if (qualified && !seenSquads.has(qualified.squadId)) {
+        seenSquads.add(qualified.squadId);
+        deduplicatedSubmissions.push(sub);
+      }
+    }
+
+    return deduplicatedSubmissions.map((sub) => {
       const override = statusOverrides[sub.id];
       // Default strictly to Pending Review for all submissions
       let status: 'Pending Review' | 'Reviewed' | 'Rejected' = 'Pending Review';
@@ -412,13 +485,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         status = 'Pending Review';
       }
 
+      // Check if this team has locked a fresh Round 2 PS
+      const qualified = findQualifiedTeamByEmail(sub.leader_email || '') ||
+                        findQualifiedTeamByName(sub.team_name || '');
+      const round2Lock = qualified ? round2TeamLockMap[qualified.squadId] : null;
+
+      // Use ONLY the Round 2 locked PS if chosen; otherwise display empty / not chosen yet
+      const round2Track = round2Lock ? `${round2Lock.psCode}: ${round2Lock.psTitle}` : '';
+
       return {
         ...sub,
+        track: round2Track,
+        created_at: round2Lock?.lockedAt || sub.created_at,
         status,
         reviewer_notes: override?.notes || sub.reviewer_notes || ''
       };
     });
-  }, [submissions, statusOverrides]);
+  }, [submissions, statusOverrides, round2TeamLockMap]);
 
   // Update status action handler
   const handleUpdateStatus = (id: string, newStatus: 'Pending Review' | 'Reviewed' | 'Rejected', notes?: string) => {
@@ -446,19 +529,28 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   // Filter and Search Processing
   const filteredSubmissions = useMemo(() => {
     return enrichedSubmissions.filter(item => {
-      // Search matching team name, leader name, email, or college
+      // Search matching team name, leader name, email (leader or members), squad ID, or college
       const q = searchQuery.toLowerCase().trim();
+      const qualified = findQualifiedTeamByEmail(item.leader_email || '') || findQualifiedTeamByName(item.team_name || '');
       const matchQuery = !q || 
         item.team_name.toLowerCase().includes(q) ||
         item.team_leader_name.toLowerCase().includes(q) ||
         item.leader_email.toLowerCase().includes(q) ||
+        (item.member2_email && item.member2_email.toLowerCase().includes(q)) ||
+        (item.member3_email && item.member3_email.toLowerCase().includes(q)) ||
+        (item.member4_email && item.member4_email.toLowerCase().includes(q)) ||
+        (item.member5_email && item.member5_email.toLowerCase().includes(q)) ||
+        (item.college && item.college.toLowerCase().includes(q)) ||
+        (qualified?.squadId && qualified.squadId.toLowerCase().includes(q)) ||
         (item.project_idea && item.project_idea.toLowerCase().includes(q));
 
-      // Track / PS filter
+      // Track / PS filter (Round 2 problem statements)
+      const tLow = (item.track || '').toLowerCase();
       const matchTrack = selectedTrack === 'all' || 
-        (selectedTrack === 'ps1' && item.track.includes('PS 01')) ||
-        (selectedTrack === 'ps2' && item.track.includes('PS 02')) ||
-        (selectedTrack === 'ps3' && item.track.includes('PS 03'));
+        (selectedTrack === 'ps1' && (tLow.includes('ps-01') || tLow.includes('ayuressence'))) ||
+        (selectedTrack === 'ps2' && (tLow.includes('ps-02') || tLow.includes('smartbus'))) ||
+        (selectedTrack === 'ps3' && (tLow.includes('ps-03') || tLow.includes('sahayak'))) ||
+        (selectedTrack === 'ps4' && (tLow.includes('ps-04') || tLow.includes('swms')));
 
       // Status filter
       const matchStatus = selectedStatus === 'all' || item.status === selectedStatus;
@@ -517,14 +609,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   };
 
   const getTrackBadge = (track: string) => {
-    if (track.includes('PS 01') || track.includes('WeatherGPT')) {
-      return { code: 'PS 01', short: 'WeatherGPT: Conversational AI for Weather Forecasting', color: 'bg-[#4F46E5] text-white' };
+    if (!track) {
+      return { code: 'PENDING', short: 'Not Selected Yet', color: 'bg-slate-100 text-slate-600 border border-slate-300' };
     }
-    if (track.includes('PS 02') || track.includes('Rural Market')) {
-      return { code: 'PS 02', short: 'Rural Market Intelligence', color: 'bg-[#F59E0B] text-white' };
+    const clean = track.toLowerCase();
+    if (clean.includes('ps-01') || clean.includes('ayuressence')) {
+      return { code: 'PS 01', short: 'AyurEssence - Ayurvedic Medicine Identification', color: 'bg-[#4F46E5] text-white' };
     }
-    if (track.includes('PS 03') || track.includes('Internship') || track.includes('Opportunity Aggregator')) {
-      return { code: 'PS 03', short: 'Internship & Opportunity Aggregator', color: 'bg-[#059669] text-white' };
+    if (clean.includes('ps-02') || clean.includes('smartbus')) {
+      return { code: 'PS 02', short: 'SMARTBUS - Intelligent Campus Transit System', color: 'bg-[#F59E0B] text-white' };
+    }
+    if (clean.includes('ps-03') || clean.includes('sahayak')) {
+      return { code: 'PS 03', short: 'Sahayak - Rural Support & Resource Platform', color: 'bg-[#059669] text-white' };
+    }
+    if (clean.includes('ps-04') || clean.includes('swms')) {
+      return { code: 'PS 04', short: 'SWMS - Smart Solid Waste Management', color: 'bg-[#0284C7] text-white' };
     }
     return { code: 'PS', short: track.slice(0, 35) + '...', color: 'bg-purple-600 text-white' };
   };
@@ -715,7 +814,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search team name or leader..."
+                placeholder="Search team name or email..."
                 className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#1E1B4B]/15 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] shadow-2xs text-[#1E1B4B]"
               />
               {searchQuery && (
@@ -854,9 +953,9 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {/* ROUND 2 PROBLEM STATEMENT LOCKS & ADMIN CAPACITY MANAGEMENT           */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 sm:p-6 shadow-sm space-y-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-[#4F46E5] flex items-center justify-center font-bold">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-purple-100 text-[#4F46E5] flex items-center justify-center font-bold shrink-0">
                 <Lock className="w-5 h-5" />
               </div>
               <div>
@@ -865,36 +964,52 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     Round 2 Problem Statement Allocation
                   </h2>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-black uppercase border border-emerald-300">
-                    {Object.keys(round2TeamLockMap).length} of 40 Teams Locked
+                    {allocationState.totalLocked} of 40 Teams Locked
                   </span>
-                  <span className="px-2 py-0.5 rounded-md bg-purple-100 text-[#4F46E5] font-mono text-[10px] font-bold uppercase">
-                    Cap: 10 / Track
+                  <span className="px-2.5 py-0.5 rounded-md bg-purple-100 text-[#4F46E5] font-mono text-[10px] font-bold uppercase border border-purple-200">
+                    Strict Cap: 10 / Track
                   </span>
+                  {allocationState.totalPendingReSelection > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-mono text-xs font-bold uppercase border border-amber-300">
+                      {allocationState.totalPendingReSelection} Overflow (1-Time Re-Selection)
+                    </span>
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 font-sans">
-                  Total teams locked: <strong className="text-[#1E1B4B] font-mono">{Object.keys(round2TeamLockMap).length} / 40</strong> ({40 - Object.keys(round2TeamLockMap).length} remaining). Each track has a strict 10-team cap.
+                <p className="text-xs text-slate-500 font-sans mt-0.5">
+                  Total teams locked: <strong className="text-[#1E1B4B] font-mono">{allocationState.totalLocked} / 40</strong> ({40 - allocationState.totalLocked} remaining open slots). Each track is strictly capped at 10 teams. Overflow teams are granted a 1-time re-selection.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-2 bg-[#F8F7FF] border border-purple-200 px-3.5 py-2 rounded-xl text-right">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="hidden sm:flex items-center gap-2 bg-[#F8F7FF] border border-purple-200 px-3.5 py-2 rounded-xl text-right">
                 <div>
                   <div className="font-mono text-[10px] uppercase font-bold text-slate-500">Overall Progress</div>
                   <div className="font-display font-black text-sm text-[#4F46E5]">
-                    {Math.round((Object.keys(round2TeamLockMap).length / 40) * 100)}% Locked
+                    {Math.round((allocationState.totalLocked / 40) * 100)}% Locked
                   </div>
                 </div>
               </div>
 
               <button
                 type="button"
-                onClick={handleResetAllRound2Locks}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-98"
-                title="Reset all problem statement locks so teams can choose again"
+                onClick={handleEnforceCapAndSync}
+                disabled={isEnforcingCap}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-98 disabled:opacity-50"
+                title="Enforces max 10 teams per track in the database, retaining the first 10 and unlocking extra teams with 1-time re-selection"
               >
-                <RotateCcw className="w-4 h-4 text-rose-600" />
-                <span>Reset All PS Locks</span>
+                {isEnforcingCap ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />}
+                <span>Enforce 10-Cap & Sync</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetAllRound2Locks}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-display font-bold uppercase tracking-wider transition-all cursor-pointer shadow-xs active:scale-98"
+                title="Wipe all Round 2 PS selections from database and clear test sessions so all 40 teams start completely fresh"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                <span>Reset Round 2 (Fresh Start)</span>
               </button>
             </div>
           </div>
@@ -910,30 +1025,31 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
             {ROUND2_PROBLEM_STATEMENTS.map((ps) => {
               const count = round2TrackCounts[ps.id] || 0;
-              const isFull = count >= 10;
-              const pct = Math.min(100, Math.round((count / 10) * 100));
+              const isFull = count >= STRICT_CAP_PER_TRACK;
+              const remainingSlots = STRICT_CAP_PER_TRACK - count;
+              const pct = Math.min(100, Math.round((count / STRICT_CAP_PER_TRACK) * 100));
 
               return (
                 <div 
                   key={ps.id}
                   className={`p-4 rounded-xl border transition-all ${
                     isFull 
-                      ? 'bg-rose-50/50 border-rose-200' 
+                      ? 'bg-emerald-50/50 border-emerald-200 shadow-2xs' 
                       : 'bg-[#FDFBF7] border-slate-200 hover:border-purple-300'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-[11px] font-black uppercase text-purple-700">
-                      {ps.id.toUpperCase()}
+                      {ps.psCode}
                     </span>
                     <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md ${
                       isFull 
-                        ? 'bg-rose-600 text-white' 
+                        ? 'bg-emerald-600 text-white' 
                         : count > 7 
                         ? 'bg-amber-100 text-amber-800' 
                         : 'bg-slate-100 text-slate-700'
                     }`}>
-                      {count} / 10 Locked
+                      {count} / 10 {isFull ? 'FULL' : 'Locked'}
                     </span>
                   </div>
 
@@ -941,12 +1057,19 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     {ps.title}
                   </h3>
 
+                  <div className="flex items-center justify-between mt-2 text-[10px] font-mono">
+                    <span className={isFull ? 'text-emerald-700 font-bold' : 'text-slate-500'}>
+                      {isFull ? '10/10 Cap Reached (Closed)' : `${remainingSlots} Slots Open`}
+                    </span>
+                    <span className="text-slate-400 font-bold">{pct}%</span>
+                  </div>
+
                   {/* Progress Bar */}
-                  <div className="mt-3 w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                  <div className="mt-1.5 w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-500 ${
                         isFull 
-                          ? 'bg-rose-500' 
+                          ? 'bg-emerald-500' 
                           : count > 7 
                           ? 'bg-amber-500' 
                           : 'bg-[#4F46E5]'
@@ -961,65 +1084,207 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
           {/* Locked Teams Detailed Drawer / Summary Table */}
           <div className="pt-1">
-            <details className="group border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+            <details className="group border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70" open>
               <summary className="p-3.5 text-xs font-display font-bold text-[#1E1B4B] cursor-pointer hover:bg-slate-100 flex items-center justify-between transition-colors list-none select-none">
                 <span className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-[#4F46E5]" />
-                  <span>View Locked Teams Breakdown ({Object.keys(round2TeamLockMap).length} of 40 Teams Locked)</span>
+                  <span>Allocation Breakdown: {allocationState.totalLocked} Locked Teams &bull; {overflowTeamsList.length} Overflow Teams</span>
                 </span>
                 <span className="font-mono text-[11px] text-purple-700 group-open:rotate-180 transition-transform">
                   ▼
                 </span>
               </summary>
 
-              <div className="p-4 bg-white border-t border-slate-200">
-                {Object.keys(round2TeamLockMap).length === 0 ? (
-                  <p className="text-xs text-slate-400 font-sans text-center py-4">
-                    No teams have locked a problem statement yet. All 40 teams can select freely.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px]">
-                          <th className="py-2 px-3 font-semibold">Team Name</th>
-                          <th className="py-2 px-3 font-semibold">Squad ID</th>
-                          <th className="py-2 px-3 font-semibold">Locked Track</th>
-                          <th className="py-2 px-3 font-semibold text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {Object.values(round2TeamLockMap).map((item) => (
-                          <tr key={item.squadId} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="py-2.5 px-3 font-display font-bold text-[#1E1B4B]">
-                              {item.teamName}
-                            </td>
-                            <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
-                              {item.squadId}
-                            </td>
-                            <td className="py-2.5 px-3">
-                              <span className="inline-block px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-100 text-[#4F46E5]">
-                                {item.psId.toUpperCase()}
-                              </span>
-                              <span className="ml-2 text-slate-600 text-[11px] font-sans">
-                                {item.psTitle}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleUnlockSingleTeam(item.squadId, item.teamName)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-display font-bold text-[10px] uppercase border border-rose-200 transition-colors cursor-pointer"
-                                title={`Unlock PS for ${item.teamName}`}
-                              >
-                                <Unlock className="w-3 h-3 text-rose-600" />
-                                <span>Unlock</span>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+              <div className="p-4 bg-white border-t border-slate-200 space-y-4">
+                {/* Tabs switcher between Locked Teams and Overflow Teams + Search */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownTab('locked')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
+                        breakdownTab === 'locked'
+                          ? 'bg-[#1E1B4B] text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Locked Teams ({allocationState.totalLocked} / 40)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBreakdownTab('overflow')}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-display font-bold uppercase transition-all cursor-pointer ${
+                        breakdownTab === 'overflow'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                      }`}
+                    >
+                      <span>⚠️ Overflow Teams ({overflowTeamsList.length})</span>
+                      <span className="px-1.5 py-0.2 rounded-full bg-white/30 text-[10px] font-mono">1-Time Selection</span>
+                    </button>
+                  </div>
+
+                  {/* Search Bar for Round 2 Allocation Breakdown */}
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={round2SearchQuery}
+                      onChange={(e) => setRound2SearchQuery(e.target.value)}
+                      placeholder="Search team name or email..."
+                      className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-[#1E1B4B] placeholder:text-slate-400"
+                    />
+                    {round2SearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setRound2SearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                        title="Clear search"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* TAB 1: LOCKED TEAMS (STRICTLY <= 10 PER TRACK) */}
+                {breakdownTab === 'locked' && (
+                  <div>
+                    {Object.keys(round2TeamLockMap).length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No teams have locked a problem statement yet.
+                      </p>
+                    ) : filteredLockedList.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No locked teams match &ldquo;{round2SearchQuery}&rdquo;.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px]">
+                              <th className="py-2 px-3 font-semibold">Rank / Squad ID</th>
+                              <th className="py-2 px-3 font-semibold">Team Name</th>
+                              <th className="py-2 px-3 font-semibold">Leader Email</th>
+                              <th className="py-2 px-3 font-semibold">Locked Track (Max 10)</th>
+                              <th className="py-2 px-3 font-semibold text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredLockedList.map((item) => (
+                              <tr key={item.squadId} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
+                                  #{String(item.rank).padStart(2, '0')} • {item.squadId}
+                                </td>
+                                <td className="py-2.5 px-3 font-display font-bold text-[#1E1B4B]">
+                                  {item.teamName}
+                                </td>
+                                <td className="py-2.5 px-3 font-sans text-slate-500 text-[11px]">
+                                  {item.leaderEmail}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="inline-block px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-100 text-[#4F46E5]">
+                                    {item.psCode}
+                                  </span>
+                                  <span className="ml-2 text-slate-700 text-[11px] font-medium font-sans">
+                                    {item.psTitle}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUnlockSingleTeam(item.squadId, item.teamName)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-display font-bold text-[10px] uppercase border border-rose-200 transition-colors cursor-pointer"
+                                    title={`Unlock PS for ${item.teamName}`}
+                                  >
+                                    <Unlock className="w-3 h-3 text-rose-600" />
+                                    <span>Unlock</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: OVERFLOW TEAMS (GRANTED ONE-TIME RE-SELECTION) */}
+                {breakdownTab === 'overflow' && (
+                  <div className="space-y-3">
+                    <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="font-display font-bold">Strict 10-Team Cap Overflow Policy:</strong>
+                        <p className="mt-0.5 leading-relaxed text-amber-800">
+                          These teams locked after their chosen track reached capacity (10 teams). The first 10 teams were retained. These overflow teams have been unlocked and given a <strong>one-time re-selection option</strong> to choose from pending problem statements (PS-03 & PS-04) where slots are available.
+                        </p>
+                      </div>
+                    </div>
+
+                    {overflowTeamsList.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No overflow teams. All locked teams are within the 10-team cap!
+                      </p>
+                    ) : filteredOverflowList.length === 0 ? (
+                      <p className="text-xs text-slate-400 font-sans text-center py-4">
+                        No overflow teams match &ldquo;{round2SearchQuery}&rdquo;.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px]">
+                              <th className="py-2 px-3 font-semibold">Rank / Squad</th>
+                              <th className="py-2 px-3 font-semibold">Team Name</th>
+                              <th className="py-2 px-3 font-semibold">Leader Email</th>
+                              <th className="py-2 px-3 font-semibold">Exceeded Track</th>
+                              <th className="py-2 px-3 font-semibold">Status</th>
+                              <th className="py-2 px-3 font-semibold text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {filteredOverflowList.map((overflow) => (
+                              <tr key={overflow.squadId} className="hover:bg-amber-50/40 transition-colors">
+                                <td className="py-2.5 px-3 font-mono text-slate-600 text-[11px]">
+                                  #{String(overflow.rank).padStart(2, '0')} • {overflow.squadId}
+                                </td>
+                                <td className="py-2.5 px-3 font-display font-bold text-[#1E1B4B]">
+                                  {overflow.teamName}
+                                </td>
+                                <td className="py-2.5 px-3 font-sans text-slate-500 text-[11px]">
+                                  {overflow.leaderEmail}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="inline-block px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-rose-100 text-rose-800">
+                                    {overflow.originalPsCode}: {overflow.originalPsTitle}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                    <Sparkles className="w-2.5 h-2.5 text-amber-700" />
+                                    <span>One-Time Selection Active</span>
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUnlockSingleTeam(overflow.squadId, overflow.teamName)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-display font-bold text-[10px] uppercase border border-slate-300 transition-colors cursor-pointer"
+                                    title="Reset team state"
+                                  >
+                                    <RotateCcw className="w-3 h-3 text-slate-500" />
+                                    <span>Clear State</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1032,7 +1297,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            {/* Search Bar: team name or email */}
+            <div className="relative w-full sm:w-72 md:w-80">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search team name or email..."
+                className="w-full pl-9 pr-8 py-2 text-xs bg-[#FDFBF7] border border-[#1E1B4B]/20 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-[#1E1B4B] shadow-2xs placeholder:text-slate-400"
+              />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  title="Clear search"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
             {/* Filter 1: Problem Statements dropdown */}
             <div className="relative">
               <select
@@ -1041,9 +1328,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 className="appearance-none bg-[#FDFBF7] border border-[#1E1B4B]/20 rounded-xl px-3.5 py-2 pr-9 text-xs font-display font-bold text-[#1E1B4B] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
               >
                 <option value="all">All Problem Statements</option>
-                <option value="ps1">PS 01: WeatherGPT</option>
-                <option value="ps2">PS 02: Rural Market</option>
-                <option value="ps3">PS 03: Opportunity Aggregator</option>
+                <option value="ps1">PS 01: AyurEssence</option>
+                <option value="ps2">PS 02: SMARTBUS</option>
+                <option value="ps3">PS 03: Sahayak</option>
+                <option value="ps4">PS 04: SWMS</option>
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -1107,7 +1395,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   <th className="py-3.5 px-4">Team Name</th>
                   <th className="py-3.5 px-4">Problem Statement</th>
                   <th className="py-3.5 px-4">Team Leader</th>
-                  <th className="py-3.5 px-4">Submitted On</th>
+                  <th className="py-3.5 px-4">PS Locked On</th>
                   <th className="py-3.5 px-4 text-center">Status</th>
                   <th className="py-3.5 px-4 text-center">Action</th>
                 </tr>
@@ -1194,16 +1482,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           </div>
                         </td>
 
-                        {/* 5. Submitted Date & Time */}
+                        {/* 5. PS Locked On Date & Time */}
                         <td className="py-4 px-4">
-                          <div className="space-y-0.5">
-                            <span className="font-display font-bold text-xs text-[#1E1B4B] block whitespace-nowrap">
-                              {dateStr}
+                          {item.track ? (
+                            <div className="space-y-0.5">
+                              <span className="font-display font-bold text-xs text-[#1E1B4B] block whitespace-nowrap">
+                                {dateStr}
+                              </span>
+                              <span className="text-[11px] font-mono text-slate-400 block whitespace-nowrap">
+                                {timeStr}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200">
+                              <Clock className="w-3 h-3" />
+                              Not selected yet
                             </span>
-                            <span className="text-[11px] font-mono text-slate-400 block whitespace-nowrap">
-                              {timeStr}
-                            </span>
-                          </div>
+                          )}
                         </td>
 
                         {/* 6. Status Pill Badge from Mockup */}
@@ -1330,8 +1625,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   {activeModalItem.team_name}
                 </h2>
                 <p className="text-xs font-sans text-slate-600">
-                  {activeModalItem.track}
+                  {activeModalItem.track || 'No Problem Statement selected yet'}
                 </p>
+                {activeModalItem.track && activeModalItem.created_at && (
+                  <p className="text-[11px] font-mono text-slate-400 flex items-center gap-1 mt-0.5">
+                    <Clock className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                    PS Locked: {formatSubmissionDate(activeModalItem.created_at).dateStr} at {formatSubmissionDate(activeModalItem.created_at).timeStr}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => setActiveModalItem(null)}
