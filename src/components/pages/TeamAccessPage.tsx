@@ -32,6 +32,7 @@ import {
     Menu,
     X,
     User,
+    UserCheck,
     AlertTriangle
 } from 'lucide-react';
 import { PageRoute } from '../../types';
@@ -165,8 +166,9 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const [registration, setRegistration] = useState<TeamRegistration | null>(null);
     const [registrationLoading, setRegistrationLoading] = useState(true);
 
-    // Editable member fields
+    // Editable member & profile fields
     const [isEditingRoster, setIsEditingRoster] = useState(false);
+    const [leaderName, setLeaderName] = useState('');
     const [leaderPhone, setLeaderPhone] = useState('');
     const [collegeName, setCollegeName] = useState('');
     const [member2Name, setMember2Name] = useState('');
@@ -236,6 +238,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                         member5_email: psRow.member5_email || regRow?.member5_email || '',
                     };
                     setRegistration(merged);
+                    setLeaderName(merged.team_leader_name || '');
                     setCollegeName(merged.college || '');
                     setLeaderPhone(merged.leader_phone || '');
                     setMember2Name(merged.member2_name || '');
@@ -249,6 +252,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                 } else if (regRow) {
                     // No round2_ps_selections row — use registrations only
                     setRegistration(regRow);
+                    setLeaderName(regRow.team_leader_name || '');
                     setCollegeName(regRow.college || '');
                     setLeaderPhone(regRow.leader_phone || '');
                     setMember2Name(regRow.member2_name || '');
@@ -279,6 +283,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                         member5_email: ''
                     };
                     setRegistration(blankFallback);
+                    setLeaderName(blankFallback.team_leader_name);
                 }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
@@ -407,6 +412,7 @@ const allocationState = useMemo(() => {
                 const found = await findTeamRegistration(qualified.teamName, cleanEmail) || await findTeamRegistrationByEmail(cleanEmail);
                 if (found) {
                     setRegistration(found);
+                    if (found.team_leader_name) setLeaderName(found.team_leader_name);
                     if (found.college) setCollegeName(found.college);
                     if (found.leader_phone) setLeaderPhone(found.leader_phone);
                     if (found.member2_name) setMember2Name(found.member2_name);
@@ -528,9 +534,10 @@ const allocationState = useMemo(() => {
 
         try {
             const leaderEmail = registration?.leader_email || team.leaderEmail || activeSession?.leaderEmail || '';
+            const finalLeaderName = leaderName.trim() || registration?.team_leader_name || 'Team Leader';
             const updatedPayload = {
                 team_name: registration?.team_name || team.name,
-                team_leader_name: registration?.team_leader_name || 'Team Leader',
+                team_leader_name: finalLeaderName,
                 leader_email: leaderEmail,
                 leader_phone: leaderPhone.trim(),
                 college: collegeName.trim(),
@@ -600,7 +607,7 @@ const allocationState = useMemo(() => {
             // Only show failure if round2_ps_selections (the reliable source) also failed
             if (!rosterRes.success) {
                 console.error('Failed to save roster to round2_ps_selections:', rosterRes.error);
-                setRosterSaveMessage('Failed to save member details. Please check your connection and try again.');
+                setRosterSaveMessage('Failed to save profile details. Please check your connection and try again.');
             } else {
                 setRegistration(prev => ({
                     ...(prev || {}),
@@ -621,9 +628,11 @@ const allocationState = useMemo(() => {
                     member5_email: updatedPayload.member5_email,
                 } as TeamRegistration));
 
-                setRosterSaveMessage('Team member details updated successfully!');
+                setLeaderName(finalLeaderName);
+                setRosterSaveMessage('Team leader profile and member details updated successfully!');
                 setIsEditingRoster(false);
                 setTimeout(() => setRosterSaveMessage(''), 4000);
+                window.dispatchEvent(new Event('hpl-team-session-update'));
             }
         } catch (err) {
             console.error(err);
@@ -642,7 +651,7 @@ const allocationState = useMemo(() => {
 
     // Formatted members list (strictly for THIS team)
     const teamMembersList = useMemo(() => {
-        const leaderName = registration?.team_leader_name || 'Team Leader';
+        const currentLeaderName = leaderName || registration?.team_leader_name || 'Team Leader';
         const leaderMail = registration?.leader_email || team?.leaderEmail || activeSession?.leaderEmail || '';
         const phone = leaderPhone || registration?.leader_phone || '';
 
@@ -656,7 +665,7 @@ const allocationState = useMemo(() => {
         const m5Mail = member5Email || registration?.member5_email || '';
 
         const list = [
-            { role: 'Team Leader', name: leaderName, email: leaderMail, phone: phone || null },
+            { role: 'Team Leader', name: currentLeaderName, email: leaderMail, phone: phone || null },
             { role: 'Member 2', name: m2Name || 'Member 2', email: m2Mail || null, phone: null },
             { role: 'Member 3', name: m3Name || 'Member 3', email: m3Mail || null, phone: null },
             { role: 'Member 4', name: m4Name || 'Member 4', email: m4Mail || null, phone: null },
@@ -670,12 +679,12 @@ const allocationState = useMemo(() => {
             });
         }
         return list;
-    }, [registration, team, activeSession, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
+    }, [leaderName, registration, team, activeSession, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
 
     // Navigation items definitions
     const navItems = [
         { key: 'overview' as TabKey, label: 'Overview', icon: LayoutDashboard, badge: null },
-        { key: 'roster' as TabKey, label: 'Team Members', icon: Users, badge: `${teamMembersList.length || 4}` },
+        { key: 'roster' as TabKey, label: 'Profile & Members', icon: Users, badge: `${teamMembersList.length || 4}` },
         { key: 'challenge' as TabKey, label: 'Problem Statement', icon: Compass, badge: activeLockedPs ? 'Selected' : 'Choose' },
         { key: 'settings' as TabKey, label: 'Change Password', icon: Settings, badge: null }
     ];
@@ -825,7 +834,7 @@ const allocationState = useMemo(() => {
                         </span>
                         
                         <span className="hidden md:inline text-white/80 text-xs">
-                            Leader: <strong className="text-white">{registration?.team_leader_name || 'Verified'}</strong>
+                            Leader: <strong className="text-white">{leaderName || registration?.team_leader_name || 'Verified'}</strong>
                         </span>
 
                         <button 
@@ -951,13 +960,22 @@ const allocationState = useMemo(() => {
 
                     {/* Bottom User Profile */}
                     <div className="pt-3 border-t-2 border-[#1E1B4B]/10">
-                        <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3 flex items-center gap-3">
+                        <div 
+                            onClick={() => {
+                                setActiveTab('roster');
+                                setIsEditingRoster(true);
+                                setIsMobileDrawerOpen(false);
+                            }}
+                            className="bg-amber-50/80 hover:bg-amber-100 border border-amber-200 rounded-2xl p-3 flex items-center gap-3 cursor-pointer"
+                            title="Click to edit Team Leader profile"
+                        >
                             <div className="w-9 h-9 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                                {(registration?.team_leader_name || team.name).charAt(0).toUpperCase()}
+                                {(leaderName || registration?.team_leader_name || team.name).charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="text-xs font-display font-black text-[#1E1B4B] truncate">
-                                    {registration?.team_leader_name || team.name}
+                                <div className="text-xs font-display font-black text-[#1E1B4B] truncate flex items-center justify-between">
+                                    <span>{leaderName || registration?.team_leader_name || team.name}</span>
+                                    <Edit3 className="w-3 h-3 text-amber-700" />
                                 </div>
                                 <div className="text-[10px] text-slate-500 truncate font-mono">
                                     {collegeName || registration?.college || registration?.leader_email || 'Team Leader'}
@@ -1093,16 +1111,21 @@ const allocationState = useMemo(() => {
                         {/* Bottom: Team Leader Profile Card */}
                         <div className="pt-3 border-t-2 border-[#1E1B4B]/10">
                             <div 
-                                className={`bg-amber-50/80 border border-amber-200 rounded-2xl p-2.5 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} transition-all`}
-                                title={isSidebarCollapsed ? (registration?.team_leader_name || team.name) : undefined}
+                                onClick={() => {
+                                    setActiveTab('roster');
+                                    setIsEditingRoster(true);
+                                }}
+                                className={`bg-amber-50/80 hover:bg-amber-100 border border-amber-200 hover:border-amber-400 rounded-2xl p-2.5 flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-2.5'} transition-all cursor-pointer group`}
+                                title={isSidebarCollapsed ? (leaderName || registration?.team_leader_name || team.name) : "Click to edit Team Leader profile"}
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
-                                    {(registration?.team_leader_name || team.name).charAt(0).toUpperCase()}
+                                <div className="w-8 h-8 rounded-xl bg-[#1E1B4B] text-amber-300 font-display font-black text-xs flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
+                                    {(leaderName || registration?.team_leader_name || team.name).charAt(0).toUpperCase()}
                                 </div>
                                 {!isSidebarCollapsed && (
                                     <div className="min-w-0 flex-1">
-                                        <div className="text-xs font-display font-black text-[#1E1B4B] truncate">
-                                            {registration?.team_leader_name || team.name}
+                                        <div className="text-xs font-display font-black text-[#1E1B4B] truncate flex items-center justify-between">
+                                            <span className="truncate">{leaderName || registration?.team_leader_name || team.name}</span>
+                                            <Edit3 className="w-3 h-3 text-amber-700 opacity-0 group-hover:opacity-100 transition-opacity ml-1 shrink-0" />
                                         </div>
                                         <div className="text-[10px] text-slate-500 truncate font-mono">
                                             {collegeName || registration?.college || registration?.leader_email || 'Team Leader'}
@@ -1127,9 +1150,14 @@ const allocationState = useMemo(() => {
                                 
                                 {/* Welcome Card */}
                                 <div className="bg-[#1E1B4B] text-white rounded-3xl p-6 sm:p-8 shadow-[6px_6px_0px_#F59E0B] border-2 border-[#1E1B4B]">
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-xs font-bold uppercase tracking-wider mb-2">
-                                        <Sparkles className="w-3.5 h-3.5" />
-                                        <span>Round 2 Dashboard</span>
+                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 font-mono text-xs font-bold uppercase tracking-wider">
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                            <span>Round 2 Dashboard</span>
+                                        </div>
+                                        <span className="text-[11px] font-mono text-white/70">
+                                            Slot #{String(team.rank).padStart(2, '0')} Qualified
+                                        </span>
                                     </div>
                                     <h1 className="font-display font-black text-3xl sm:text-4xl uppercase tracking-tight text-white mt-1">
                                         Welcome, {team.name}
@@ -1137,6 +1165,33 @@ const allocationState = useMemo(() => {
                                     <p className="text-white/80 text-xs sm:text-sm mt-2 max-w-xl leading-relaxed">
                                         Welcome to your team dashboard. Review your selected challenge, see your team members, and manage your account.
                                     </p>
+
+                                    {/* Team Leader Quick Bar & Edit CTA */}
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-5 pt-4 border-t border-white/15">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-7 h-7 rounded-lg bg-amber-400 text-[#1E1B4B] font-display font-black text-xs flex items-center justify-center">
+                                                {(leaderName || registration?.team_leader_name || team.name).charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] font-mono uppercase text-white/60 block">Team Leader:</span>
+                                                <span className="font-display font-bold text-amber-300 text-xs sm:text-sm">
+                                                    {leaderName || registration?.team_leader_name || 'Team Leader'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('roster');
+                                                setIsEditingRoster(true);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider transition-all cursor-pointer shadow-[2px_2px_0px_#FAF6EE] active:translate-x-0.5 active:translate-y-0.5 self-start sm:self-auto"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                            <span>Edit Leader Profile</span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Metrics Summary Row */}
@@ -1255,10 +1310,14 @@ const allocationState = useMemo(() => {
                                             </p>
                                         </div>
                                         <button 
-                                            onClick={() => setActiveTab('roster')}
+                                            onClick={() => {
+                                                setActiveTab('roster');
+                                                setIsEditingRoster(true);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
                                             className="text-xs font-display font-black uppercase text-indigo-700 hover:text-indigo-900 flex items-center gap-1 cursor-pointer"
                                         >
-                                            <span>Manage / Edit</span>
+                                            <span>Edit Profile & Members</span>
                                             <ArrowRight className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
@@ -1312,10 +1371,10 @@ const allocationState = useMemo(() => {
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#1E1B4B]/10 pb-4">
                                         <div>
                                             <h2 className="font-display font-black text-2xl text-[#1E1B4B] uppercase tracking-tight">
-                                                Team Members
+                                                Team Profile & Members
                                             </h2>
                                             <p className="text-xs text-slate-500">
-                                                View and update details for your team members.
+                                                View and update your team leader profile and registered member details.
                                             </p>
                                         </div>
 
@@ -1324,7 +1383,7 @@ const allocationState = useMemo(() => {
                                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border-2 border-[#1E1B4B] bg-white font-display font-black text-xs uppercase text-[#1E1B4B] hover:bg-amber-100 transition-colors cursor-pointer shadow-[2px_2px_0px_#1E1B4B]"
                                         >
                                             <Edit3 className="w-3.5 h-3.5" />
-                                            <span>{isEditingRoster ? 'Cancel Editing' : 'Edit Details'}</span>
+                                            <span>{isEditingRoster ? 'Cancel Editing' : 'Edit Profile & Details'}</span>
                                         </button>
                                     </div>
 
@@ -1368,9 +1427,15 @@ const allocationState = useMemo(() => {
                                                             {m.role}
                                                         </span>
                                                         {idx === 0 && (
-                                                            <span className="text-[11px] font-mono font-bold text-amber-800 flex items-center gap-1">
-                                                                <KeyRound className="w-3 h-3" /> Team Admin
-                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setIsEditingRoster(true)}
+                                                                className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+                                                                title="Click to edit leader name and details"
+                                                            >
+                                                                <Edit3 className="w-3 h-3 text-amber-800" />
+                                                                <span>Edit Leader</span>
+                                                            </button>
                                                         )}
                                                     </div>
                                                     
@@ -1394,136 +1459,193 @@ const allocationState = useMemo(() => {
                                         </div>
                                     ) : (
                                         /* EDIT MODE: Update form directly updating database */
-                                        <form onSubmit={handleSaveRoster} className="space-y-4 pt-2">
-                                            <div className="grid gap-4 sm:grid-cols-2">
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Team Leader Phone
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={leaderPhone} 
-                                                        onChange={(e) => setLeaderPhone(e.target.value)} 
-                                                        placeholder="10-digit mobile number" 
-                                                        className="w-full rounded-xl border-2 border-[#1E1B4B] px-3.5 py-2 text-sm bg-white font-medium" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        College / Institution Name
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={collegeName} 
-                                                        onChange={(e) => setCollegeName(e.target.value)} 
-                                                        placeholder="College or university" 
-                                                        className="w-full rounded-xl border-2 border-[#1E1B4B] px-3.5 py-2 text-sm bg-white font-medium" 
-                                                    />
+                                        <form onSubmit={handleSaveRoster} className="space-y-6 pt-2">
+                                            
+                                            {/* Section 1: Team Leader Profile */}
+                                            <div className="bg-amber-50/60 border-2 border-amber-300/80 rounded-2xl p-4 sm:p-5 space-y-4">
+                                                <div className="flex items-center gap-2 border-b border-amber-200 pb-2.5">
+                                                    <UserCheck className="w-4 h-4 text-amber-800" />
+                                                    <span className="font-display font-black text-xs uppercase tracking-wider text-[#1E1B4B]">
+                                                        Team Leader Profile & Contact
+                                                    </span>
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 2 Name
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={member2Name} 
-                                                        onChange={(e) => setMember2Name(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 2 Email
-                                                    </label>
-                                                    <input 
-                                                        type="email" 
-                                                        value={member2Email} 
-                                                        onChange={(e) => setMember2Email(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Team Leader Full Name <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            required
+                                                            value={leaderName} 
+                                                            onChange={(e) => setLeaderName(e.target.value)} 
+                                                            placeholder="Enter team leader's full name" 
+                                                            className="w-full rounded-xl border-2 border-[#1E1B4B] px-3.5 py-2.5 text-sm bg-white font-bold text-[#1E1B4B] focus:ring-2 focus:ring-amber-400 focus:outline-none" 
+                                                        />
+                                                    </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 3 Name
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={member3Name} 
-                                                        onChange={(e) => setMember3Name(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 3 Email
-                                                    </label>
-                                                    <input 
-                                                        type="email" 
-                                                        value={member3Email} 
-                                                        onChange={(e) => setMember3Email(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Leader Email (Official Login)
+                                                        </label>
+                                                        <input 
+                                                            type="email" 
+                                                            disabled
+                                                            value={registration?.leader_email || team.leaderEmail || ''} 
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm bg-slate-100/80 text-slate-500 font-mono cursor-not-allowed" 
+                                                            title="Leader email cannot be changed as it is your official login identifier."
+                                                        />
+                                                    </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 4 Name
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={member4Name} 
-                                                        onChange={(e) => setMember4Name(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 4 Email
-                                                    </label>
-                                                    <input 
-                                                        type="email" 
-                                                        value={member4Email} 
-                                                        onChange={(e) => setMember4Email(e.target.value)} 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Team Leader Phone / WhatsApp <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <input 
+                                                            type="tel" 
+                                                            value={leaderPhone} 
+                                                            onChange={(e) => setLeaderPhone(e.target.value)} 
+                                                            placeholder="10-digit mobile number" 
+                                                            className="w-full rounded-xl border-2 border-[#1E1B4B] px-3.5 py-2.5 text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none" 
+                                                        />
+                                                    </div>
 
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 5 Name (Optional)
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={member5Name} 
-                                                        onChange={(e) => setMember5Name(e.target.value)} 
-                                                        placeholder="Leave empty if 4 members" 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
-                                                        Member 5 Email (Optional)
-                                                    </label>
-                                                    <input 
-                                                        type="email" 
-                                                        value={member5Email} 
-                                                        onChange={(e) => setMember5Email(e.target.value)} 
-                                                        placeholder="Leave empty if 4 members" 
-                                                        className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
-                                                    />
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            College / Institution Name <span className="text-rose-500">*</span>
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={collegeName} 
+                                                            onChange={(e) => setCollegeName(e.target.value)} 
+                                                            placeholder="College or university name" 
+                                                            className="w-full rounded-xl border-2 border-[#1E1B4B] px-3.5 py-2.5 text-sm bg-white font-medium focus:ring-2 focus:ring-amber-400 focus:outline-none" 
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
+                                            {/* Section 2: Team Members Roster */}
+                                            <div className="bg-white border-2 border-[#1E1B4B]/15 rounded-2xl p-4 sm:p-5 space-y-4">
+                                                <div className="flex items-center gap-2 border-b border-slate-100 pb-2.5">
+                                                    <Users className="w-4 h-4 text-indigo-700" />
+                                                    <span className="font-display font-black text-xs uppercase tracking-wider text-[#1E1B4B]">
+                                                        Team Members (Members 2 to 5)
+                                                    </span>
+                                                </div>
+
+                                                <div className="grid gap-4 sm:grid-cols-2">
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 2 Name
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={member2Name} 
+                                                            onChange={(e) => setMember2Name(e.target.value)} 
+                                                            placeholder="Member 2 full name"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 2 Email
+                                                        </label>
+                                                        <input 
+                                                            type="email" 
+                                                            value={member2Email} 
+                                                            onChange={(e) => setMember2Email(e.target.value)} 
+                                                            placeholder="member2@example.com"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 3 Name
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={member3Name} 
+                                                            onChange={(e) => setMember3Name(e.target.value)} 
+                                                            placeholder="Member 3 full name"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 3 Email
+                                                        </label>
+                                                        <input 
+                                                            type="email" 
+                                                            value={member3Email} 
+                                                            onChange={(e) => setMember3Email(e.target.value)} 
+                                                            placeholder="member3@example.com"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 4 Name
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={member4Name} 
+                                                            onChange={(e) => setMember4Name(e.target.value)} 
+                                                            placeholder="Member 4 full name"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 4 Email
+                                                        </label>
+                                                        <input 
+                                                            type="email" 
+                                                            value={member4Email} 
+                                                            onChange={(e) => setMember4Email(e.target.value)} 
+                                                            placeholder="member4@example.com"
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 5 Name (Optional)
+                                                        </label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={member5Name} 
+                                                            onChange={(e) => setMember5Name(e.target.value)} 
+                                                            placeholder="Leave empty if 4 members" 
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs font-display font-black uppercase text-slate-700 mb-1">
+                                                            Member 5 Email (Optional)
+                                                        </label>
+                                                        <input 
+                                                            type="email" 
+                                                            value={member5Email} 
+                                                            onChange={(e) => setMember5Email(e.target.value)} 
+                                                            placeholder="Leave empty if 4 members" 
+                                                            className="w-full rounded-xl border border-slate-300 px-3.5 py-2 text-sm bg-white" 
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 pt-2">
                                                 <button
                                                     type="submit"
                                                     disabled={isSavingRoster}
                                                     className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1E1B4B] text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] transition-colors cursor-pointer shadow-[3px_3px_0px_#1E1B4B] disabled:opacity-50"
                                                 >
                                                     <Save className="w-4 h-4" />
-                                                    <span>{isSavingRoster ? 'Saving...' : 'Save Updates'}</span>
+                                                    <span>{isSavingRoster ? 'Saving Changes...' : 'Save Profile & Roster'}</span>
                                                 </button>
                                                 <button
                                                     type="button"

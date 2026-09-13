@@ -35,7 +35,8 @@ import {
   RotateCcw,
   AlertTriangle,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { AdminTeamEvalIllustration, AdminClipboardDoodle } from '../illustrations/AdminIllustration';
 import { AdminLoginGate } from '../auth/AdminLoginGate';
@@ -56,6 +57,12 @@ import {
   AllocationState,
   OverflowTeamRecord
 } from '../../services/round2AllocationService';
+import { 
+  fetchEvaluationsByWeek, 
+  saveTeamEvaluation, 
+  batchSaveEvaluations, 
+  TeamEvaluationRecord 
+} from '../../services/evaluationService';
 
 export interface RegistrationRecord {
   id: string;
@@ -194,6 +201,208 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [round2SearchQuery, setRound2SearchQuery] = useState<string>('');
   const [breakdownPsFilter, setBreakdownPsFilter] = useState<string>('all');
   const [isEnforcingCap, setIsEnforcingCap] = useState<boolean>(false);
+
+  // ── EVALUATION & MARKS STATE ──
+  const [adminSection, setAdminSection] = useState<'submissions' | 'evaluations'>('submissions');
+  const [evalWeek, setEvalWeek] = useState<'week1' | 'week2' | 'week3'>('week1');
+  const [evalPsFilter, setEvalPsFilter] = useState<string>('all');
+  const [evalSearchQuery, setEvalSearchQuery] = useState<string>('');
+  const [evaluationsMap, setEvaluationsMap] = useState<Record<string, TeamEvaluationRecord>>({});
+  const [pendingMarks, setPendingMarks] = useState<Record<string, { marks: number; feedback: string }>>({});
+  const [savingSquadId, setSavingSquadId] = useState<string | null>(null);
+  const [savedSquadFeedback, setSavedSquadFeedback] = useState<Record<string, boolean>>({});
+  const [isBatchSaving, setIsBatchSaving] = useState<boolean>(false);
+  const [batchSaveSuccess, setBatchSaveSuccess] = useState<boolean>(false);
+  const [showSchemaHelp, setShowSchemaHelp] = useState<boolean>(false);
+
+  // Fetch evaluations for current active week
+  const refreshEvaluations = useCallback(async () => {
+    try {
+      const evals = await fetchEvaluationsByWeek(evalWeek);
+      setEvaluationsMap(evals);
+    } catch (err) {
+      console.warn('Error fetching evaluations:', err);
+    }
+  }, [evalWeek]);
+
+  useEffect(() => {
+    refreshEvaluations();
+  }, [refreshEvaluations]);
+
+  // Handle single team marks save
+  const handleSaveMarks = async (squadId: string, teamName: string, psId: string) => {
+    const current = pendingMarks[squadId] || { 
+      marks: evaluationsMap[squadId]?.marks || 0, 
+      feedback: evaluationsMap[squadId]?.feedback || '' 
+    };
+    setSavingSquadId(squadId);
+    try {
+      await saveTeamEvaluation({
+        squad_id: squadId,
+        team_name: teamName,
+        ps_id: psId,
+        week: evalWeek,
+        marks: Number(current.marks) || 0,
+        feedback: current.feedback || '',
+        graded_by: adminSession?.email || 'admin'
+      });
+
+      setEvaluationsMap(prev => ({
+        ...prev,
+        [squadId]: {
+          squad_id: squadId,
+          team_name: teamName,
+          ps_id: psId,
+          week: evalWeek,
+          marks: Number(current.marks) || 0,
+          feedback: current.feedback || '',
+          graded_by: adminSession?.email || 'admin'
+        }
+      }));
+
+      setSavedSquadFeedback(prev => ({ ...prev, [squadId]: true }));
+      setTimeout(() => {
+        setSavedSquadFeedback(prev => ({ ...prev, [squadId]: false }));
+      }, 2500);
+    } catch (err) {
+      console.error('Error saving marks:', err);
+    } finally {
+      setSavingSquadId(null);
+    }
+  };
+
+  // Filtered list of teams for the Evaluations view
+  const evaluationTeamsList = useMemo(() => {
+    const lockedMap = allocationState.lockedMap;
+    const items: Array<{
+      squadId: string;
+      teamName: string;
+      leaderEmail: string;
+      psId: string;
+      psCode: string;
+      psTitle: string;
+      rank: number;
+    }> = [];
+
+    // 1. First include teams locked in Supabase
+    Object.values(lockedMap).forEach((lock, idx) => {
+      items.push({
+        squadId: lock.squadId,
+        teamName: lock.teamName,
+        leaderEmail: lock.leaderEmail,
+        psId: lock.psId,
+        psCode: lock.psCode || 'PS',
+        psTitle: lock.psTitle || 'Problem Statement',
+        rank: lock.rank || idx + 1
+      });
+    });
+
+    // 2. If DB has no entries, fallback to OFFICIAL_QUALIFIED_TEAMS (10 per PS)
+    if (items.length === 0) {
+      OFFICIAL_QUALIFIED_TEAMS.slice(0, 40).forEach((t, idx) => {
+        let psId = 'ps-01';
+        let psCode = 'PS 01';
+        let psTitle = 'AyurEssence';
+        if (idx >= 10 && idx < 20) {
+          psId = 'ps-02';
+          psCode = 'PS 02';
+          psTitle = 'SMARTBUS';
+        } else if (idx >= 20 && idx < 30) {
+          psId = 'ps-03';
+          psCode = 'PS 03';
+          psTitle = 'Sahayak';
+        } else if (idx >= 30) {
+          psId = 'ps-04';
+          psCode = 'PS 04';
+          psTitle = 'SWMS';
+        }
+        items.push({
+          squadId: t.squadId,
+          teamName: t.teamName,
+          leaderEmail: t.leaderEmail,
+          psId,
+          psCode,
+          psTitle,
+          rank: t.rank
+        });
+      });
+    }
+
+    // Filter by chosen Problem Statement
+    let filtered = items;
+    if (evalPsFilter !== 'all') {
+      filtered = filtered.filter(item => item.psId === evalPsFilter);
+    }
+
+    // Filter by search query
+    if (evalSearchQuery.trim()) {
+      const q = evalSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(item =>
+        item.teamName.toLowerCase().includes(q) ||
+        item.squadId.toLowerCase().includes(q) ||
+        item.leaderEmail.toLowerCase().includes(q) ||
+        item.psTitle.toLowerCase().includes(q)
+      );
+    }
+
+    return filtered.sort((a, b) => a.rank - b.rank);
+  }, [allocationState.lockedMap, evalPsFilter, evalSearchQuery]);
+
+  // Batch save all displayed teams
+  const handleBatchSaveAll = async () => {
+    setIsBatchSaving(true);
+    try {
+      const recordsToSave: TeamEvaluationRecord[] = evaluationTeamsList.map(t => {
+        const pending = pendingMarks[t.squadId];
+        const marks = pending !== undefined ? Number(pending.marks) : (evaluationsMap[t.squadId]?.marks || 0);
+        const feedback = pending !== undefined ? pending.feedback : (evaluationsMap[t.squadId]?.feedback || '');
+        return {
+          squad_id: t.squadId,
+          team_name: t.teamName,
+          ps_id: t.psId,
+          week: evalWeek,
+          marks,
+          feedback,
+          graded_by: adminSession?.email || 'admin'
+        };
+      });
+
+      await batchSaveEvaluations(recordsToSave);
+      const updatedMap = { ...evaluationsMap };
+      recordsToSave.forEach(r => {
+        updatedMap[r.squad_id] = r;
+      });
+      setEvaluationsMap(updatedMap);
+      setBatchSaveSuccess(true);
+      setTimeout(() => setBatchSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error batch saving:', err);
+    } finally {
+      setIsBatchSaving(false);
+    }
+  };
+
+  // Evaluation stats
+  const evalStats = useMemo(() => {
+    const total = evaluationTeamsList.length;
+    let graded = 0;
+    let sumMarks = 0;
+    let highest = 0;
+
+    evaluationTeamsList.forEach(t => {
+      const pending = pendingMarks[t.squadId];
+      const m = pending !== undefined ? Number(pending.marks) : (evaluationsMap[t.squadId]?.marks || 0);
+      if (m > 0) {
+        graded++;
+        sumMarks += m;
+        if (m > highest) highest = m;
+      }
+    });
+
+    const pending = total - graded;
+    const avg = graded > 0 ? (sumMarks / graded).toFixed(1) : '0';
+    return { total, graded, pending, avg, highest };
+  }, [evaluationTeamsList, pendingMarks, evaluationsMap]);
 
   // Filtered lists for Round 2 Allocation Breakdown table (safeguarded and sorted by rank)
   const filteredLockedList = useMemo(() => {
@@ -749,11 +958,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               <span>Dashboard</span>
             </button>
 
-            {/* Active Link: Idea Submissions */}
-            <div className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#4F46E5] text-white shadow-sm font-black">
-              <Lightbulb className="w-4 h-4 text-amber-300" />
+            {/* Navigation: Idea Submissions */}
+            <button
+              onClick={() => {
+                setAdminSection('submissions');
+                setMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors text-left cursor-pointer ${
+                adminSection === 'submissions'
+                  ? 'bg-[#4F46E5] text-white shadow-sm font-black'
+                  : 'text-[#1E1B4B]/70 hover:bg-white hover:text-[#1E1B4B]'
+              }`}
+            >
+              <Lightbulb className={`w-4 h-4 ${adminSection === 'submissions' ? 'text-amber-300' : 'text-[#1E1B4B]/60'}`} />
               <span>Idea Submissions</span>
-            </div>
+            </button>
 
             <button
               onClick={() => onNavigate('squads')}
@@ -779,12 +998,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               <span>Users</span>
             </button>
 
+            {/* Navigation: Evaluations & Marks */}
             <button
-              onClick={() => onNavigate('leaderboard')}
-              className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#1E1B4B]/70 hover:bg-white hover:text-[#1E1B4B] transition-colors text-left"
+              onClick={() => {
+                setAdminSection('evaluations');
+                setMobileSidebarOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-colors text-left cursor-pointer ${
+                adminSection === 'evaluations'
+                  ? 'bg-[#4F46E5] text-white shadow-sm font-black'
+                  : 'text-[#1E1B4B]/70 hover:bg-white hover:text-[#1E1B4B]'
+              }`}
             >
-              <Award className="w-4 h-4 text-[#1E1B4B]/60" />
-              <span>Evaluations</span>
+              <Award className={`w-4 h-4 ${adminSection === 'evaluations' ? 'text-amber-300' : 'text-[#1E1B4B]/60'}`} />
+              <span>Evaluations & Marks</span>
             </button>
 
             <button
@@ -836,10 +1063,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             </button>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black font-display text-[#1E1B4B] uppercase tracking-tight">
-                Idea Submissions
+                {adminSection === 'evaluations' ? 'Evaluations & Marks' : 'Idea Submissions'}
               </h1>
               <p className="text-xs sm:text-sm text-[#1E1B4B]/65 font-medium">
-                Review and evaluate idea submissions from teams.
+                {adminSection === 'evaluations' 
+                  ? 'Grade and update Week 1 marks manually by Problem Statement. Updates sync live to the Leaderboard.'
+                  : 'Review and evaluate idea submissions from teams.'}
               </p>
             </div>
           </div>
@@ -867,9 +1096,12 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             {/* Refresh Live Button */}
             <button
-              onClick={() => fetchSubmissions(true)}
+              onClick={() => {
+                fetchSubmissions(true);
+                refreshEvaluations();
+              }}
               disabled={isRefreshing}
-              title="Refresh live registrations from Supabase"
+              title="Refresh live registrations & evaluations from Supabase"
               className="p-2 rounded-xl bg-white border border-[#1E1B4B]/15 hover:bg-slate-100 text-[#1E1B4B] transition-all cursor-pointer shadow-2xs relative"
             >
               <RefreshCw className={`w-4 h-4 text-[#4F46E5] ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -909,10 +1141,443 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
+        {/* Section Navigation Tabs: Idea Submissions vs Evaluations */}
+        <div className="flex items-center gap-2 p-1 bg-[#ECE7DC] rounded-2xl border border-[#1E1B4B]/15 w-fit">
+          <button
+            onClick={() => setAdminSection('submissions')}
+            className={`px-4 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer ${
+              adminSection === 'submissions'
+                ? 'bg-[#1E1B4B] text-white shadow-xs'
+                : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+            }`}
+          >
+            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            <span>Idea Submissions & Allocations</span>
+          </button>
+
+          <button
+            onClick={() => setAdminSection('evaluations')}
+            className={`px-4 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer ${
+              adminSection === 'evaluations'
+                ? 'bg-[#4F46E5] text-white shadow-xs'
+                : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5 text-amber-300" />
+            <span>Evaluations & Marks (Week 1 Active)</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold">
+              LIVE
+            </span>
+          </button>
+        </div>
+
         {/* ═════════════════════════════════════════════════════════════════════ */}
-        {/* 3. FOUR METRIC STAT CARDS (WITH VINTAGE CLIPBOARD DOODLE)            */}
+        {/* CONDITIONAL RENDER: EVALUATIONS VIEW VS SUBMISSIONS VIEW             */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
-        <div className="relative">
+        {adminSection === 'evaluations' ? (
+          <div className="space-y-6">
+            {/* Header / Week Switcher Card */}
+            <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 sm:p-6 shadow-sm space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#4F46E5] flex items-center justify-center font-bold shrink-0">
+                    <Award className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="font-display font-black text-xl text-[#1E1B4B] uppercase tracking-tight">
+                        Week 1 Jury Evaluation & Marks Entry
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-black uppercase border border-emerald-300">
+                        Week 1 Active
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-md bg-purple-100 text-[#4F46E5] font-mono text-[10px] font-bold uppercase border border-purple-200">
+                        Syncs Live to Leaderboard
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-sans mt-0.5">
+                      Select a Problem Statement below to grade the teams who chose it. Enter marks (0-150) and feedback. Changes save directly to the database.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Week Selector: Week 1 Active, Week 2 and Week 3 Coming Soon */}
+                <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-xl border border-slate-200">
+                  <button
+                    onClick={() => setEvalWeek('week1')}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all bg-[#4F46E5] text-white shadow-xs cursor-pointer"
+                  >
+                    Week 1
+                  </button>
+
+                  <button
+                    disabled
+                    title="Week 2 Evaluation Coming Soon"
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase text-slate-400 bg-slate-200/60 cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3 h-3 text-slate-400" />
+                    <span>Week 2</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200/80 text-amber-900 font-bold">SOON</span>
+                  </button>
+
+                  <button
+                    disabled
+                    title="Week 3 Evaluation Coming Soon"
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase text-slate-400 bg-slate-200/60 cursor-not-allowed flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3 h-3 text-slate-400" />
+                    <span>Week 3</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-amber-200/80 text-amber-900 font-bold">SOON</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Problem Statements Filter Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEvalPsFilter('all')}
+                  className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    evalPsFilter === 'all'
+                      ? 'bg-[#1E1B4B] text-white border-[#1E1B4B] shadow-sm'
+                      : 'bg-slate-50 hover:bg-slate-100 text-[#1E1B4B] border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-xs font-mono font-bold">
+                    <span>ALL TRACKS</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                      evalPsFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                    }`}>
+                      {allocationState.totalLocked || 40}
+                    </span>
+                  </div>
+                  <div className="text-[11px] font-sans opacity-80 mt-1">
+                    All Problem Statements
+                  </div>
+                </button>
+
+                {ROUND2_PROBLEM_STATEMENTS.map(ps => {
+                  const count = round2TrackCounts[ps.id] || 10;
+                  const isSelected = evalPsFilter === ps.id;
+                  return (
+                    <button
+                      key={ps.id}
+                      type="button"
+                      onClick={() => setEvalPsFilter(ps.id)}
+                      className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-[#4F46E5] text-white border-[#4F46E5] shadow-sm'
+                          : 'bg-slate-50 hover:bg-slate-100 text-[#1E1B4B] border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs font-mono font-bold">
+                        <span>{ps.psCode}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-purple-100 text-[#4F46E5]'
+                        }`}>
+                          {count} Teams
+                        </span>
+                      </div>
+                      <div className="text-[11px] font-display font-bold truncate mt-1" title={ps.title}>
+                        {ps.title}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+            </div>
+
+            {/* Metric Stat Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs">
+                <span className="font-mono text-[10px] uppercase font-bold text-slate-500 block">
+                  Total Teams
+                </span>
+                <span className="font-display font-black text-2xl text-[#1E1B4B]">
+                  {evalStats.total}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans block">In current filter</span>
+              </div>
+
+              <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-2xs">
+                <span className="font-mono text-[10px] uppercase font-bold text-emerald-700 block">
+                  Graded Teams
+                </span>
+                <span className="font-display font-black text-2xl text-emerald-700">
+                  {evalStats.graded}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans block">Marks assigned</span>
+              </div>
+
+              <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-2xs">
+                <span className="font-mono text-[10px] uppercase font-bold text-amber-700 block">
+                  Pending Marks
+                </span>
+                <span className="font-display font-black text-2xl text-amber-700">
+                  {evalStats.pending}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans block">Awaiting evaluation</span>
+              </div>
+
+              <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-2xs">
+                <span className="font-mono text-[10px] uppercase font-bold text-purple-700 block">
+                  Average Score
+                </span>
+                <span className="font-display font-black text-2xl text-purple-700">
+                  {evalStats.avg}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans block">Out of 150</span>
+              </div>
+
+              <div className="bg-white rounded-xl border border-blue-200 p-4 shadow-2xs">
+                <span className="font-mono text-[10px] uppercase font-bold text-blue-700 block">
+                  Highest Score
+                </span>
+                <span className="font-display font-black text-2xl text-blue-700">
+                  {evalStats.highest}
+                </span>
+                <span className="text-[10px] text-slate-400 font-sans block">Top performing squad</span>
+              </div>
+            </div>
+
+            {/* Toolbar: Search, Schema Info, Batch Save */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={evalSearchQuery}
+                  onChange={(e) => setEvalSearchQuery(e.target.value)}
+                  placeholder="Search team name, squad ID or email..."
+                  className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] text-[#1E1B4B]"
+                />
+                {evalSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setEvalSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowSchemaHelp(!showSchemaHelp)}
+                  className="px-3 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer"
+                  title="View database schema & SQL script"
+                >
+                  <Info className="w-3.5 h-3.5 text-[#4F46E5]" />
+                  <span>Schema SQL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBatchSaveAll}
+                  disabled={isBatchSaving}
+                  className="px-4 py-2 rounded-xl bg-[#4F46E5] hover:bg-purple-900 text-white text-xs font-display font-bold uppercase tracking-wider flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  {isBatchSaving ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : batchSaveSuccess ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5" />
+                  )}
+                  <span>{batchSaveSuccess ? 'All Marks Saved!' : 'Save All Marks'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Schema Help Accordion */}
+            {showSchemaHelp && (
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-2xl text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-display font-bold text-[#1E1B4B] uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#4F46E5]" />
+                    <span>Supabase Evaluations Table Schema (`public.evaluations`)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSchemaHelp(false)}
+                    className="text-slate-500 hover:text-slate-800"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-slate-600 font-sans">
+                  The application saves marks directly to Supabase table <code className="bg-purple-100 px-1 py-0.5 rounded font-mono">public.evaluations</code> with automatic localStorage offline caching.
+                </p>
+                <pre className="p-3 bg-slate-900 text-purple-200 rounded-xl font-mono text-[11px] overflow-x-auto select-all">
+{`CREATE TABLE IF NOT EXISTS public.evaluations (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    squad_id text NOT NULL,
+    team_name text NOT NULL,
+    ps_id text NOT NULL,
+    week text NOT NULL DEFAULT 'week1',
+    marks numeric DEFAULT 0,
+    feedback text DEFAULT '',
+    graded_by text DEFAULT 'admin',
+    CONSTRAINT unique_squad_week UNIQUE (squad_id, week)
+);`}
+                </pre>
+              </div>
+            )}
+
+            {/* Evaluations Data Table */}
+            <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="bg-[#1E1B4B] text-white font-mono text-[11px] font-bold uppercase tracking-wider">
+                      <th className="py-3.5 px-4 w-14 text-center">Rank</th>
+                      <th className="py-3.5 px-4">Squad / Team</th>
+                      <th className="py-3.5 px-4">Problem Statement</th>
+                      <th className="py-3.5 px-4 w-44 text-center">Week 1 Marks (Max 150)</th>
+                      <th className="py-3.5 px-4">Mentor Feedback</th>
+                      <th className="py-3.5 px-4 text-center w-28">Action</th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-[#1E1B4B]/10 text-xs font-sans">
+                    {evaluationTeamsList.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-500 font-mono">
+                          No teams found for the selected problem statement filter.
+                        </td>
+                      </tr>
+                    ) : (
+                      evaluationTeamsList.map((team, index) => {
+                        const squadId = team.squadId;
+                        const pending = pendingMarks[squadId];
+                        const currentMarks = pending !== undefined ? pending.marks : (evaluationsMap[squadId]?.marks ?? 0);
+                        const currentFeedback = pending !== undefined ? pending.feedback : (evaluationsMap[squadId]?.feedback ?? '');
+                        const isSaving = savingSquadId === squadId;
+                        const isSaved = savedSquadFeedback[squadId];
+
+                        return (
+                          <tr key={squadId} className="hover:bg-purple-50/30 transition-colors">
+                            {/* Rank */}
+                            <td className="py-3.5 px-4 font-mono font-bold text-center text-slate-600">
+                              #{team.rank || index + 1}
+                            </td>
+
+                            {/* Squad details */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-display font-black text-sm text-[#1E1B4B]">
+                                {team.teamName}
+                              </div>
+                              <div className="font-mono text-[11px] text-[#4F46E5] font-bold">
+                                {team.squadId}
+                              </div>
+                              <div className="font-mono text-[10px] text-slate-400 truncate max-w-[180px]">
+                                {team.leaderEmail}
+                              </div>
+                            </td>
+
+                            {/* PS badge */}
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-block px-2.5 py-0.5 rounded font-mono text-[10px] font-bold ${
+                                team.psId === 'ps-01' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
+                                team.psId === 'ps-02' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                team.psId === 'ps-03' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
+                                'bg-sky-100 text-sky-800 border border-sky-200'
+                              }`}>
+                                {team.psCode}
+                              </span>
+                              <span className="block text-[11px] text-slate-600 font-medium truncate max-w-[200px] mt-0.5">
+                                {team.psTitle}
+                              </span>
+                            </td>
+
+                            {/* Marks Input */}
+                            <td className="py-3.5 px-4 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="150"
+                                  value={currentMarks === 0 ? '' : currentMarks}
+                                  onChange={(e) => {
+                                    const val = e.target.value === '' ? 0 : Math.min(150, Math.max(0, Number(e.target.value)));
+                                    setPendingMarks(prev => ({
+                                      ...prev,
+                                      [squadId]: {
+                                        marks: val,
+                                        feedback: currentFeedback
+                                      }
+                                    }));
+                                  }}
+                                  placeholder="0"
+                                  className="w-18 py-1.5 px-2.5 text-center font-mono font-black text-sm bg-slate-50 border-2 border-slate-300 rounded-xl focus:border-[#4F46E5] focus:bg-white focus:outline-none transition-colors"
+                                />
+                                <span className="font-mono text-xs text-slate-400 font-bold">/ 150</span>
+                              </div>
+                            </td>
+
+                            {/* Feedback Input */}
+                            <td className="py-3.5 px-4">
+                              <input
+                                type="text"
+                                value={currentFeedback}
+                                onChange={(e) => {
+                                  const text = e.target.value;
+                                  setPendingMarks(prev => ({
+                                    ...prev,
+                                    [squadId]: {
+                                      marks: currentMarks,
+                                      feedback: text
+                                    }
+                                  }));
+                                }}
+                                placeholder="Optional reviewer feedback..."
+                                className="w-full py-1.5 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:border-[#4F46E5] focus:bg-white focus:outline-none"
+                              />
+                            </td>
+
+                            {/* Action Button */}
+                            <td className="py-3.5 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleSaveMarks(team.squadId, team.teamName, team.psId)}
+                                disabled={isSaving}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-display font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-2xs ${
+                                  isSaved
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-[#4F46E5] hover:bg-purple-900 text-white'
+                                }`}
+                              >
+                                {isSaving ? (
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                ) : isSaved ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-200" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5" />
+                                )}
+                                <span>{isSaved ? 'Saved!' : 'Save'}</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* ═════════════════════════════════════════════════════════════════════ */}
+            {/* 3. FOUR METRIC STAT CARDS (WITH VINTAGE CLIPBOARD DOODLE)            */}
+            {/* ═════════════════════════════════════════════════════════════════════ */}
+            <div className="relative">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
             {/* Card 1: Total Submissions */}
@@ -1659,6 +2324,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           </div>
 
         </div>
+      </div>
+    )}
 
         {/* Footer Credit Tag from Mockup */}
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-slate-500 gap-2">
