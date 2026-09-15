@@ -1891,7 +1891,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={ps.id}
-<<<<<<< HEAD
                   onClick={() => {
                     setBreakdownPsFilter(prev => prev === ps.id ? 'all' : ps.id);
                   }}
@@ -1903,18 +1902,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       : 'bg-[#FDFBF7] border-slate-200 hover:border-purple-300'
                   }`}
                   title={`Click to filter teams by ${ps.psCode}: ${ps.title}`}
-=======
-                  className={`p-4 rounded-xl border transition-all ${isFull
-                    ? 'bg-rose-50/50 border-rose-200'
-                    : 'bg-[#FDFBF7] border-slate-200 hover:border-purple-300'
-                    }`}
->>>>>>> pr-3
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-mono text-[11px] font-black uppercase text-purple-700">
                       {ps.psCode}
                     </span>
-<<<<<<< HEAD
                     <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md ${
                       isFull 
                         ? 'bg-emerald-600 text-white' 
@@ -1923,15 +1915,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         : 'bg-slate-100 text-slate-700'
                     }`}>
                       {count} / 10 {isFull ? 'FULL' : 'Locked'}
-=======
-                    <span className={`font-mono text-xs font-bold px-2 py-0.5 rounded-md ${isFull
-                      ? 'bg-rose-600 text-white'
-                      : count > 7
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-100 text-slate-700'
-                      }`}>
-                      {count} / 10 Locked
->>>>>>> pr-3
                     </span>
                   </div>
 
@@ -1947,7 +1930,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   </div>
 
                   {/* Progress Bar */}
-<<<<<<< HEAD
                   <div className="mt-1.5 w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-500 ${
@@ -1955,14 +1937,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           ? 'bg-emerald-500' 
                           : count > 7 
                           ? 'bg-amber-500' 
-=======
-                  <div className="mt-3 w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${isFull
-                        ? 'bg-rose-500'
-                        : count > 7
-                          ? 'bg-amber-500'
->>>>>>> pr-3
                           : 'bg-[#4F46E5]'
                         }`}
                       style={{ width: `${pct}%` }}
@@ -2359,8 +2333,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {/* 4. FILTERS & ACTIONS TOOLBAR                                         */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-<<<<<<< HEAD
-          
           <div className="flex flex-wrap items-center gap-3 flex-1">
             {/* Search Bar: team name or email */}
             <div className="relative w-full sm:w-72 md:w-80">
@@ -2383,11 +2355,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </button>
               )}
             </div>
-
-=======
-
-          <div className="flex flex-wrap items-center gap-3">
->>>>>>> pr-3
             {/* Filter 1: Problem Statements dropdown */}
             <div className="relative">
               <select
