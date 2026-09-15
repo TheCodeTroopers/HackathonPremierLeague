@@ -531,7 +531,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       // Also clean localStorage PS selection keys
       const raw = localStorage.getItem('hpl-round2-ps-selections');
       const current = raw ? JSON.parse(raw) : {};
-      const q = findQualifiedTeamBySquadId(squadIdToUnlock);
 
       // Clean all possible alias keys
       delete current[squadIdToUnlock];
