@@ -15,6 +15,7 @@ import {
     LayoutDashboard,
     Compass,
     Settings,
+    Link,
     LogOut,
     Edit3,
     Save,
@@ -124,6 +125,10 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     // Registration data for this team
     const [registration, setRegistration] = useState<TeamRegistration | null>(null);
     const [registrationLoading, setRegistrationLoading] = useState(true);
+    const [driveLink, setDriveLink] = useState('');
+    const [isLoadingDriveLink, setIsLoadingDriveLink] = useState(false);
+    const [isSavingDriveLink, setIsSavingDriveLink] = useState(false);
+    const [driveLinkMessage, setDriveLinkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Editable member fields
     const [isEditingRoster, setIsEditingRoster] = useState(false);
@@ -166,15 +171,100 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                     if (reg?.college) setCollegeName(reg.college);
                     if (reg?.leader_phone) setLeaderPhone(reg.leader_phone);
                 }
+
+                const { data: round2Team, error: round2Error } = await supabase
+                    .from('round2_ps_selections')
+                    .select('id')
+                    .eq('squad_id', team.squadId)
+                    .maybeSingle();
+
+                if (round2Error) throw round2Error;
+
+                if (round2Team) {
+                    setIsLoadingDriveLink(true);
+                    const { data: linkRecord, error: linkError } = await supabase
+                        .from('team_drive_links')
+                        .select('drive_link')
+                        .eq('team_id', round2Team.id)
+                        .maybeSingle();
+
+                    if (linkError) throw linkError;
+                    if (isMounted) setDriveLink(linkRecord?.drive_link || '');
+                }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
+                if (isMounted) {
+                    setDriveLinkMessage({ type: 'error', text: 'Could not load the team Google Drive link.' });
+                }
             } finally {
-                if (isMounted) setRegistrationLoading(false);
+                if (isMounted) {
+                    setRegistrationLoading(false);
+                    setIsLoadingDriveLink(false);
+                }
             }
         };
         loadRegistration();
         return () => { isMounted = false; };
     }, [team?.name]);
+
+    const handleSaveDriveLink = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setDriveLinkMessage(null);
+
+        const cleanDriveLink = driveLink.trim();
+        if (!cleanDriveLink) {
+            setDriveLinkMessage({ type: 'error', text: 'Please enter a Google Drive link.' });
+            return;
+        }
+
+        let parsedUrl: URL;
+        try {
+            parsedUrl = new URL(cleanDriveLink);
+        } catch {
+            setDriveLinkMessage({ type: 'error', text: 'Please enter a valid URL.' });
+            return;
+        }
+
+        const hostname = parsedUrl.hostname.toLowerCase();
+        const isGoogleHost = hostname === 'google.com' || hostname.endsWith('.google.com');
+        if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isGoogleHost) {
+            setDriveLinkMessage({ type: 'error', text: 'Please enter a valid Google Drive URL.' });
+            return;
+        }
+
+        if (!team) {
+            setDriveLinkMessage({ type: 'error', text: 'Your team session could not be identified.' });
+            return;
+        }
+
+        setIsSavingDriveLink(true);
+        try {
+            const { data: round2Team, error: round2Error } = await supabase
+                .from('round2_ps_selections')
+                .select('id')
+                .eq('squad_id', team.squadId)
+                .maybeSingle();
+
+            if (round2Error) throw round2Error;
+            if (!round2Team) throw new Error('Round 2 team record not found.');
+
+            const { error } = await supabase
+                .from('team_drive_links')
+                .upsert(
+                    { team_id: round2Team.id, drive_link: cleanDriveLink },
+                    { onConflict: 'team_id' }
+                );
+
+            if (error) throw error;
+            setDriveLink(cleanDriveLink);
+            setDriveLinkMessage({ type: 'success', text: 'Google Drive link saved successfully.' });
+        } catch (err) {
+            console.error('Failed to save Google Drive link:', err);
+            setDriveLinkMessage({ type: 'error', text: 'Could not save the Google Drive link. Please try again.' });
+        } finally {
+            setIsSavingDriveLink(false);
+        }
+    };
 
     // Keep selections synced across tabs
     useEffect(() => {
@@ -1064,6 +1154,60 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+
+                                <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-3xl p-6 shadow-[5px_5px_0px_#1E1B4B] space-y-4">
+                                    <div className="border-b-2 border-[#1E1B4B]/10 pb-3">
+                                        <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight">
+                                            Google Drive Link
+                                        </h3>
+                                        <p className="text-xs text-slate-500">
+                                            Share your team&apos;s project folder or submission files.
+                                        </p>
+                                    </div>
+
+                                    <form onSubmit={handleSaveDriveLink} className="space-y-3">
+                                        <label htmlFor="team-drive-link" className="block text-xs font-display font-black uppercase tracking-wider text-slate-700">
+                                            Drive URL
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row gap-3">
+                                            <div className="relative flex-1">
+                                                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <input
+                                                    id="team-drive-link"
+                                                    type="url"
+                                                    value={driveLink}
+                                                    onChange={(e) => {
+                                                        setDriveLink(e.target.value);
+                                                        setDriveLinkMessage(null);
+                                                    }}
+                                                    placeholder="https://drive.google.com/..."
+                                                    disabled={isLoadingDriveLink || isSavingDriveLink}
+                                                    className="w-full rounded-xl border-2 border-[#1E1B4B]/20 pl-10 pr-4 py-3 text-sm outline-none focus:border-amber-400 bg-white disabled:opacity-60"
+                                                />
+                                            </div>
+                                            <button
+                                                type="submit"
+                                                disabled={isLoadingDriveLink || isSavingDriveLink}
+                                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E1B4B] px-6 py-3 text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] transition-colors cursor-pointer shadow-[2px_2px_0px_#1E1B4B] disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isSavingDriveLink ? 'Saving...' : 'Save Link'}
+                                            </button>
+                                        </div>
+
+                                        {driveLinkMessage && (
+                                            <div className={`p-3 rounded-xl border text-xs font-mono font-bold flex items-center gap-2 ${
+                                                driveLinkMessage.type === 'success'
+                                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                                                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                                            }`}>
+                                                {driveLinkMessage.type === 'success'
+                                                    ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                                    : <AlertCircle className="w-4 h-4 text-rose-600" />}
+                                                <span>{driveLinkMessage.text}</span>
+                                            </div>
+                                        )}
+                                    </form>
                                 </div>
 
                             </div>
