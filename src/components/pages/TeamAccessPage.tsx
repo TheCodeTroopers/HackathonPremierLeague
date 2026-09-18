@@ -295,20 +295,38 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                     setLeaderName(blankFallback.team_leader_name);
                 }
 
-                const { data: round2Team, error: round2Error } = await supabase
+                let round2TeamRecord = null;
+                const { data: bySquad } = await supabase
                     .from('round2_ps_selections')
                     .select('id')
                     .eq('squad_id', team.squadId)
                     .maybeSingle();
+                round2TeamRecord = bySquad;
 
-                if (round2Error) throw round2Error;
+                if (!round2TeamRecord && team.name) {
+                    const { data: byName } = await supabase
+                        .from('round2_ps_selections')
+                        .select('id')
+                        .ilike('team_name', team.name)
+                        .maybeSingle();
+                    round2TeamRecord = byName;
+                }
 
-                if (round2Team) {
+                if (!round2TeamRecord && team.leaderEmail) {
+                    const { data: byEmail } = await supabase
+                        .from('round2_ps_selections')
+                        .select('id')
+                        .ilike('leader_email', team.leaderEmail)
+                        .maybeSingle();
+                    round2TeamRecord = byEmail;
+                }
+
+                if (round2TeamRecord) {
                     setIsLoadingDriveLink(true);
                     const { data: linkRecord, error: linkError } = await supabase
                         .from('team_drive_links')
                         .select('*')
-                        .eq('team_id', round2Team.id)
+                        .eq('team_id', round2TeamRecord.id)
                         .maybeSingle();
 
                     if (linkError) throw linkError;
@@ -405,17 +423,36 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
 
         setIsSavingDriveLink(true);
         try {
-            const { data: round2Team, error: round2Error } = await supabase
+            let round2TeamRecord = null;
+            const { data: bySquad } = await supabase
                 .from('round2_ps_selections')
                 .select('id')
                 .eq('squad_id', team.squadId)
                 .maybeSingle();
+            round2TeamRecord = bySquad;
 
-            if (round2Error) throw round2Error;
-            if (!round2Team) throw new Error('Round 2 team record not found.');
+            if (!round2TeamRecord && team.name) {
+                const { data: byName } = await supabase
+                    .from('round2_ps_selections')
+                    .select('id')
+                    .ilike('team_name', team.name)
+                    .maybeSingle();
+                round2TeamRecord = byName;
+            }
+
+            if (!round2TeamRecord && team.leaderEmail) {
+                const { data: byEmail } = await supabase
+                    .from('round2_ps_selections')
+                    .select('id')
+                    .ilike('leader_email', team.leaderEmail)
+                    .maybeSingle();
+                round2TeamRecord = byEmail;
+            }
+
+            if (!round2TeamRecord) throw new Error('Round 2 team record not found.');
 
             const upsertPayload: Record<string, any> = {
-                team_id: round2Team.id,
+                team_id: round2TeamRecord.id,
                 drive_link: cleanDriveLink || null,
                 github_link: cleanGithubLink || null,
                 youtube_link: cleanYoutubeLink || null

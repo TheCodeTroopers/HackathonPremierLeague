@@ -669,7 +669,7 @@ export const SHORTLISTED_TEAMS_DATA: string[] = [
   "Team Alpha",
   "Innovexa",
   "abyss emarald",
-  "mind mesh",
+  "mindmesh",
   "algo angels",
   "team apex",
   "AgroNex",

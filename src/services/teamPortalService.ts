@@ -55,7 +55,7 @@ export const OFFICIAL_QUALIFIED_TEAMS: QualifiedTeamRecord[] = [
     { rank: 24, squadId: 'HPL-R2-24', teamName: 'Team Alpha', leaderEmail: 'bmvijetha705@gmail.com', initialPassword: 'HPL24-TEAM!' },
     { rank: 25, squadId: 'HPL-R2-25', teamName: 'Innovexa', leaderEmail: 'vihaan.24ai059@sode-edu.in', initialPassword: 'HPL25-INNO!' },
     { rank: 26, squadId: 'HPL-R2-26', teamName: 'abyss emarald', leaderEmail: 'kamath.23cs054@sode-edu.in', initialPassword: 'HPL26-ABYS!' },
-    { rank: 27, squadId: 'HPL-R2-27', teamName: 'mind mesh', leaderEmail: 'rajiya.24cs113@sode-edu.in', initialPassword: 'HPL27-MIND!' },
+    { rank: 27, squadId: 'HPL-R2-27', teamName: 'mindmesh', leaderEmail: 'rajiya.24cs113@sode-edu.in', initialPassword: 'HPL27-MIND!' },
     { rank: 28, squadId: 'HPL-R2-28', teamName: 'algo angels', leaderEmail: 'anushree.24cs017@sode-edu.in', initialPassword: 'HPL28-ALGO!' },
     { rank: 29, squadId: 'HPL-R2-29', teamName: 'team apex', leaderEmail: 'pramod.24ai033@sode-edu.in', initialPassword: 'HPL29-TEAM!' },
     { rank: 30, squadId: 'HPL-R2-30', teamName: 'AgroNex', leaderEmail: 'rohan.24cs117@sode-edu.in', initialPassword: 'HPL30-AGRO!' },

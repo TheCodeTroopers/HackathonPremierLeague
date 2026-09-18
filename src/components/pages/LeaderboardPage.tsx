@@ -247,9 +247,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
         const isGraded = team.evaluationsCount > 0 && marks > 0;
         const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
 
+        const rawName = team.teamName || '';
+        const teamName = (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mindmatrix' || team.squadId === 'HPL-R2-27') ? 'mindmesh' : rawName;
+
         return {
           squadId: team.squadId,
-          teamName: team.teamName,
+          teamName,
           leaderEmail: team.leaderEmail,
           psId: team.psId,
           psCode: team.psCode || 'PS',
@@ -274,10 +277,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     Object.values(lockedMap).forEach((lock, idx) => {
       lockedSquadIds.add(lock.squadId);
       const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
+      const rawName = lock.teamName || '';
+      const teamName = (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mindmatrix' || lock.squadId === 'HPL-R2-27') ? 'mindmesh' : rawName;
 
       items.push({
         squadId: lock.squadId,
-        teamName: lock.teamName,
+        teamName,
         leaderEmail: lock.leaderEmail,
         psId: lock.psId,
         psCode: lock.psCode || 'PS',

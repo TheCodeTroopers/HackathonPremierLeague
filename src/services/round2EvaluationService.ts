@@ -176,16 +176,28 @@ export function norm(str: string): string {
 /**
  * Canonical lookup for an official team from OFFICIAL_QUALIFIED_TEAMS
  */
-export function getOfficialSquadRecord(identifier?: string) {
-  if (!identifier) return undefined;
-  const clean = identifier.trim();
-  const n = norm(clean);
-  return OFFICIAL_QUALIFIED_TEAMS.find(t => 
-    t.squadId.toLowerCase() === clean.toLowerCase() ||
-    norm(t.teamName) === n ||
-    t.teamName.toLowerCase() === clean.toLowerCase() ||
-    (t.leaderEmail && t.leaderEmail.toLowerCase() === clean.toLowerCase())
-  );
+export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
+  for (const identifier of identifiers) {
+    if (!identifier) continue;
+    const clean = identifier.trim();
+    const n = norm(clean);
+
+    // Explicit alias: 'mindmatrix' -> rank 27 'mindmesh'
+    if (n === 'mindmatrix' || n === 'mindmesh' || n === 'hplr227' || n === 'squad27') {
+      const team27 = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === 27);
+      if (team27) return team27;
+    }
+
+    const found = OFFICIAL_QUALIFIED_TEAMS.find(t => 
+      t.squadId.toLowerCase() === clean.toLowerCase() ||
+      norm(t.squadId) === n ||
+      norm(t.teamName) === n ||
+      t.teamName.toLowerCase() === clean.toLowerCase() ||
+      (t.leaderEmail && t.leaderEmail.toLowerCase() === clean.toLowerCase())
+    );
+    if (found) return found;
+  }
+  return undefined;
 }
 
 /**
@@ -240,17 +252,18 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
     const dedupedMentorMap = new Map<string, MentorEvaluationEntry>();
 
     actualEvals.forEach(row => {
-      const official = getOfficialSquadRecord(row.team_name || row.squad_id || row.team_code);
+      const official = getOfficialSquadRecord(row.squad_id, row.team_name, row.team_code);
       const canonicalKey = official ? official.squadId : (norm(row.team_name) || row.team_code || row.squad_id || row.selection_id || row.id);
       const mentorKey = (row.mentor_name || row.mentor_id || 'unknown').toLowerCase().trim();
       const uniqueKey = `${canonicalKey}:::${mentorKey}`;
+      const canonicalTeamName = official?.teamName || (norm(row.team_name) === 'mindmatrix' ? 'mindmesh' : (row.team_name || ''));
 
       const entry: MentorEvaluationEntry = {
         id: row.id,
         mentorId: row.mentor_id || '',
         mentorName: row.mentor_name || 'Mentor',
         teamId: row.team_id || row.selection_id || '',
-        teamName: official?.teamName || row.team_name || '',
+        teamName: canonicalTeamName,
         teamCode: row.team_code || (official ? `HPL-${String(official.rank).padStart(3, '0')}` : ''),
         squadId: official?.squadId || row.squad_id || '',
         mark1: Number(row.mark1) || 0,
@@ -287,10 +300,16 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         keysToRegister.add(norm(entry.teamName));
         keysToRegister.add(entry.teamName.toLowerCase().trim());
       }
+      if (norm(entry.teamName) === 'mindmatrix' || norm(entry.teamName) === 'mindmesh' || norm(entry.squadId) === 'hplr227') {
+        keysToRegister.add('mindmatrix');
+        keysToRegister.add('mindmesh');
+        keysToRegister.add('HPL-R2-27');
+        keysToRegister.add('hplr227');
+      }
       if (entry.teamCode) keysToRegister.add(entry.teamCode.toUpperCase().trim());
       if (entry.teamId) keysToRegister.add(entry.teamId);
 
-      const official = getOfficialSquadRecord(entry.teamName || entry.squadId);
+      const official = getOfficialSquadRecord(entry.squadId, entry.teamName);
       if (official) {
         keysToRegister.add(official.squadId.toUpperCase().trim());
         keysToRegister.add(norm(official.teamName));
@@ -365,16 +384,18 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
 
     // Process all roster teams
     allRosterTeams.forEach(sel => {
-      const official = getOfficialSquadRecord(sel.team_name || sel.squad_id);
+      const official = getOfficialSquadRecord(sel.squad_id, sel.team_name, sel.id);
       const rankNum = sel.rank || official?.rank || (sel.squad_id ? parseInt(sel.squad_id.replace(/\D/g, ''), 10) : 1);
       const squadId = official?.squadId || sel.squad_id || `HPL-R2-${String(rankNum).padStart(2, '0')}`;
-      const teamName = official?.teamName || sel.team_name || 'Team';
+      const rawName = official?.teamName || sel.team_name || 'Team';
+      const teamName = (norm(rawName) === 'mindmatrix' || norm(rawName) === 'mindmesh' || norm(squadId) === 'hplr227') ? 'mindmesh' : rawName;
       const teamCode = `HPL-${String(rankNum).padStart(3, '0')}`;
 
       // Find evaluations by any lookup key
       const teamEvals = 
         evalsByLookupKey.get(squadId.toUpperCase().trim()) ||
         evalsByLookupKey.get(norm(teamName)) ||
+        (norm(teamName) === 'mindmesh' ? (evalsByLookupKey.get('mindmatrix') || evalsByLookupKey.get('mindmesh')) : undefined) ||
         evalsByLookupKey.get(teamCode) ||
         (sel.id ? evalsByLookupKey.get(sel.id) : undefined) ||
         [];
