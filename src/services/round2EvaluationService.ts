@@ -169,7 +169,7 @@ export function setPsPublishStatus(psId: string, isPublished: boolean) {
 /**
  * Normalize string for comparison.
  */
-export function norm(str: string): string {
+export function norm(str?: string | null): string {
   return (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
 }
 
