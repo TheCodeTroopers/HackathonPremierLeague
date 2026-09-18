@@ -20,6 +20,7 @@ export type PageRoute =
   | 'shortlisted'
   | 'contact'
   | 'admin'
+  | 'round2-evaluation-day'
   | 'team-login'
   | 'team-profile'
   | 'team-select'

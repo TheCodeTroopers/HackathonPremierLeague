@@ -30,16 +30,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [hasEntered, setHasEntered] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
-  const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
 
-  // Auto-trigger Shortlisting Announcement window popup on visit
-  React.useEffect(() => {
-    // Show after slight delay for smooth entrance experience
-    const timer = setTimeout(() => {
-      setIsShortlistModalOpen(true);
-    }, 850);
-    return () => clearTimeout(timer);
-  }, []);
+
 
   const rotatingTaglines = [
     'A 3-Week League of Innovation • Build impactful solutions.',
@@ -1063,86 +1055,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onSelectSquad, i
         </div>
       </Modal>
 
-      {/* ================================================================= */}
-      {/* 13. SHORTLIST ANNOUNCEMENT WINDOW POPUP MODAL                     */}
-      {/* ================================================================= */}
-      <Modal
-        isOpen={isShortlistModalOpen}
-        onClose={() => setIsShortlistModalOpen(false)}
-        title="🎉 ROUND 2 SHORTLISTING ANNOUNCED!"
-        maxWidth="lg"
-      >
-        <div className="space-y-3 sm:space-y-4 text-center">
-          
-          {/* Festive Comic Banner */}
-          <div className="relative rounded-2xl bg-gradient-to-br from-purple-900 via-indigo-950 to-slate-900 p-3.5 xs:p-5 sm:p-6 text-white border-2 border-[#1E1B4B] shadow-inner overflow-hidden">
-            {/* Soft Glow Circles */}
-            <div className="absolute -top-10 -right-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-amber-400/20 blur-xl pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-purple-500/20 blur-xl pointer-events-none" />
-            
-            <div className="relative z-10 space-y-1.5 sm:space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-400 text-[#1E1B4B] font-display font-black text-[10px] sm:text-[11px] uppercase tracking-wider shadow-sm">
-                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>OFFICIAL LEAGUE UPDATE</span>
-              </div>
 
-              <h4 className="font-display font-black text-xl xs:text-2xl sm:text-3xl text-amber-300 uppercase tracking-tight italic leading-tight">
-                40 SQUADS SHORTLISTED!
-              </h4>
-
-              <p className="text-[11px] xs:text-xs sm:text-sm text-indigo-100/90 font-medium max-w-md mx-auto leading-relaxed">
-                The evaluation panel has finalized the Round 1 results. 40 top engineering teams have qualified for the Round 2 Stakeholder Sprint!
-              </p>
-            </div>
-          </div>
-
-          {/* Key Details Card */}
-          <div className="p-3 xs:p-4 sm:p-5 bg-amber-50/90 rounded-2xl border-2 border-amber-300/80 text-left space-y-2 sm:space-y-3">
-            <div className="font-display font-black text-xs sm:text-sm uppercase text-[#1E1B4B] flex items-center gap-1.5">
-              <Trophy className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              <span>What Shortlisted Squads Must Do Next:</span>
-            </div>
-            <ul className="text-xs sm:text-[13px] text-slate-800 space-y-2 pl-4 list-decimal font-medium leading-relaxed">
-              <li>
-                Check your squad name in the official <strong>Shortlisted Squads Directory</strong>.
-              </li>
-              <li>
-                <strong>Read the problem statements thoroughly</strong> and make sure which problem statement you will work on.
-              </li>
-              <li>
-                <strong>Only the Team Leader needs to register</strong> on the website at <strong>8:00 PM</strong> — in that, make sure you choose your Problem Statement (PS) correctly and fast!
-              </li>
-              <li>
-                <strong>Join the official WhatsApp group</strong> for all instant match-day updates, announcements, and live coordination.
-              </li>
-            </ul>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 pt-2 border-t-2 border-[#1E1B4B]/10">
-            <button
-              type="button"
-              onClick={() => setIsShortlistModalOpen(false)}
-              className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 font-display font-bold text-xs uppercase text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-center"
-            >
-              Dismiss
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsShortlistModalOpen(false);
-                onNavigate('shortlisted');
-              }}
-              className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-xs sm:text-sm uppercase tracking-wider shadow-[2.5px_2.5px_0px_#1E1B4B] sm:shadow-[3px_3px_0px_#1E1B4B] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>SEE SHORTLISTED SQUADS</span>
-              <ArrowRight className="w-4 h-4 flex-shrink-0" />
-            </button>
-          </div>
-
-        </div>
-      </Modal>
 
     </div>
   );

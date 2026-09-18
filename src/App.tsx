@@ -21,6 +21,7 @@ import { ProblemStatementsPage } from './components/pages/ProblemStatementsPage'
 import { PresentationPage } from './components/pages/PresentationPage';
 import { ContactPage, ShortlistedPage } from './components/pages/ContactPage';
 import { AdminPage } from './components/pages/AdminPage';
+import { Round2EvaluationDayPage } from './components/pages/Round2EvaluationDayPage';
 import { TeamAccessPage } from './components/pages/TeamAccessPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
 import { PageTransition } from './components/common/PageTransition';
@@ -34,7 +35,7 @@ const getInitialPage = (): PageRoute => {
     const rawHash = window.location.hash.replace('#', '') as PageRoute;
     const validPages: PageRoute[] = [
       'home', 'how-it-works', 'match-day', 'squads',
-      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-profile', 'team-select', 'team-portal'
+      'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'round2-evaluation-day', 'team-login', 'team-profile', 'team-select', 'team-portal'
     ];
     if (validPages.includes(rawHash)) {
       return rawHash;
@@ -96,7 +97,7 @@ export function App() {
       }
       const validPages: PageRoute[] = [
         'home', 'how-it-works', 'match-day', 'squads',
-        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'team-login', 'team-profile', 'team-select', 'team-portal'
+        'leaderboard', 'journey', 'playoffs', 'mentors', 'rulebook', 'faq', 'register', 'sponsors', 'problem-statements', 'round2', 'reveal', 'presentation', 'shortlisted', 'contact', 'admin', 'round2-evaluation-day', 'team-login', 'team-profile', 'team-select', 'team-portal'
       ];
       if (validPages.includes(hash)) {
         setActivePage(hash);
@@ -138,8 +139,8 @@ export function App() {
       {/* Unique Animated Mouse Cursor & Scroll Indicator */}
       <CustomCursor />
 
-      {/* Top Sticky Header (Hidden on Admin portal & Presentation mode for clean workspace view) */}
-      {activePage !== 'admin' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
+      {/* Top Sticky Header (Hidden on Admin portal, Round 2 Evaluation Day & Presentation mode for clean workspace view) */}
+      {activePage !== 'admin' && activePage !== 'round2-evaluation-day' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
         <>
           <Navbar activePage={activePage} onNavigate={handleNavigate} />
           <DeadlineMarquee
@@ -210,11 +211,14 @@ export function App() {
           {activePage === 'admin' && (
             <AdminPage onNavigate={handleNavigate} />
           )}
+          {activePage === 'round2-evaluation-day' && (
+            <Round2EvaluationDayPage onNavigate={handleNavigate} />
+          )}
         </PageTransition>
       </main>
 
-      {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal, Timeline & Presentation) */}
-      {activePage !== 'admin' && activePage !== 'timeline' && activePage !== 'journey' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
+      {/* Editorial Footer with Partner Logos & Callout Banner (Hidden on Admin portal, Evaluation Day, Timeline & Presentation) */}
+      {activePage !== 'admin' && activePage !== 'round2-evaluation-day' && activePage !== 'timeline' && activePage !== 'journey' && activePage !== 'presentation' && !activePage.startsWith('team-') && (
         <Footer onNavigate={handleNavigate} />
       )}
     </div>

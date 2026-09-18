@@ -14,17 +14,17 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
   const marqueeItems = [
     {
       icon: <Trophy className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />,
-      text: '🎉 ROUND 2 SHORTLISTED SQUADS OFFICIALLY ANNOUNCED!',
+      text: '🎉 WEEK 1 EVALUATION MARKS OFFICIALLY ANNOUNCED!',
       highlight: true
     },
     {
       icon: <Sparkles className="w-3.5 h-3.5 text-yellow-300 flex-shrink-0" />,
-      text: '40 TEAMS QUALIFIED FOR LIVE STAKEHOLDER ROUND',
+      text: 'CHECK YOUR SQUAD STANDINGS & SCORES ON THE LIVE LEADERBOARD',
       highlight: false
     },
     {
       icon: <ArrowRight className="w-3.5 h-3.5 text-amber-300 flex-shrink-0" />,
-      text: 'CLICK TO VIEW SHORTLISTED SQUADS DIRECTORY',
+      text: 'CLICK TO VIEW LIVE LEADERBOARD TABLE',
       highlight: true
     }
   ];
@@ -51,7 +51,7 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
 
   return (
     <aside 
-      aria-label="Round 2 Shortlisted Squads Announcement"
+      aria-label="Week 1 Evaluation Marks Announcement"
       className="relative z-30 w-full overflow-hidden bg-gradient-to-r from-[#991B1B] via-[#DC2626] to-[#B91C1C] border-b-2 border-t border-[#1E1B4B] shadow-[0_2px_4px_rgba(0,0,0,0.12)] select-none"
     >
       <div className="max-w-7xl mx-auto px-2 sm:px-4 flex items-center justify-between py-2 sm:py-2.5">
@@ -61,16 +61,16 @@ export const DeadlineMarquee: React.FC<DeadlineMarqueeProps> = ({
           <div
             className="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-[#1E1B4B] text-white border border-amber-400/40 text-[10px] sm:text-[11px] font-mono font-black uppercase tracking-wider shadow-sm"
           >
-            <span className="text-amber-300 font-display">ROUND 2</span>
-            <span className="hidden xs:inline text-white/90">ANNOUNCED</span>
+            <span className="text-amber-300 font-display">WEEK 1</span>
+            <span className="hidden xs:inline text-white/90">EVALUATION</span>
           </div>
         </div>
 
         {/* Continuous Animated Marquee Ticker Loop */}
         <div 
-          onClick={() => onNavigate('shortlisted')} 
+          onClick={() => onNavigate('leaderboard')} 
           className="flex-1 overflow-hidden cursor-pointer group"
-          title="Click to view shortlisted squads"
+          title="Click to view live leaderboard"
         >
           <div className="flex w-fit animate-marquee-ticker whitespace-nowrap will-change-transform group-hover:[animation-play-state:paused]">
             {/* Track 1 */}

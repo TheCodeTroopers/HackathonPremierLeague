@@ -25,9 +25,11 @@ import {
   RefreshCw,
   Zap,
   Info,
-  X
+  X,
+  PartyPopper
 } from 'lucide-react';
 import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
+import { StageConfettiBlaster, playPartyBlasterSound } from '../common/StageConfettiBlaster';
 import { 
   fetchRound2PsSelectionsFromDB, 
   calculateStrictAllocations, 
@@ -84,7 +86,7 @@ const AVATAR_PALETTES = [
 const SquadAvatar: React.FC<{ icon: string; bg: string }> = ({ icon, bg }) => {
   return (
     <div
-      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-2xs border-2 border-white/80"
+      className="w-8 h-8 xs:w-9 xs:h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-2xs border-2 border-white/80"
       style={{ backgroundColor: bg }}
     >
       {icon === 'ninja' && (
@@ -160,6 +162,24 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
+  // ── CELEBRATORY BIRTHDAY SURPRISE PARTY BLASTER STATE ──
+  const [celebrationActive, setCelebrationActive] = useState<boolean>(true);
+  const [celebrationKey, setCelebrationKey] = useState<number>(1);
+
+  const triggerCelebration = useCallback(() => {
+    setCelebrationActive(true);
+    setCelebrationKey(prev => prev + 1);
+    playPartyBlasterSound();
+  }, []);
+
+  // Fire celebratory birthday surprise popper audio when navigating to leaderboard
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      playPartyBlasterSound();
+    }, 450);
+    return () => clearTimeout(timer);
+  }, []);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const underlineRef = useRef<SVGPathElement>(null);
 
@@ -219,7 +239,15 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     Object.values(lockedMap).forEach((lock, idx) => {
       lockedSquadIds.add(lock.squadId);
       const evalRecord = evaluationsMap[lock.squadId];
-      const marks = evalRecord ? Number(evalRecord.marks) : 0;
+      const rowInDb = round2DbRows.find(r => r.squad_id === lock.squadId);
+      const dbAverageMarks = rowInDb ? Number(
+        (rowInDb as any).average_marks ?? 
+        (rowInDb as any).avg_marks ?? 
+        (rowInDb as any).total_marks ?? 
+        0
+      ) : 0;
+      const marks = evalRecord ? Number(evalRecord.marks) : dbAverageMarks;
+      const isGraded = (evalRecord !== undefined && evalRecord.marks !== undefined) || dbAverageMarks > 0;
       const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
 
       items.push({
@@ -232,7 +260,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
         qualificationRank: lock.rank || idx + 1,
         marks: marks,
         feedback: evalRecord?.feedback || '',
-        isGraded: evalRecord !== undefined && evalRecord.marks !== undefined,
+        isGraded: isGraded,
         avatarBg: palette.bg,
         avatarIcon: palette.icon,
         trend: marks > 70 ? 'up' : marks > 40 ? 'same' : 'down',
@@ -400,8 +428,14 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   return (
     <div 
       ref={containerRef}
-      className="min-h-screen bg-[#F6F3EB] text-[#1E1B4B] py-6 sm:py-10 px-3.5 xs:px-5 sm:px-6 lg:px-10 relative overflow-hidden selection:bg-[#FBBF24] selection:text-[#1E1B4B]"
+      className="min-h-screen bg-[#F6F3EB] text-[#1E1B4B] py-5 sm:py-8 md:py-10 px-3 xs:px-4 sm:px-6 lg:px-8 relative overflow-hidden selection:bg-[#FBBF24] selection:text-[#1E1B4B]"
     >
+      {/* ── BIRTHDAY SURPRISE CELEBRATORY PARTY BLASTER CANNON SYSTEM ── */}
+      <StageConfettiBlaster 
+        active={celebrationActive} 
+        triggerKey={celebrationKey} 
+        onComplete={() => setCelebrationActive(false)} 
+      />
       
       {/* ── TOP RIGHT BACKGROUND DOODLES ── */}
       <div className="absolute top-8 right-6 sm:right-24 pointer-events-none select-none opacity-80 flex items-center gap-6 sm:gap-10 hidden md:flex">
@@ -417,15 +451,15 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-8 relative z-10">
         
         {/* ── 1. CINEMATIC HEADER TITLE & ROUND TABS ── */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-5 sm:gap-6 pb-2 border-b border-[#1E1B4B]/10">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-6 pb-2 border-b border-[#1E1B4B]/10">
           
           {/* Left: Trophy + Animated Title + Subtitle */}
-          <div className="flex items-start gap-3 sm:gap-4 max-w-2xl">
+          <div className="flex items-start gap-2.5 xs:gap-3 sm:gap-4 max-w-2xl">
             <div className="anim-trophy-crest flex-shrink-0 pt-0.5 sm:pt-1">
-              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" className="w-10 h-10 sm:w-13 sm:h-13 filter drop-shadow-sm">
+              <svg width="48" height="48" viewBox="0 0 64 64" fill="none" className="w-9 h-9 xs:w-11 xs:h-11 sm:w-13 sm:h-13 filter drop-shadow-sm">
                 <path d="M16 12 H48 V28 C48 38 38 44 32 44 C26 44 16 38 16 28 V12 Z" fill="#FBBF24" stroke="#1E1B4B" strokeWidth="2.5" />
                 <path d="M16 18 C8 18 8 32 18 34" stroke="#1E1B4B" strokeWidth="2.5" strokeLinecap="round" fill="none" />
                 <path d="M48 18 C56 18 56 32 46 34" stroke="#1E1B4B" strokeWidth="2.5" strokeLinecap="round" fill="none" />
@@ -438,12 +472,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             </div>
 
             <div>
-              <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none overflow-hidden">
+              <h1 className="text-xl xs:text-2xl sm:text-4xl md:text-5xl font-black tracking-tight leading-none overflow-hidden">
                 <span className="anim-title-live inline-block font-display text-[#1E1B4B]">LIVE </span>{' '}
                 <span className="anim-title-board inline-block font-marker text-[#582A9C] tracking-wide">LEADERBOARD</span>
               </h1>
 
-              <div className="anim-subtext mt-1.5 sm:mt-2 text-xs xs:text-sm sm:text-base font-sans text-[#1E1B4B]/80 font-medium leading-snug">
+              <div className="anim-subtext mt-1 xs:mt-1.5 sm:mt-2 text-xs xs:text-sm sm:text-base font-sans text-[#1E1B4B]/80 font-medium leading-snug">
                 <p>
                   The race to the <span className="font-bold text-[#EA580C]">championship</span> is on.
                 </p>
@@ -466,15 +500,15 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             </div>
           </div>
 
-          {/* Right: Round Tabs with Week 1 (Active) and Week 2/3 (Coming Soon) */}
+          {/* Right: Round Tabs + Celebrate Button & Live Status */}
           <div className="flex flex-col items-start lg:items-end gap-2 sm:gap-2.5 flex-shrink-0 w-full lg:w-auto">
-            <div className="anim-tabs-bar w-full lg:w-auto overflow-x-auto no-scrollbar py-0.5">
+            <div className="anim-tabs-bar w-full lg:w-auto overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1 touch-pan-x">
               <div className="inline-flex p-1 bg-[#ECE7DC]/90 rounded-2xl border border-[#1E1B4B]/15 shadow-2xs min-w-max">
                 
                 {/* Week 1: Active Tab */}
                 <button
                   onClick={() => setActiveTab('week1')}
-                  className={`px-3 xs:px-3.5 sm:px-4 py-1.5 rounded-xl font-mono text-[11px] xs:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 xs:px-3 sm:px-4 py-1.5 rounded-xl font-mono text-[10px] xs:text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeTab === 'week1'
                       ? 'bg-[#3B1A6B] text-white shadow-xs'
                       : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
@@ -487,7 +521,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 {/* Overall Tab */}
                 <button
                   onClick={() => setActiveTab('overall')}
-                  className={`px-3 xs:px-3.5 sm:px-4 py-1.5 rounded-xl font-mono text-[11px] xs:text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`px-2.5 xs:px-3 sm:px-4 py-1.5 rounded-xl font-mono text-[10px] xs:text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
                     activeTab === 'overall'
                       ? 'bg-[#3B1A6B] text-white shadow-xs'
                       : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
@@ -499,7 +533,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 {/* Week 2: Coming Soon */}
                 <button
                   onClick={() => setActiveTab('week2')}
-                  className={`px-2.5 xs:px-3 sm:px-3.5 py-1.5 rounded-xl font-mono text-[11px] xs:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 xs:px-2.5 sm:px-3.5 py-1.5 rounded-xl font-mono text-[10px] xs:text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeTab === 'week2'
                       ? 'bg-[#3B1A6B] text-white shadow-xs'
                       : 'text-[#1E1B4B]/50 hover:text-[#1E1B4B]'
@@ -513,7 +547,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 {/* Week 3 / Playoffs: Coming Soon */}
                 <button
                   onClick={() => setActiveTab('playoffs')}
-                  className={`px-2.5 xs:px-3 sm:px-3.5 py-1.5 rounded-xl font-mono text-[11px] xs:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2 xs:px-2.5 sm:px-3.5 py-1.5 rounded-xl font-mono text-[10px] xs:text-[11px] sm:text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
                     activeTab === 'playoffs'
                       ? 'bg-[#3B1A6B] text-white shadow-xs'
                       : 'text-[#1E1B4B]/50 hover:text-[#1E1B4B]'
@@ -527,17 +561,29 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
               </div>
             </div>
 
-            {/* Live Synchronized Status Indicator */}
-            <div className="flex items-center gap-2 text-xs font-sans font-medium text-[#1E1B4B]/70">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
-              <span>
-                Connected to live backend &bull; Week 1 Evaluation Active
-              </span>
+            {/* Live Synchronized Status Indicator + Celebrate Birthday Surprise Popper Button */}
+            <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-2.5 text-xs font-sans font-medium text-[#1E1B4B]/70 w-full sm:w-auto flex-wrap">
+              <button
+                onClick={triggerCelebration}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-mono text-[10px] xs:text-[11px] font-black uppercase tracking-wider shadow-2xs hover:shadow-xs transition-all transform active:scale-95 cursor-pointer border border-amber-600/30 shrink-0"
+                title="Pop Birthday Surprise Blaster Cannon!"
+              >
+                <PartyPopper className="w-3.5 h-3.5 text-amber-950 animate-bounce" />
+                <span>Celebrate 🎉</span>
+              </button>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                <span className="text-[10px] xs:text-[11px] sm:text-xs font-medium">
+                  Live Backend &bull; Week 1 Active
+                </span>
+              </div>
+
               <button
                 onClick={() => loadLeaderboardData(true)}
                 disabled={isRefreshing}
                 title="Refresh leaderboard"
-                className="p-1 rounded-md hover:bg-[#ECE7DC] text-[#582A9C] cursor-pointer"
+                className="p-1 rounded-md hover:bg-[#ECE7DC] text-[#582A9C] cursor-pointer shrink-0"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -582,16 +628,16 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             {/* PS 01: AyurEssence */}
             <button
               onClick={() => setSelectedPsFilter('ps-01')}
-              className={`p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
+              className={`p-2 xs:p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
                 selectedPsFilter === 'ps-01'
                   ? 'bg-[#4F46E5] text-white border-[#4F46E5] shadow-sm ring-2 ring-purple-400'
                   : 'bg-[#F6F3EB] hover:bg-white text-[#1E1B4B] border-[#1E1B4B]/15'
               }`}
             >
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1 w-full">
                 <span className="font-black text-xs sm:text-sm">PS 01</span>
-                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 ${
-                  selectedPsFilter === 'ps-01' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800 font-mono'
+                <span className={`text-[9px] xs:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 font-mono font-bold leading-none ${
+                  selectedPsFilter === 'ps-01' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800'
                 }`}>
                   {psTeamCounts['ps-01']} Teams
                 </span>
@@ -604,16 +650,16 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             {/* PS 02: SMARTBUS */}
             <button
               onClick={() => setSelectedPsFilter('ps-02')}
-              className={`p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
+              className={`p-2 xs:p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
                 selectedPsFilter === 'ps-02'
                   ? 'bg-[#D97706] text-white border-[#D97706] shadow-sm ring-2 ring-amber-400'
                   : 'bg-[#F6F3EB] hover:bg-white text-[#1E1B4B] border-[#1E1B4B]/15'
               }`}
             >
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1 w-full">
                 <span className="font-black text-xs sm:text-sm">PS 02</span>
-                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 ${
-                  selectedPsFilter === 'ps-02' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800 font-mono'
+                <span className={`text-[9px] xs:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 font-mono font-bold leading-none ${
+                  selectedPsFilter === 'ps-02' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
                 }`}>
                   {psTeamCounts['ps-02']} Teams
                 </span>
@@ -626,16 +672,16 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             {/* PS 03: Sahayak */}
             <button
               onClick={() => setSelectedPsFilter('ps-03')}
-              className={`p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
+              className={`p-2 xs:p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
                 selectedPsFilter === 'ps-03'
                   ? 'bg-[#059669] text-white border-[#059669] shadow-sm ring-2 ring-emerald-400'
                   : 'bg-[#F6F3EB] hover:bg-white text-[#1E1B4B] border-[#1E1B4B]/15'
               }`}
             >
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1 w-full">
                 <span className="font-black text-xs sm:text-sm">PS 03</span>
-                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 ${
-                  selectedPsFilter === 'ps-03' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800 font-mono'
+                <span className={`text-[9px] xs:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 font-mono font-bold leading-none ${
+                  selectedPsFilter === 'ps-03' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
                 }`}>
                   {psTeamCounts['ps-03']} Teams
                 </span>
@@ -648,16 +694,16 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
             {/* PS 04: SWMS */}
             <button
               onClick={() => setSelectedPsFilter('ps-04')}
-              className={`p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
+              className={`p-2 xs:p-2.5 sm:px-3 sm:py-2.5 rounded-xl text-xs font-mono font-bold transition-all text-left flex flex-col justify-between border cursor-pointer min-w-0 ${
                 selectedPsFilter === 'ps-04'
                   ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-sm ring-2 ring-sky-400'
                   : 'bg-[#F6F3EB] hover:bg-white text-[#1E1B4B] border-[#1E1B4B]/15'
               }`}
             >
-              <div className="flex items-center justify-between gap-1">
+              <div className="flex items-center justify-between gap-1 w-full">
                 <span className="font-black text-xs sm:text-sm">PS 04</span>
-                <span className={`text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 ${
-                  selectedPsFilter === 'ps-04' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800 font-mono'
+                <span className={`text-[9px] xs:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full shrink-0 font-mono font-bold leading-none ${
+                  selectedPsFilter === 'ps-04' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-800'
                 }`}>
                   {psTeamCounts['ps-04']} Teams
                 </span>
@@ -732,23 +778,23 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                         <div
                           key={team.squadId}
                           onClick={() => onSelectSquad && onSelectSquad(team.squadId)}
-                          className="p-3.5 hover:bg-[#EFE8DA] active:bg-[#ECE7DC] transition-colors cursor-pointer flex items-center justify-between gap-3"
+                          className="p-3 xs:p-3.5 hover:bg-[#EFE8DA] active:bg-[#ECE7DC] transition-colors cursor-pointer flex items-center justify-between gap-2.5 xs:gap-3"
                         >
                           {/* Left: Rank + Avatar + Name & Squad Details */}
-                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 xs:gap-2.5 min-w-0 flex-1">
                             {/* Rank Indicator */}
-                            <div className="flex-shrink-0 w-7 text-center font-bold">
+                            <div className="flex-shrink-0 w-6 xs:w-7 text-center font-bold">
                               {hasMarks ? (
                                 displayRank === 1 ? (
-                                  <div className="w-7 h-7 rounded-lg bg-amber-400 border border-amber-600 text-amber-950 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
+                                  <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-amber-400 border border-amber-600 text-amber-950 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥇
                                   </div>
                                 ) : displayRank === 2 ? (
-                                  <div className="w-7 h-7 rounded-lg bg-slate-300 border border-slate-400 text-slate-800 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
+                                  <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-slate-300 border border-slate-400 text-slate-800 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥈
                                   </div>
                                 ) : displayRank === 3 ? (
-                                  <div className="w-7 h-7 rounded-lg bg-amber-700/25 border border-amber-700 text-amber-900 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
+                                  <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-amber-700/25 border border-amber-700 text-amber-900 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥉
                                   </div>
                                 ) : (
@@ -793,7 +839,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                           {/* Right: Marks & Status */}
                           <div className="flex flex-col items-end justify-center flex-shrink-0 pl-1">
                             <div className="flex items-baseline gap-1">
-                              <span className={`font-mono font-black text-base ${
+                              <span className={`font-mono font-black text-base xs:text-lg ${
                                 team.marks > 0 ? 'text-[#3B1A6B]' : 'text-gray-400'
                               }`}>
                                 {team.marks}
@@ -804,13 +850,13 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                             </div>
                             <div className="mt-0.5">
                               {hasMarks ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                  <CheckCircle2 className="w-2 h-2" />
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
                                   <span>Graded</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300">
-                                  <Clock className="w-2 h-2" />
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300">
+                                  <Clock className="w-2.5 h-2.5" />
                                   <span>Pending</span>
                                 </span>
                               )}
@@ -1000,7 +1046,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 </div>
 
                 <div className="px-2.5 py-1 bg-[#ECE7DC] rounded-lg border border-[#1E1B4B]/10 text-[11px] font-mono font-bold text-[#582A9C]">
-                  Week 1 Leaders
+                  Top 3 Squads
                 </div>
               </div>
 
@@ -1018,51 +1064,51 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
-                  {/* 1st Place */}
-                  <div className="p-2 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-amber-300 flex flex-col items-center justify-center min-w-0">
-                    <span className="text-[10px] sm:text-[11px] font-sans font-bold text-amber-700 mb-0.5 sm:mb-1 truncate w-full">
-                      🥇 1st Place
-                    </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-amber-500 mb-0.5">
-                      <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="grid grid-cols-3 gap-1.5 xs:gap-2 sm:gap-3 text-center">
+                  {/* Top 1 */}
+                  <div 
+                    onClick={() => topPerformers.highest && onSelectSquad && onSelectSquad(topPerformers.highest.squadId)}
+                    className="p-2 xs:p-2.5 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-amber-300 flex flex-col items-center justify-center min-w-0 hover:bg-[#EAE4D6] active:scale-95 transition-all cursor-pointer"
+                  >
+                    <div className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 flex items-center justify-center text-amber-500 mb-1">
+                      <Trophy className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <span className="font-display font-black text-lg sm:text-2xl text-[#1E1B4B] leading-none mb-1">
+                    <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-[#1E1B4B] leading-none mb-1">
                       {topPerformers.highest?.marks || 0}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-sans font-bold text-[#1E1B4B] truncate w-full" title={topPerformers.highest?.teamName}>
+                    <span className="text-[10px] xs:text-[11px] sm:text-xs font-sans font-black text-[#1E1B4B] truncate w-full px-0.5" title={topPerformers.highest?.teamName}>
                       {topPerformers.highest?.teamName || '—'}
                     </span>
                   </div>
 
-                  {/* 2nd Place */}
-                  <div className="p-2 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-slate-300 flex flex-col items-center justify-center min-w-0">
-                    <span className="text-[10px] sm:text-[11px] font-sans font-bold text-slate-700 mb-0.5 sm:mb-1 truncate w-full">
-                      🥈 2nd Place
-                    </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-500 mb-0.5">
-                      <Award className="w-5 h-5 sm:w-6 sm:h-6" />
+                  {/* Top 2 */}
+                  <div 
+                    onClick={() => topPerformers.second && onSelectSquad && onSelectSquad(topPerformers.second.squadId)}
+                    className="p-2 xs:p-2.5 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-slate-300 flex flex-col items-center justify-center min-w-0 hover:bg-[#EAE4D6] active:scale-95 transition-all cursor-pointer"
+                  >
+                    <div className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-500 mb-1">
+                      <Award className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6" />
                     </div>
-                    <span className="font-display font-black text-lg sm:text-2xl text-[#1E1B4B] leading-none mb-1">
+                    <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-[#1E1B4B] leading-none mb-1">
                       {topPerformers.second ? topPerformers.second.marks : '—'}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-sans font-bold text-[#1E1B4B] truncate w-full" title={topPerformers.second?.teamName}>
+                    <span className="text-[10px] xs:text-[11px] sm:text-xs font-sans font-black text-[#1E1B4B] truncate w-full px-0.5" title={topPerformers.second?.teamName}>
                       {topPerformers.second ? topPerformers.second.teamName : '—'}
                     </span>
                   </div>
 
-                  {/* 3rd Place */}
-                  <div className="p-2 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-amber-600/30 flex flex-col items-center justify-center min-w-0">
-                    <span className="text-[10px] sm:text-[11px] font-sans font-bold text-amber-900 mb-0.5 sm:mb-1 truncate w-full">
-                      🥉 3rd Place
-                    </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-amber-700 mb-0.5">
-                      <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-amber-700/30" />
+                  {/* Top 3 */}
+                  <div 
+                    onClick={() => topPerformers.third && onSelectSquad && onSelectSquad(topPerformers.third.squadId)}
+                    className="p-2 xs:p-2.5 sm:p-3 bg-[#EDE8DC] rounded-xl sm:rounded-2xl border border-amber-600/30 flex flex-col items-center justify-center min-w-0 hover:bg-[#EAE4D6] active:scale-95 transition-all cursor-pointer"
+                  >
+                    <div className="w-6 h-6 xs:w-7 xs:h-7 sm:w-8 sm:h-8 flex items-center justify-center text-amber-700 mb-1">
+                      <Star className="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 fill-amber-700/30" />
                     </div>
-                    <span className="font-display font-black text-lg sm:text-2xl text-[#1E1B4B] leading-none mb-1">
+                    <span className="font-display font-black text-base xs:text-xl sm:text-2xl text-[#1E1B4B] leading-none mb-1">
                       {topPerformers.third ? topPerformers.third.marks : '—'}
                     </span>
-                    <span className="text-[10px] sm:text-xs font-sans font-bold text-[#1E1B4B] truncate w-full" title={topPerformers.third?.teamName}>
+                    <span className="text-[10px] xs:text-[11px] sm:text-xs font-sans font-black text-[#1E1B4B] truncate w-full px-0.5" title={topPerformers.third?.teamName}>
                       {topPerformers.third ? topPerformers.third.teamName : '—'}
                     </span>
                   </div>

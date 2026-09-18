@@ -36,7 +36,14 @@ import {
   AlertTriangle,
   ShieldCheck,
   Sparkles,
-  Info
+  Info,
+  Send,
+  CheckCheck,
+  FileSpreadsheet,
+  BarChart3,
+  TrendingUp,
+  Trophy,
+  Star
 } from 'lucide-react';
 import { AdminTeamEvalIllustration, AdminClipboardDoodle } from '../illustrations/AdminIllustration';
 import { AdminLoginGate } from '../auth/AdminLoginGate';
@@ -1014,6 +1021,23 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               <span>Evaluations & Marks</span>
             </button>
 
+            {/* Navigation: Round 2 Evaluation Day (Dedicated Portal) */}
+            <button
+              onClick={() => {
+                onNavigate('round2-evaluation-day');
+                setMobileSidebarOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[#1E1B4B]/75 hover:bg-white hover:text-[#1E1B4B] transition-colors text-left cursor-pointer group"
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span>Round 2 Eval Day</span>
+              </div>
+              <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold tracking-wider shadow-xs">
+                LIVE
+              </span>
+            </button>
+
             <button
               onClick={() => onNavigate('timeline')}
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[#1E1B4B]/70 hover:bg-white hover:text-[#1E1B4B] transition-colors text-left"
@@ -1141,8 +1165,37 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Section Navigation Tabs: Idea Submissions vs Evaluations */}
-        <div className="flex items-center gap-2 p-1 bg-[#ECE7DC] rounded-2xl border border-[#1E1B4B]/15 w-fit">
+        {/* Dedicated Round 2 Evaluation Day Hero Banner */}
+        <div className="bg-gradient-to-r from-[#1E1B4B] via-[#2E1065] to-[#4F46E5] rounded-3xl p-5 sm:p-6 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-indigo-400/20">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-black uppercase tracking-wider border border-emerald-400/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                Live Evaluations
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-indigo-200 font-mono text-[10px] font-bold">
+                Round 2 Week 1
+              </span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-display font-black tracking-tight text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-300" />
+              Round 2 Evaluation Day Portal
+            </h2>
+            <p className="text-xs text-indigo-100/80 font-medium">
+              Dedicated portal to inspect mentor reviews, filter by Problem Statement, view rubric scores (R1–R5), refetch data live, and publish official marks to the Leaderboard.
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('round2-evaluation-day')}
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#1E1B4B] font-display font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer shrink-0"
+          >
+            <span>Open Portal</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* Section Navigation Tabs: Submissions vs Manual Marks */}
+        <div className="flex flex-wrap items-center gap-2 p-1 bg-[#ECE7DC] rounded-2xl border border-[#1E1B4B]/15 w-fit">
           <button
             onClick={() => setAdminSection('submissions')}
             className={`px-4 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer ${
@@ -1157,24 +1210,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
           <button
             onClick={() => setAdminSection('evaluations')}
-            className={`px-4 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer ${
               adminSection === 'evaluations'
-                ? 'bg-[#4F46E5] text-white shadow-xs'
+                ? 'bg-[#1E1B4B] text-white shadow-xs'
                 : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
             }`}
           >
-            <Award className="w-3.5 h-3.5 text-amber-300" />
-            <span>Evaluations & Marks (Week 1 Active)</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold">
+            <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400" />
+            <span>Manual Marks Table</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('round2-evaluation-day')}
+            className="px-3.5 py-2 rounded-xl text-xs font-display font-bold uppercase transition-all flex items-center gap-2 cursor-pointer bg-[#4F46E5] hover:bg-indigo-700 text-white shadow-xs"
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-300" />
+            <span>Round 2 Eval Day (Dedicated)</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-mono text-[9px] font-bold tracking-wider">
               LIVE
             </span>
           </button>
         </div>
 
         {/* ═════════════════════════════════════════════════════════════════════ */}
-        {/* CONDITIONAL RENDER: EVALUATIONS VIEW VS SUBMISSIONS VIEW             */}
+        {/* CONDITIONAL RENDER: MANUAL MARKS VS SUBMISSIONS                      */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
         {adminSection === 'evaluations' ? (
+
           <div className="space-y-6">
             {/* Header / Week Switcher Card */}
             <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 sm:p-6 shadow-sm space-y-4">
@@ -2509,7 +2571,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}

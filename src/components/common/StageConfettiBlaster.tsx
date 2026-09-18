@@ -30,6 +30,86 @@ interface BlasterSmoke {
 
 interface StageConfettiBlasterProps {
   active: boolean;
+  triggerKey?: number | string;
+  onComplete?: () => void;
+  playSound?: boolean;
+}
+
+/**
+ * Web Audio Synthesizer for Authentic Birthday Party Blaster POPs!
+ * Recreates compressed-air popper thumps, paper rupture crackles, and celebratory chimes.
+ */
+export function playPartyBlasterSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+    const now = ctx.currentTime;
+
+    const triggerSinglePop = (startTime: number, pitch: number = 220) => {
+      // 1. Deep compressed air thump
+      const thumpOsc = ctx.createOscillator();
+      const thumpGain = ctx.createGain();
+      thumpOsc.type = 'triangle';
+      thumpOsc.frequency.setValueAtTime(pitch, startTime);
+      thumpOsc.frequency.exponentialRampToValueAtTime(32, startTime + 0.14);
+
+      thumpGain.gain.setValueAtTime(0.65, startTime);
+      thumpGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+      thumpOsc.connect(thumpGain);
+      thumpGain.connect(ctx.destination);
+      thumpOsc.start(startTime);
+      thumpOsc.stop(startTime + 0.24);
+
+      // 2. Sharp paper rupture crackle
+      const popBufferSize = Math.floor(ctx.sampleRate * 0.18);
+      const popBuffer = ctx.createBuffer(1, popBufferSize, ctx.sampleRate);
+      const popData = popBuffer.getChannelData(0);
+      for (let j = 0; j < popBufferSize; j++) {
+        popData[j] = (Math.random() * 2 - 1) * Math.exp(-j / (ctx.sampleRate * 0.04));
+      }
+      const crackle = ctx.createBufferSource();
+      crackle.buffer = popBuffer;
+      const popFilter = ctx.createBiquadFilter();
+      popFilter.type = 'highpass';
+      popFilter.frequency.value = 1300;
+
+      const crackleGain = ctx.createGain();
+      crackleGain.gain.setValueAtTime(0.5, startTime);
+      crackleGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.18);
+      crackle.connect(popFilter);
+      popFilter.connect(crackleGain);
+      crackleGain.connect(ctx.destination);
+      crackle.start(startTime);
+    };
+
+    // Salvo of party popper bursts
+    triggerSinglePop(now, 240);
+    triggerSinglePop(now + 0.12, 210);
+    triggerSinglePop(now + 0.45, 270);
+
+    // Celebratory Shimmer Chimes
+    [1046.5, 1318.5, 1567.98, 2093.0, 2637.0].forEach((freq, idx) => {
+      const bell = ctx.createOscillator();
+      const bellGain = ctx.createGain();
+      const bellStart = now + 0.35 + idx * 0.08;
+      bell.type = 'sine';
+      bell.frequency.setValueAtTime(freq, bellStart);
+      bellGain.gain.setValueAtTime(0.001, bellStart);
+      bellGain.gain.linearRampToValueAtTime(0.12, bellStart + 0.02);
+      bellGain.gain.exponentialRampToValueAtTime(0.0001, bellStart + 0.45);
+      bell.connect(bellGain);
+      bellGain.connect(ctx.destination);
+      bell.start(bellStart);
+      bell.stop(bellStart + 0.5);
+    });
+  } catch (err) {
+    // AudioContext blocked until user gesture, safely ignore
+  }
 }
 
 const CELEBRATION_COLORS = [
@@ -49,11 +129,15 @@ const CELEBRATION_COLORS = [
 
 export const StageConfettiBlaster: React.FC<StageConfettiBlasterProps> = ({
   active,
+  triggerKey,
+  onComplete,
+  playSound = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameId = useRef<number | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const smokesRef = useRef<BlasterSmoke[]>([]);
+  const wavesActiveRef = useRef<boolean>(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,8 +201,14 @@ export const StageConfettiBlaster: React.FC<StageConfettiBlasterProps> = ({
     let waveTimer1: any;
     let waveTimer2: any;
     let waveTimer3: any;
+    let waveEndTimer: any;
 
     if (active) {
+      wavesActiveRef.current = true;
+      if (playSound) {
+        playPartyBlasterSound();
+      }
+
       // Wave 1: Twin Stage Bottom Cannons blast upward across each other
       spawnBlast(width * 0.06, height * 0.95, -60, 170, 48); // Left Cannon firing upward-right
       spawnBlast(width * 0.94, height * 0.95, -120, 170, 48); // Right Cannon firing upward-left
@@ -140,6 +230,10 @@ export const StageConfettiBlaster: React.FC<StageConfettiBlasterProps> = ({
       waveTimer3 = setTimeout(() => {
         spawnBlast(width * 0.5, height * 0.55, -90, 120, 100);
       }, 2000);
+
+      waveEndTimer = setTimeout(() => {
+        wavesActiveRef.current = false;
+      }, 2300);
     }
 
     const drawStar = (cx: number, cy: number, spikes: number, outerRadius: number, innerRadius: number, color: string) => {
@@ -254,6 +348,13 @@ export const StageConfettiBlaster: React.FC<StageConfettiBlasterProps> = ({
         ctx.restore();
       }
 
+      if (particlesRef.current.length === 0 && smokesRef.current.length === 0 && !wavesActiveRef.current) {
+        if (onComplete) {
+          onComplete();
+        }
+        return;
+      }
+
       animationFrameId.current = requestAnimationFrame(render);
     };
 
@@ -264,11 +365,12 @@ export const StageConfettiBlaster: React.FC<StageConfettiBlasterProps> = ({
       clearTimeout(waveTimer1);
       clearTimeout(waveTimer2);
       clearTimeout(waveTimer3);
+      clearTimeout(waveEndTimer);
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, [active]);
+  }, [active, triggerKey]);
 
   if (!active && particlesRef.current.length === 0) {
     return null;
