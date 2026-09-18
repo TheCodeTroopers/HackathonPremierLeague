@@ -194,13 +194,11 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   const loadLeaderboardData = useCallback(async (manual = false) => {
     if (manual) setIsRefreshing(true);
     try {
-      const [dbRows, evals, aggRes] = await Promise.all([
+      const [dbRows, aggRes] = await Promise.all([
         fetchRound2PsSelectionsFromDB(),
-        fetchEvaluationsByWeek('week1'),
         fetchRound2AggregatedEvaluations()
       ]);
       setRound2DbRows(dbRows);
-      setEvaluationsMap(evals);
       setRound2AggTeams(aggRes.teams || []);
       setLastSyncTime(new Date());
     } catch (err) {
@@ -241,75 +239,40 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
+    // 1. Primary Source of Truth: Use live aggregated evaluations from round2_evaluations
+    if (round2AggTeams && round2AggTeams.length > 0) {
+      return round2AggTeams.map((team, idx) => {
+        const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
+        const marks = team.averageMarks || 0;
+        const isGraded = team.evaluationsCount > 0 && marks > 0;
+        const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
+
+        return {
+          squadId: team.squadId,
+          teamName: team.teamName,
+          leaderEmail: team.leaderEmail,
+          psId: team.psId,
+          psCode: team.psCode || 'PS',
+          psTitle: team.psTitle || 'Problem Statement',
+          qualificationRank: team.rank || idx + 1,
+          marks,
+          feedback,
+          isGraded,
+          avatarBg: palette.bg,
+          avatarIcon: palette.icon,
+          trend: marks > 70 ? 'up' : marks > 40 ? 'same' : 'down',
+          trendValue: Math.max(1, (idx % 3) + 1)
+        };
+      });
+    }
+
+    // 2. Fallback: If round2AggTeams is still loading, build from lockedMap and official qualified list
     const lockedMap = allocationState.lockedMap;
     const items: LeaderboardTeamItem[] = [];
     const lockedSquadIds = new Set<string>();
 
-    // Helper to resolve marks across all 3 data sources
-    const resolveMarks = (squadId: string, teamName: string, psId: string) => {
-      const cleanSquad = squadId || '';
-      const cleanName = teamName || '';
-      const normalizedName = norm(cleanName);
-
-      // 1. Evaluations table lookup
-      const evalRec = 
-        evaluationsMap[cleanSquad] ||
-        evaluationsMap[cleanSquad.toLowerCase()] ||
-        evaluationsMap[cleanSquad.toUpperCase()] ||
-        evaluationsMap[cleanName] ||
-        evaluationsMap[cleanName.toLowerCase().trim()] ||
-        evaluationsMap[normalizedName];
-
-      // 2. Mentor Aggregated Reviews lookup (direct from round2_evaluations)
-      const aggTeam = round2AggTeams.find(a => 
-        a.squadId.toUpperCase() === cleanSquad.toUpperCase() ||
-        norm(a.teamName) === normalizedName ||
-        a.teamName.toLowerCase().trim() === cleanName.toLowerCase().trim()
-      );
-
-      // 3. Problem Statement selection table lookup
-      const dbRow = round2DbRows.find(r => 
-        (r.squad_id && r.squad_id.toUpperCase() === cleanSquad.toUpperCase()) ||
-        norm(r.team_name) === normalizedName
-      );
-      const dbAvg = dbRow ? Number(
-        (dbRow as any).average_marks ?? 
-        (dbRow as any).avg_marks ?? 
-        (dbRow as any).total_marks ?? 
-        0
-      ) : 0;
-
-      // Check publish status
-      const psPub = getPsPublishStatus(psId);
-      const isPublished = psPub.isPublished || 
-        getPsPublishStatus('all').isPublished || 
-        aggTeam?.isPublished || 
-        (evalRec !== undefined && Number(evalRec.marks) > 0);
-
-      let marks = 0;
-      let isGraded = false;
-      let feedback = '';
-
-      if (evalRec && Number(evalRec.marks) > 0) {
-        marks = Number(evalRec.marks);
-        feedback = evalRec.feedback || '';
-        isGraded = true;
-      } else if (isPublished && aggTeam && aggTeam.averageMarks > 0) {
-        marks = aggTeam.averageMarks;
-        feedback = aggTeam.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
-        isGraded = true;
-      } else if (isPublished && dbAvg > 0) {
-        marks = dbAvg;
-        isGraded = true;
-      }
-
-      return { marks, isGraded, feedback };
-    };
-
-    // 1. First include all teams who locked via DB
     Object.values(lockedMap).forEach((lock, idx) => {
       lockedSquadIds.add(lock.squadId);
-      const { marks, isGraded, feedback } = resolveMarks(lock.squadId, lock.teamName, lock.psId);
       const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
 
       items.push({
@@ -320,38 +283,30 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
         psCode: lock.psCode || 'PS',
         psTitle: lock.psTitle || 'Problem Statement',
         qualificationRank: lock.rank || idx + 1,
-        marks,
-        feedback,
-        isGraded,
+        marks: 0,
+        feedback: '',
+        isGraded: false,
         avatarBg: palette.bg,
         avatarIcon: palette.icon,
-        trend: marks > 70 ? 'up' : marks > 40 ? 'same' : 'down',
-        trendValue: Math.max(1, (idx % 3) + 1)
+        trend: 'same',
+        trendValue: 0
       });
     });
 
-    // 2. Include all 40 qualified teams, mapping un-locked teams to their designated tracks
     OFFICIAL_QUALIFIED_TEAMS.slice(0, 40).forEach((t, idx) => {
-      if (lockedSquadIds.has(t.squadId)) return; // Already present from lockedMap
+      if (lockedSquadIds.has(t.squadId)) return;
 
       let psId = 'ps-01';
       let psCode = 'PS 01';
       let psTitle = 'AyurEssence';
       if (idx >= 10 && idx < 20) {
-        psId = 'ps-02';
-        psCode = 'PS 02';
-        psTitle = 'SMARTBUS';
+        psId = 'ps-02'; psCode = 'PS 02'; psTitle = 'SMARTBUS';
       } else if (idx >= 20 && idx < 30) {
-        psId = 'ps-03';
-        psCode = 'PS 03';
-        psTitle = 'Sahayak';
+        psId = 'ps-03'; psCode = 'PS 03'; psTitle = 'Sahayak';
       } else if (idx >= 30) {
-        psId = 'ps-04';
-        psCode = 'PS 04';
-        psTitle = 'SWMS';
+        psId = 'ps-04'; psCode = 'PS 04'; psTitle = 'SWMS';
       }
 
-      const { marks, isGraded, feedback } = resolveMarks(t.squadId, t.teamName, psId);
       const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
 
       items.push({
@@ -362,18 +317,19 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
         psCode,
         psTitle,
         qualificationRank: t.rank,
-        marks,
-        feedback,
-        isGraded,
+        marks: 0,
+        feedback: '',
+        isGraded: false,
         avatarBg: palette.bg,
         avatarIcon: palette.icon,
-        trend: marks > 70 ? 'up' : marks > 40 ? 'same' : 'down',
-        trendValue: Math.max(1, (idx % 3) + 1)
+        trend: 'same',
+        trendValue: 0
       });
     });
 
     return items;
-  }, [allocationState.lockedMap, evaluationsMap, round2AggTeams, round2DbRows]);
+  }, [round2AggTeams, allocationState.lockedMap]);
+
 
 
   // Filter and rank teams dynamically

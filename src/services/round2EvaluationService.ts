@@ -521,24 +521,6 @@ export async function publishPsMarksToLeaderboard(
       }
     }
 
-    // 2. Insert database-level publication marker row into `round2_evaluations` so all clients worldwide know this PS is published
-    try {
-      const markerPsList = psId === 'all' ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'] : [psId];
-      for (const mId of markerPsList) {
-        await supabase.from('round2_evaluations').insert({
-          mentor_id: 'admin_publisher',
-          mentor_name: 'Admin System',
-          team_name: `__PUBLISHED_${mId}__`,
-          team_code: mId,
-          status: 'published',
-          feedback: `Published by ${adminEmail}`,
-          mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0, total: 0,
-          evaluation: 'Published Track'
-        });
-      }
-    } catch (markerErr) {
-      console.warn('[HPL] Notice on publish marker insert:', markerErr);
-    }
 
     // 3. Mark PS as published in-memory and in localStorage
     if (psId === 'all') {

@@ -201,7 +201,7 @@ export function subscribeToEvaluations(week: string, onUpdate: () => void): () =
     .channel(`evaluations_realtime_${week}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'evaluations' },
+      { event: '*', schema: 'public', table: 'round2_evaluations' },
       () => {
         onUpdate();
       }
