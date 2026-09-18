@@ -52,7 +52,7 @@ export async function fetchEvaluationsByWeek(week: string = 'week1'): Promise<Re
       .eq('week', week);
 
     if (error) {
-      console.warn(`[HPL] Supabase evaluations fetch note for ${week}:`, error.message);
+      // Table evaluations is deprecated/not in schema cache, fallback silently to cache
       return cached;
     }
 

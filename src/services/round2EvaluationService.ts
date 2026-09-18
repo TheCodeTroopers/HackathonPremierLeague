@@ -198,37 +198,38 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
   totalEvaluations: number;
 }> {
   try {
-    // 1. Concurrently fetch round2_ps_selections, round2_evaluations, and evaluations table
-    const [psRes, evalRes, pubRes] = await Promise.all([
+    // 1. Concurrently fetch round2_ps_selections and round2_evaluations
+    const [psRes, evalRes] = await Promise.all([
       supabase.from('round2_ps_selections').select('*'),
-      supabase.from('round2_evaluations').select('*'),
-      supabase.from('evaluations').select('*').eq('week', 'week1')
+      supabase.from('round2_evaluations').select('*')
     ]);
 
     const selectionsList = psRes.data || [];
     const rawEvals = evalRes.data || [];
-    const pubRows = pubRes.data || [];
 
-    // Check publication markers from Supabase `evaluations` table
-    pubRows.forEach((row: any) => {
-      if (row.squad_id && row.squad_id.startsWith('__PUBLISHED_')) {
-        const match = row.squad_id.match(/__PUBLISHED_(ps-\d{2}|all)__/);
-        if (match && match[1]) {
-          markPsPublishedInMemory(match[1]);
-        }
-      } else if (row.ps_id && Number(row.marks) > 0) {
-        // If marks are saved in evaluations table for a PS, it was published by admin
-        markPsPublishedInMemory(row.ps_id);
+    // Filter out marker rows from being processed as actual team reviews
+    const markerRows = rawEvals.filter((r: any) => r.team_name && r.team_name.startsWith('__PUBLISHED_'));
+    const actualEvals = rawEvals.filter((r: any) => !r.team_name || !r.team_name.startsWith('__PUBLISHED_'));
+
+    // Check publication markers
+    markerRows.forEach((row: any) => {
+      const match = row.team_name.match(/__PUBLISHED_(ps-\d{2}|all)__/);
+      if (match && match[1]) {
+        markPsPublishedInMemory(match[1]);
       }
     });
 
     // Also check if any round2_evaluations row has status === 'published'
-    rawEvals.forEach((row: any) => {
+    actualEvals.forEach((row: any) => {
       if (row.status === 'published') {
         const off = getOfficialSquadRecord(row.team_name || row.squad_id);
-        if (off) {
-          const rank = off.rank;
-          const psId = rank <= 10 ? 'ps-01' : rank <= 20 ? 'ps-02' : rank <= 30 ? 'ps-03' : 'ps-04';
+        const sel = selectionsList.find(s => 
+          (row.selection_id && s.id === row.selection_id) ||
+          (s.team_name && norm(s.team_name) === norm(row.team_name)) ||
+          (s.squad_id && s.squad_id === row.squad_id)
+        );
+        const psId = sel?.ps_id || (off ? (off.rank <= 10 ? 'ps-01' : off.rank <= 20 ? 'ps-02' : off.rank <= 30 ? 'ps-03' : 'ps-04') : undefined);
+        if (psId) {
           markPsPublishedInMemory(psId);
         }
       }
@@ -238,7 +239,7 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
     // Deduplicate by (canonicalSquadId, mentorKey) taking latest submitted
     const dedupedMentorMap = new Map<string, MentorEvaluationEntry>();
 
-    rawEvals.forEach(row => {
+    actualEvals.forEach(row => {
       const official = getOfficialSquadRecord(row.team_name || row.squad_id || row.team_code);
       const canonicalKey = official ? official.squadId : (norm(row.team_name) || row.team_code || row.squad_id || row.selection_id || row.id);
       const mentorKey = (row.mentor_name || row.mentor_id || 'unknown').toLowerCase().trim();
@@ -500,165 +501,56 @@ export async function publishPsMarksToLeaderboard(
 
     const now = new Date().toISOString();
 
-    // 1. Prepare evaluations table payload with official squad IDs and average marks
-    const evalPayloads = teamsToPublish.map(t => {
-      const official = getOfficialSquadRecord(t.teamName || t.squadId);
-      const squadId = official?.squadId || t.squadId;
-      const combinedFeedback = t.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
-      return {
-        squad_id: squadId,
-        team_name: official?.teamName || t.teamName,
-        ps_id: t.psId,
-        week: 'week1',
-        marks: t.averageMarks, // Publish average marks (e.g. 41.3)
-        feedback: combinedFeedback,
-        graded_by: `admin-published (${adminEmail})`,
-        updated_at: now
-      };
-    });
-
-    // 2. Safe save to `evaluations` table:
-    // First, clear old records for these teams to avoid unique constraint or conflict issues
-    try {
-      const squadIds = evalPayloads.map(p => p.squad_id).filter(Boolean);
-      if (squadIds.length > 0) {
-        await supabase
-          .from('evaluations')
-          .delete()
-          .eq('week', 'week1')
-          .in('squad_id', squadIds);
-      }
-      const teamNames = evalPayloads.map(p => p.team_name).filter(Boolean);
-      if (teamNames.length > 0) {
-        await supabase
-          .from('evaluations')
-          .delete()
-          .eq('week', 'week1')
-          .in('team_name', teamNames);
-      }
-    } catch (delErr) {
-      console.warn('[HPL] Notice clearing prior evaluations:', delErr);
-    }
-
-    // Direct insert to `evaluations`
-    const { error: evalInsertError } = await supabase
-      .from('evaluations')
-      .insert(evalPayloads);
-
-    if (evalInsertError) {
-      console.warn('[HPL] Direct evaluations insert note, trying upsert:', evalInsertError.message);
-      for (const p of evalPayloads) {
-        try {
-          await supabase.from('evaluations').upsert(p);
-        } catch {}
+    // 1. Mark evaluations as 'published' in `round2_evaluations` table
+    for (const t of teamsToPublish) {
+      try {
+        if (t.teamName) {
+          await supabase
+            .from('round2_evaluations')
+            .update({ status: 'published' })
+            .ilike('team_name', t.teamName);
+        }
+        if (t.squadId) {
+          await supabase
+            .from('round2_evaluations')
+            .update({ status: 'published' })
+            .eq('squad_id', t.squadId);
+        }
+      } catch (e) {
+        console.warn(`[HPL] Notice updating round2_evaluations status for ${t.teamName}:`, e);
       }
     }
 
-    // Insert database-level publication marker row so all clients worldwide know this PS is published
+    // 2. Insert database-level publication marker row into `round2_evaluations` so all clients worldwide know this PS is published
     try {
       const markerPsList = psId === 'all' ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'] : [psId];
       for (const mId of markerPsList) {
-        await supabase.from('evaluations').upsert({
-          squad_id: `__PUBLISHED_${mId}__`,
-          team_name: `PUBLISHED_${mId}`,
-          ps_id: mId,
-          week: 'week1',
-          marks: 1,
-          feedback: `PUBLISHED_BY_${adminEmail}`,
-          graded_by: adminEmail,
-          updated_at: now
+        await supabase.from('round2_evaluations').insert({
+          mentor_id: 'admin_publisher',
+          mentor_name: 'Admin System',
+          team_name: `__PUBLISHED_${mId}__`,
+          team_code: mId,
+          status: 'published',
+          feedback: `Published by ${adminEmail}`,
+          mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0, total: 0,
+          evaluation: 'Published Track'
         });
       }
     } catch (markerErr) {
-      console.warn('[HPL] Notice on publish marker upsert:', markerErr);
+      console.warn('[HPL] Notice on publish marker insert:', markerErr);
     }
 
-    // 3. Mark evaluations as 'published' in `round2_evaluations`
-    for (const t of teamsToPublish) {
-      try {
-        if (t.teamName) {
-          await supabase
-            .from('round2_evaluations')
-            .update({ status: 'published' })
-            .ilike('team_name', t.teamName);
-        }
-        if (t.squadId) {
-          await supabase
-            .from('round2_evaluations')
-            .update({ status: 'published' })
-            .eq('squad_id', t.squadId);
-        }
-      } catch (e) {
-        console.warn(`Could not update round2_evaluations status for ${t.teamName}:`, e);
-      }
-    }
-
-    // 4. Update `round2_ps_selections` table for each team
-    for (const t of teamsToPublish) {
-      try {
-        if (t.id && !t.id.startsWith('off-')) {
-          await supabase
-            .from('round2_ps_selections')
-            .update({
-              total_marks: t.averageMarks,
-              average_marks: t.averageMarks,
-              total_score: t.totalMarks
-            })
-            .eq('id', t.id);
-        }
-        if (t.squadId) {
-          await supabase
-            .from('round2_ps_selections')
-            .update({
-              total_marks: t.averageMarks,
-              average_marks: t.averageMarks,
-              total_score: t.totalMarks
-            })
-            .eq('squad_id', t.squadId);
-        }
-        if (t.teamName) {
-          await supabase
-            .from('round2_ps_selections')
-            .update({
-              total_marks: t.averageMarks,
-              average_marks: t.averageMarks,
-              total_score: t.totalMarks
-            })
-            .ilike('team_name', t.teamName);
-        }
-      } catch (e) {
-        console.warn(`Could not update round2_ps_selections for ${t.squadId}:`, e);
-      }
-    }
-
-    // 5. Update localStorage evaluations cache for immediate zero-latency Leaderboard sync
-    try {
-      const cacheKey = 'hpl_evaluations_cache_week1';
-      const existingRaw = localStorage.getItem(cacheKey);
-      const cacheMap = existingRaw ? JSON.parse(existingRaw) : {};
-      evalPayloads.forEach(p => {
-        const item = { ...p, created_at: now, updated_at: now };
-        cacheMap[p.squad_id] = item;
-        cacheMap[p.squad_id.toLowerCase()] = item;
-        cacheMap[p.team_name] = item;
-        cacheMap[norm(p.team_name)] = item;
-      });
-      localStorage.setItem(cacheKey, JSON.stringify(cacheMap));
-    } catch (e) {
-      console.warn('Could not update localStorage cache:', e);
-    }
-
-    // 6. Mark PS as published in-memory and in localStorage
+    // 3. Mark PS as published in-memory and in localStorage
     if (psId === 'all') {
       ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => setPsPublishStatus(id, true));
     } else {
       setPsPublishStatus(psId, true);
     }
 
-    // 7. Broadcast events for real-time reactivity across all browser tabs
+    // 4. Broadcast events for real-time reactivity across all browser tabs
     window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: 'week1', psId } }));
     window.dispatchEvent(new Event('hpl-selection-update'));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'hpl_evaluations_cache_week1' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: `${PUBLISHED_KEY_PREFIX}${psId}` }));
 
     console.log(`[HPL] ✅ Successfully published ${teamsToPublish.length} teams for ${psId} to Leaderboard!`);
     return { success: true, publishedCount: teamsToPublish.length };
@@ -667,4 +559,5 @@ export async function publishPsMarksToLeaderboard(
     return { success: false, publishedCount: 0, error: err?.message || 'Server error publishing marks.' };
   }
 }
+
 
