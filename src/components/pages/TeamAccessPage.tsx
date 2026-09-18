@@ -16,6 +16,8 @@ import {
     Compass,
     Settings,
     Link,
+    Github,
+    Youtube,
     LogOut,
     Edit3,
     Save,
@@ -167,6 +169,8 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const [registration, setRegistration] = useState<TeamRegistration | null>(null);
     const [registrationLoading, setRegistrationLoading] = useState(true);
     const [driveLink, setDriveLink] = useState('');
+    const [githubLink, setGithubLink] = useState('');
+    const [youtubeLink, setYoutubeLink] = useState('');
     const [isLoadingDriveLink, setIsLoadingDriveLink] = useState(false);
     const [isSavingDriveLink, setIsSavingDriveLink] = useState(false);
     const [driveLinkMessage, setDriveLinkMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -303,17 +307,21 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                     setIsLoadingDriveLink(true);
                     const { data: linkRecord, error: linkError } = await supabase
                         .from('team_drive_links')
-                        .select('drive_link')
+                        .select('*')
                         .eq('team_id', round2Team.id)
                         .maybeSingle();
 
                     if (linkError) throw linkError;
-                    if (isMounted) setDriveLink(linkRecord?.drive_link || '');
+                    if (isMounted) {
+                        setDriveLink(linkRecord?.drive_link || '');
+                        setGithubLink(linkRecord?.github_link || '');
+                        setYoutubeLink(linkRecord?.youtube_link || '');
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load team registration:', err);
                 if (isMounted) {
-                    setDriveLinkMessage({ type: 'error', text: 'Could not load the team Google Drive link.' });
+                    setDriveLinkMessage({ type: 'error', text: 'Could not load the team project links.' });
                 }
             } finally {
                 if (isMounted) {
@@ -331,24 +339,63 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
         setDriveLinkMessage(null);
 
         const cleanDriveLink = driveLink.trim();
-        if (!cleanDriveLink) {
-            setDriveLinkMessage({ type: 'error', text: 'Please enter a Google Drive link.' });
+        const cleanGithubLink = githubLink.trim();
+        const cleanYoutubeLink = youtubeLink.trim();
+
+        if (!cleanDriveLink && !cleanGithubLink && !cleanYoutubeLink) {
+            setDriveLinkMessage({ type: 'error', text: 'Please enter at least one project submission link.' });
             return;
         }
 
-        let parsedUrl: URL;
-        try {
-            parsedUrl = new URL(cleanDriveLink);
-        } catch {
-            setDriveLinkMessage({ type: 'error', text: 'Please enter a valid URL.' });
-            return;
+        if (cleanDriveLink) {
+            let parsedUrl: URL;
+            try {
+                parsedUrl = new URL(cleanDriveLink);
+            } catch {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid Google Drive URL.' });
+                return;
+            }
+
+            const hostname = parsedUrl.hostname.toLowerCase();
+            const isGoogleHost = hostname === 'google.com' || hostname.endsWith('.google.com');
+            if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isGoogleHost) {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid Google Drive URL (e.g., https://drive.google.com/...).' });
+                return;
+            }
         }
 
-        const hostname = parsedUrl.hostname.toLowerCase();
-        const isGoogleHost = hostname === 'google.com' || hostname.endsWith('.google.com');
-        if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isGoogleHost) {
-            setDriveLinkMessage({ type: 'error', text: 'Please enter a valid Google Drive URL.' });
-            return;
+        if (cleanGithubLink) {
+            let parsedUrl: URL;
+            try {
+                parsedUrl = new URL(cleanGithubLink);
+            } catch {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid GitHub URL.' });
+                return;
+            }
+
+            const hostname = parsedUrl.hostname.toLowerCase();
+            const isGithubHost = hostname === 'github.com' || hostname.endsWith('.github.com');
+            if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isGithubHost) {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid GitHub repository URL (e.g., https://github.com/org/repo).' });
+                return;
+            }
+        }
+
+        if (cleanYoutubeLink) {
+            let parsedUrl: URL;
+            try {
+                parsedUrl = new URL(cleanYoutubeLink);
+            } catch {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid YouTube video URL.' });
+                return;
+            }
+
+            const hostname = parsedUrl.hostname.toLowerCase();
+            const isYoutubeHost = hostname === 'youtube.com' || hostname.endsWith('.youtube.com') || hostname === 'youtu.be';
+            if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isYoutubeHost) {
+                setDriveLinkMessage({ type: 'error', text: 'Please enter a valid YouTube video URL (e.g., https://youtube.com/watch?v=... or https://youtu.be/...).' });
+                return;
+            }
         }
 
         if (!team) {
@@ -367,19 +414,25 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
             if (round2Error) throw round2Error;
             if (!round2Team) throw new Error('Round 2 team record not found.');
 
+            const upsertPayload: Record<string, any> = {
+                team_id: round2Team.id,
+                drive_link: cleanDriveLink || null,
+                github_link: cleanGithubLink || null,
+                youtube_link: cleanYoutubeLink || null
+            };
+
             const { error } = await supabase
                 .from('team_drive_links')
-                .upsert(
-                    { team_id: round2Team.id, drive_link: cleanDriveLink },
-                    { onConflict: 'team_id' }
-                );
+                .upsert(upsertPayload, { onConflict: 'team_id' });
 
             if (error) throw error;
             setDriveLink(cleanDriveLink);
-            setDriveLinkMessage({ type: 'success', text: 'Google Drive link saved successfully.' });
-        } catch (err) {
-            console.error('Failed to save Google Drive link:', err);
-            setDriveLinkMessage({ type: 'error', text: 'Could not save the Google Drive link. Please try again.' });
+            setGithubLink(cleanGithubLink);
+            setYoutubeLink(cleanYoutubeLink);
+            setDriveLinkMessage({ type: 'success', text: 'Project submission links saved successfully.' });
+        } catch (err: any) {
+            console.error('Failed to save project links:', err);
+            setDriveLinkMessage({ type: 'error', text: err?.message || 'Could not save the links. Please try again.' });
         } finally {
             setIsSavingDriveLink(false);
         }
@@ -1451,20 +1504,21 @@ const allocationState = useMemo(() => {
                                 <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-3xl p-6 shadow-[5px_5px_0px_#1E1B4B] space-y-4">
                                     <div className="border-b-2 border-[#1E1B4B]/10 pb-3">
                                         <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight">
-                                            Google Drive Link
+                                            Project Submission Links
                                         </h3>
                                         <p className="text-xs text-slate-500">
-                                            Share your team&apos;s project folder or submission files.
+                                            Share your team&apos;s Google Drive folder, GitHub repository, and YouTube demo video.
                                         </p>
                                     </div>
 
-                                    <form onSubmit={handleSaveDriveLink} className="space-y-3">
-                                        <label htmlFor="team-drive-link" className="block text-xs font-display font-black uppercase tracking-wider text-slate-700">
-                                            Drive URL
-                                        </label>
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <div className="relative flex-1">
-                                                <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <form onSubmit={handleSaveDriveLink} className="space-y-4">
+                                        {/* Field 1: Google Drive */}
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="team-drive-link" className="block text-xs font-display font-black uppercase tracking-wider text-slate-700">
+                                                Google Drive Link
+                                            </label>
+                                            <div className="relative">
+                                                <Link className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                                 <input
                                                     id="team-drive-link"
                                                     type="url"
@@ -1475,15 +1529,62 @@ const allocationState = useMemo(() => {
                                                     }}
                                                     placeholder="https://drive.google.com/..."
                                                     disabled={isLoadingDriveLink || isSavingDriveLink}
-                                                    className="w-full rounded-xl border-2 border-[#1E1B4B]/20 pl-10 pr-4 py-3 text-sm outline-none focus:border-amber-400 bg-white disabled:opacity-60"
+                                                    className="w-full rounded-xl border-2 border-[#1E1B4B]/20 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-400 bg-white disabled:opacity-60"
                                                 />
                                             </div>
+                                        </div>
+
+                                        {/* Field 2: GitHub Repo */}
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="team-github-link" className="block text-xs font-display font-black uppercase tracking-wider text-slate-700">
+                                                GitHub Repository Link
+                                            </label>
+                                            <div className="relative">
+                                                <Github className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                                <input
+                                                    id="team-github-link"
+                                                    type="url"
+                                                    value={githubLink}
+                                                    onChange={(e) => {
+                                                        setGithubLink(e.target.value);
+                                                        setDriveLinkMessage(null);
+                                                    }}
+                                                    placeholder="https://github.com/org/repository"
+                                                    disabled={isLoadingDriveLink || isSavingDriveLink}
+                                                    className="w-full rounded-xl border-2 border-[#1E1B4B]/20 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-400 bg-white disabled:opacity-60"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Field 3: YouTube Demo */}
+                                        <div className="space-y-1.5">
+                                            <label htmlFor="team-youtube-link" className="block text-xs font-display font-black uppercase tracking-wider text-slate-700">
+                                                YouTube Video Link
+                                            </label>
+                                            <div className="relative">
+                                                <Youtube className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-rose-500" />
+                                                <input
+                                                    id="team-youtube-link"
+                                                    type="url"
+                                                    value={youtubeLink}
+                                                    onChange={(e) => {
+                                                        setYoutubeLink(e.target.value);
+                                                        setDriveLinkMessage(null);
+                                                    }}
+                                                    placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
+                                                    disabled={isLoadingDriveLink || isSavingDriveLink}
+                                                    className="w-full rounded-xl border-2 border-[#1E1B4B]/20 pl-10 pr-4 py-2.5 text-sm outline-none focus:border-amber-400 bg-white disabled:opacity-60"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-1">
                                             <button
                                                 type="submit"
                                                 disabled={isLoadingDriveLink || isSavingDriveLink}
                                                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E1B4B] px-6 py-3 text-white font-display font-black text-xs uppercase hover:bg-amber-400 hover:text-[#1E1B4B] transition-colors cursor-pointer shadow-[2px_2px_0px_#1E1B4B] disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                {isSavingDriveLink ? 'Saving...' : 'Save Link'}
+                                                {isSavingDriveLink ? 'Saving Links...' : 'Save Links'}
                                             </button>
                                         </div>
 
@@ -1494,8 +1595,8 @@ const allocationState = useMemo(() => {
                                                     : 'bg-rose-50 border-rose-300 text-rose-800'
                                             }`}>
                                                 {driveLinkMessage.type === 'success'
-                                                    ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                                                    : <AlertCircle className="w-4 h-4 text-rose-600" />}
+                                                    ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                                    : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
                                                 <span>{driveLinkMessage.text}</span>
                                             </div>
                                         )}
