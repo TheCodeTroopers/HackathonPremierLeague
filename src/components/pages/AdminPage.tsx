@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PageRoute } from '../../types';
 import { supabase } from '../../client_config';
-import { 
-  LayoutDashboard, 
-  Lightbulb, 
-  Users, 
-  FileCode, 
-  UserCheck, 
-  Award, 
-  Bell, 
-  Settings, 
-  LogOut, 
-  Search, 
-  RefreshCw, 
-  Download, 
-  Eye, 
-  CheckCircle2, 
-  Clock, 
-  XCircle, 
-  ChevronDown, 
-  ChevronLeft, 
-  ChevronRight, 
-  X, 
+import {
+  LayoutDashboard,
+  Lightbulb,
+  Users,
+  FileCode,
+  UserCheck,
+  Award,
+  Bell,
+  Settings,
+  LogOut,
+  Search,
+  RefreshCw,
+  Download,
+  Eye,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
   ExternalLink,
   Mail,
   Phone,
@@ -30,6 +30,10 @@ import {
   Filter,
   Check,
   Menu,
+  Edit3,
+  Save,
+  Loader2,
+  AlertCircle,
   Lock,
   Unlock,
   RotateCcw,
@@ -101,6 +105,15 @@ interface AdminPageProps {
   onNavigate: (page: PageRoute) => void;
 }
 
+interface AdminDriveLinkTeam {
+  id: string;
+  team_name: string | null;
+  squad_id: string | null;
+  leader_name: string | null;
+  leader_email: string | null;
+  drive_link: string | null;
+}
+
 const LOCAL_STORAGE_CACHE_KEY = 'hpl_admin_submissions_cache';
 const LOCAL_STORAGE_STATUS_MAP_KEY = 'hpl_admin_status_overrides';
 
@@ -126,6 +139,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   // Selected Submission Modal View / Review
   const [activeModalItem, setActiveModalItem] = useState<RegistrationRecord | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+  const [driveLinkTeams, setDriveLinkTeams] = useState<AdminDriveLinkTeam[]>([]);
+  const [driveLinksLoading, setDriveLinksLoading] = useState<boolean>(false);
+  const [driveLinksError, setDriveLinksError] = useState<string | null>(null);
+  const [editingDriveLinkTeamId, setEditingDriveLinkTeamId] = useState<string | null>(null);
+  const [editingDriveLink, setEditingDriveLink] = useState('');
+  const [savingDriveLinkTeamId, setSavingDriveLinkTeamId] = useState<string | null>(null);
+  const [driveLinkFeedback, setDriveLinkFeedback] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({});
 
   // Status overrides stored locally so the reviewer can accept/review/reject live without mutating schema
   const [statusOverrides, setStatusOverrides] = useState<Record<string, { status: 'Pending Review' | 'Reviewed' | 'Rejected'; notes?: string }>>(() => {
@@ -518,6 +538,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       // Also clean localStorage PS selection keys
       const raw = localStorage.getItem('hpl-round2-ps-selections');
       const current = raw ? JSON.parse(raw) : {};
+
+      // Clean all possible alias keys
       delete current[squadIdToUnlock];
       if (q) {
         delete current[q.teamName];
@@ -707,6 +729,139 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   // Combined records with status overrides, strictly deduplicated to exactly the 40 shortlisted qualified teams!
   // Shows ONLY the 40 shortlisted teams (1 entry per team) and their newly selected Round 2 problem statement!
+  const fetchDriveLinkTeams = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    setDriveLinksLoading(true);
+    setDriveLinksError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('round2_ps_selections')
+        .select('id, team_name, squad_id, leader_name, leader_email, team_drive_links(drive_link)')
+        .order('team_name', { ascending: true });
+
+      if (error) throw error;
+
+      const teams = (data || []).map((team: {
+        id: string;
+        team_name: string | null;
+        squad_id: string | null;
+        leader_name: string | null;
+        leader_email: string | null;
+        team_drive_links?: { drive_link: string | null } | { drive_link: string | null }[] | null;
+      }) => {
+        const relatedLink = Array.isArray(team.team_drive_links)
+          ? team.team_drive_links[0]
+          : team.team_drive_links;
+
+        return {
+          id: team.id,
+          team_name: team.team_name,
+          squad_id: team.squad_id,
+          leader_name: team.leader_name,
+          leader_email: team.leader_email,
+          drive_link: relatedLink?.drive_link || null
+        };
+      });
+
+      setDriveLinkTeams(teams);
+    } catch (err) {
+      console.error('Failed to fetch team Drive Links:', err);
+      setDriveLinksError('Could not load team Drive Links. Please refresh and try again.');
+    } finally {
+      setDriveLinksLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    fetchDriveLinkTeams();
+  }, [fetchDriveLinkTeams]);
+
+  const beginDriveLinkEdit = (team: AdminDriveLinkTeam) => {
+    setDriveLinkFeedback(prev => {
+      const next = { ...prev };
+      delete next[team.id];
+      return next;
+    });
+    setEditingDriveLinkTeamId(team.id);
+    setEditingDriveLink(team.drive_link || '');
+  };
+
+  const cancelDriveLinkEdit = () => {
+    setEditingDriveLinkTeamId(null);
+    setEditingDriveLink('');
+  };
+
+  const handleAdminDriveLinkSave = async (team: AdminDriveLinkTeam) => {
+    const cleanDriveLink = editingDriveLink.trim();
+    let parsedUrl: URL;
+
+    if (!cleanDriveLink) {
+      setDriveLinkFeedback(prev => ({
+        ...prev,
+        [team.id]: { type: 'error', text: 'Please enter a Google Drive link.' }
+      }));
+      return;
+    }
+
+    try {
+      parsedUrl = new URL(cleanDriveLink);
+    } catch {
+      setDriveLinkFeedback(prev => ({
+        ...prev,
+        [team.id]: { type: 'error', text: 'Please enter a valid URL.' }
+      }));
+      return;
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const isGoogleHost = hostname === 'google.com' || hostname.endsWith('.google.com');
+    if (!['http:', 'https:'].includes(parsedUrl.protocol) || !isGoogleHost) {
+      setDriveLinkFeedback(prev => ({
+        ...prev,
+        [team.id]: { type: 'error', text: 'Please enter a valid Google Drive URL.' }
+      }));
+      return;
+    }
+
+    setSavingDriveLinkTeamId(team.id);
+    setDriveLinkFeedback(prev => {
+      const next = { ...prev };
+      delete next[team.id];
+      return next;
+    });
+
+    try {
+      const { error } = await supabase
+        .from('team_drive_links')
+        .upsert(
+          { team_id: team.id, drive_link: cleanDriveLink },
+          { onConflict: 'team_id' }
+        );
+
+      if (error) throw error;
+
+      setDriveLinkTeams(prev => prev.map(item => (
+        item.id === team.id ? { ...item, drive_link: cleanDriveLink } : item
+      )));
+      setDriveLinkFeedback(prev => ({
+        ...prev,
+        [team.id]: { type: 'success', text: 'Drive Link saved successfully.' }
+      }));
+      cancelDriveLinkEdit();
+    } catch (err) {
+      console.error(`Failed to save Drive Link for team ${team.id}:`, err);
+      setDriveLinkFeedback(prev => ({
+        ...prev,
+        [team.id]: { type: 'error', text: 'Could not save this Drive Link. Check your admin access and try again.' }
+      }));
+    } finally {
+      setSavingDriveLinkTeamId(null);
+    }
+  };
+
+
   const enrichedSubmissions = useMemo(() => {
     // 1. Group submissions by squadId and keep only the latest submission per team
     const seenSquads = new Set<string>();
@@ -916,13 +1071,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] text-[#1E1B4B] flex font-sans selection:bg-[#4F46E5] selection:text-white">
-      
+
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* 1. LEFT SIDEBAR NAVIGATION                                           */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       {/* Mobile Drawer Overlay */}
       {mobileSidebarOpen && (
-        <div 
+        <div
           onClick={() => setMobileSidebarOpen(false)}
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs lg:hidden"
         />
@@ -947,7 +1102,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 <span className="font-mono text-[10px] text-[#582A9C] font-bold">HPL 2026 ADMIN</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setMobileSidebarOpen(false)}
               className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-200"
             >
@@ -1074,7 +1229,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* 2. MAIN CONTENT AREA                                                 */}
       {/* ═════════════════════════════════════════════════════════════════════ */}
       <main className="flex-1 lg:ml-64 p-4 sm:p-7 md:p-9 space-y-6 max-w-7xl mx-auto w-full">
-        
+
         {/* Top App Bar with Search, Notification, Profile & Refresh */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -1109,7 +1264,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 className="w-full pl-9 pr-3.5 py-2 text-xs bg-white border border-[#1E1B4B]/15 rounded-xl font-sans focus:outline-none focus:ring-2 focus:ring-[#4F46E5] shadow-2xs text-[#1E1B4B]"
               />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
@@ -1133,7 +1288,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             {/* Notification Bell Badge from Mockup */}
             <div className="relative">
-              <button 
+              <button
                 title="Notifications"
                 className="w-9 h-9 rounded-xl bg-white border border-[#1E1B4B]/15 flex items-center justify-center text-slate-700 hover:bg-slate-100 cursor-pointer shadow-2xs"
               >
@@ -1641,7 +1796,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             {/* ═════════════════════════════════════════════════════════════════════ */}
             <div className="relative">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+
             {/* Card 1: Total Submissions */}
             <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 shadow-2xs flex items-center gap-4 hover:border-[#4F46E5]/40 transition-all">
               <div className="w-12 h-12 rounded-xl bg-purple-100 text-[#4F46E5] flex items-center justify-center flex-shrink-0">
@@ -1795,7 +1950,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               const pct = Math.min(100, Math.round((count / STRICT_CAP_PER_TRACK) * 100));
 
               return (
-                <div 
+                <div
                   key={ps.id}
                   onClick={() => {
                     setBreakdownPsFilter(prev => prev === ps.id ? 'all' : ps.id);
@@ -1844,7 +1999,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                           : count > 7 
                           ? 'bg-amber-500' 
                           : 'bg-[#4F46E5]'
-                      }`}
+                        }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -2084,10 +2239,161 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         </div>
 
         {/* ═════════════════════════════════════════════════════════════════════ */}
+        {/* TEAM DRIVE LINKS                                                      */}
+        {/* ═════════════════════════════════════════════════════════════════════ */}
+        <section className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-5 sm:p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                <ExternalLink className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight">
+                  Team Drive Links
+                </h2>
+                <p className="text-xs text-slate-500">
+                  View and manage the Google Drive link for each Round 2 team.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={fetchDriveLinkTeams}
+              disabled={driveLinksLoading}
+              className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-[#FDFBF7] hover:bg-slate-100 text-[#1E1B4B] border border-[#1E1B4B]/20 text-xs font-display font-bold uppercase tracking-wider transition-colors disabled:opacity-60"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${driveLinksLoading ? 'animate-spin' : ''}`} />
+              Refresh Links
+            </button>
+          </div>
+
+          {driveLinksError && (
+            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{driveLinksError}</span>
+            </div>
+          )}
+
+          {driveLinksLoading ? (
+            <div className="py-8 text-center text-slate-500 text-xs font-mono">
+              <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[#4F46E5]" />
+              Loading team Drive Links...
+            </div>
+          ) : driveLinkTeams.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-xs">
+              No Round 2 team records were found.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500 font-mono uppercase text-[10px]">
+                    <th className="py-2.5 px-3 font-semibold">Team</th>
+                    <th className="py-2.5 px-3 font-semibold">Leader</th>
+                    <th className="py-2.5 px-3 font-semibold">Drive Link</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {driveLinkTeams.map(team => {
+                    const isEditing = editingDriveLinkTeamId === team.id;
+                    const isSaving = savingDriveLinkTeamId === team.id;
+                    const feedback = driveLinkFeedback[team.id];
+
+                    return (
+                      <tr key={team.id} className="align-top hover:bg-slate-50/70 transition-colors">
+                        <td className="py-3 px-3 min-w-[180px]">
+                          <div className="font-display font-bold text-sm text-[#1E1B4B]">
+                            {team.team_name || 'Unnamed team'}
+                          </div>
+                          <div className="font-mono text-[10px] text-slate-500">
+                            {team.squad_id || 'No squad ID'}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 min-w-[180px]">
+                          <div className="text-xs font-display font-bold text-[#1E1B4B]">
+                            {team.leader_name || 'No leader name'}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-500">
+                            {team.leader_email || 'No leader email'}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 min-w-[280px]">
+                          {isEditing ? (
+                            <input
+                              type="url"
+                              value={editingDriveLink}
+                              onChange={event => setEditingDriveLink(event.target.value)}
+                              placeholder="https://drive.google.com/..."
+                              autoFocus
+                              disabled={isSaving}
+                              className="w-full rounded-lg border border-[#1E1B4B]/25 px-3 py-2 text-xs text-[#1E1B4B] focus:outline-none focus:ring-2 focus:ring-[#4F46E5] disabled:opacity-60"
+                            />
+                          ) : team.drive_link ? (
+                            <a
+                              href={team.drive_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 max-w-full text-xs text-[#4F46E5] hover:underline"
+                              title="Open team Drive Link"
+                            >
+                              <span className="truncate">{team.drive_link}</span>
+                              <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Not uploaded</span>
+                          )}
+                          {feedback && (
+                            <div className={`mt-1.5 text-[11px] ${feedback.type === 'success' ? 'text-emerald-700' : 'text-rose-700'}`}>
+                              {feedback.text}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          {isEditing ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleAdminDriveLinkSave(team)}
+                                disabled={isSaving}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-display font-bold text-[10px] uppercase transition-colors disabled:opacity-60"
+                              >
+                                {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelDriveLinkEdit}
+                                disabled={isSaving}
+                                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-display font-bold text-[10px] uppercase transition-colors disabled:opacity-60"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => beginDriveLinkEdit(team)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#4F46E5] hover:bg-purple-900 text-white font-display font-bold text-[10px] uppercase transition-colors"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              {team.drive_link ? 'Edit' : 'Add Drive Link'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* ═════════════════════════════════════════════════════════════════════ */}
         {/* 4. FILTERS & ACTIONS TOOLBAR                                         */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 p-4 shadow-2xs flex flex-wrap items-center justify-between gap-3">
-          
           <div className="flex flex-wrap items-center gap-3 flex-1">
             {/* Search Bar: team name or email */}
             <div className="relative w-full sm:w-72 md:w-80">
@@ -2110,7 +2416,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </button>
               )}
             </div>
-
             {/* Filter 1: Problem Statements dropdown */}
             <div className="relative">
               <select
@@ -2175,11 +2480,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         {/* 5. DATA TABLE                                                        */}
         {/* ═════════════════════════════════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-[#1E1B4B]/15 shadow-2xs overflow-hidden">
-          
+
           {/* Table Container with Horizontal Scroll support */}
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              
+
               {/* Deep Indigo Navy Table Header matching mockup */}
               <thead>
                 <tr className="bg-[#1E1B4B] text-white font-mono text-[11px] font-bold uppercase tracking-wider">
@@ -2221,7 +2526,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                     const { dateStr, timeStr } = formatSubmissionDate(item.created_at);
 
                     return (
-                      <tr 
+                      <tr
                         key={item.id}
                         className="hover:bg-amber-50/40 transition-colors"
                       >
@@ -2362,11 +2667,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                       {showEllipsis && <span className="px-1 text-slate-400">...</span>}
                       <button
                         onClick={() => setCurrentPage(page)}
-                        className={`w-8 h-8 rounded-lg font-mono font-bold text-xs transition-all cursor-pointer ${
-                          currentPage === page
-                            ? 'bg-[#4F46E5] text-white shadow-sm'
-                            : 'border border-[#1E1B4B]/15 text-[#1E1B4B] hover:bg-slate-100'
-                        }`}
+                        className={`w-8 h-8 rounded-lg font-mono font-bold text-xs transition-all cursor-pointer ${currentPage === page
+                          ? 'bg-[#4F46E5] text-white shadow-sm'
+                          : 'border border-[#1E1B4B]/15 text-[#1E1B4B] hover:bg-slate-100'
+                          }`}
                       >
                         {page}
                       </button>
@@ -2403,7 +2707,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {activeModalItem && (
         <div className="fixed inset-0 z-[99999] bg-[#1E1B4B]/80 backdrop-blur-xs p-4 flex items-center justify-center overflow-y-auto">
           <div className="bg-[#FAF6EE] border-2 border-[#1E1B4B] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-sketch-xl p-6 sm:p-8 space-y-6 text-[#1E1B4B] animate-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="flex items-start justify-between border-b-2 border-[#1E1B4B]/10 pb-4">
               <div>
@@ -2529,11 +2833,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => handleUpdateStatus(activeModalItem.id, 'Reviewed')}
-                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${
-                    activeModalItem.status === 'Reviewed'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${activeModalItem.status === 'Reviewed'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
+                    }`}
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Mark as Reviewed</span>
@@ -2541,11 +2844,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                 <button
                   onClick={() => handleUpdateStatus(activeModalItem.id, 'Pending Review')}
-                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${
-                    activeModalItem.status === 'Pending Review'
-                      ? 'bg-amber-600 text-white shadow-sm'
-                      : 'bg-amber-100 hover:bg-amber-200 text-amber-800'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${activeModalItem.status === 'Pending Review'
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-amber-100 hover:bg-amber-200 text-amber-800'
+                    }`}
                 >
                   <Clock className="w-4 h-4" />
                   <span>Set as Pending</span>
@@ -2553,11 +2855,10 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
                 <button
                   onClick={() => handleUpdateStatus(activeModalItem.id, 'Rejected')}
-                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${
-                    activeModalItem.status === 'Rejected'
-                      ? 'bg-rose-600 text-white shadow-sm'
-                      : 'bg-rose-100 hover:bg-rose-200 text-rose-800'
-                  }`}
+                  className={`px-4 py-2 rounded-xl font-display font-bold text-xs uppercase tracking-wider flex items-center gap-2 cursor-pointer transition-all ${activeModalItem.status === 'Rejected'
+                    ? 'bg-rose-600 text-white shadow-sm'
+                    : 'bg-rose-100 hover:bg-rose-200 text-rose-800'
+                    }`}
                 >
                   <XCircle className="w-4 h-4" />
                   <span>Mark as Rejected</span>

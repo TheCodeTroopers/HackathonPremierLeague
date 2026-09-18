@@ -88,3 +88,4 @@ src/assets/ps_weathergpt_mobile.png
 .antigravity/
 coverage/
 
+.vite/
