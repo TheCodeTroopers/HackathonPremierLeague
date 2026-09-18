@@ -1,4 +1,5 @@
 import { supabase } from '../client_config';
+import { OFFICIAL_QUALIFIED_TEAMS } from './teamPortalService';
 
 export interface MentorEvaluationEntry {
   id: string;
@@ -104,14 +105,41 @@ export interface TeamAggregatedEvaluation {
 
 const PUBLISHED_KEY_PREFIX = 'hpl_published_ps_';
 
+// Global in-memory set of published Problem Statement IDs (synced with Supabase)
+const dbPublishedPsSet = new Set<string>();
+
+export function markPsPublishedInMemory(psId: string) {
+  if (!psId) return;
+  dbPublishedPsSet.add(psId);
+  try {
+    localStorage.setItem(
+      `${PUBLISHED_KEY_PREFIX}${psId}`,
+      JSON.stringify({ isPublished: true, publishedAt: new Date().toISOString() })
+    );
+  } catch {}
+}
+
 /**
  * Check if a Problem Statement's marks have been published to the leaderboard.
+ * Checks both in-memory synced DB cache and localStorage.
  */
 export function getPsPublishStatus(psId: string): { isPublished: boolean; publishedAt?: string } {
+  if (psId === 'all') {
+    const allPublished = ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id).isPublished);
+    return { isPublished: allPublished };
+  }
+
+  if (dbPublishedPsSet.has(psId)) {
+    return { isPublished: true, publishedAt: new Date().toISOString() };
+  }
+
   try {
     const raw = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
     if (!raw) return { isPublished: false };
     const parsed = JSON.parse(raw);
+    if (parsed.isPublished) {
+      dbPublishedPsSet.add(psId);
+    }
     return { isPublished: true, publishedAt: parsed.publishedAt };
   } catch {
     return { isPublished: false };
@@ -119,16 +147,18 @@ export function getPsPublishStatus(psId: string): { isPublished: boolean; publis
 }
 
 /**
- * Record publication status in localStorage.
+ * Record publication status in localStorage and in-memory cache.
  */
 export function setPsPublishStatus(psId: string, isPublished: boolean) {
   try {
     if (isPublished) {
+      dbPublishedPsSet.add(psId);
       localStorage.setItem(
         `${PUBLISHED_KEY_PREFIX}${psId}`,
         JSON.stringify({ isPublished: true, publishedAt: new Date().toISOString() })
       );
     } else {
+      dbPublishedPsSet.delete(psId);
       localStorage.removeItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
     }
   } catch (e) {
@@ -139,8 +169,23 @@ export function setPsPublishStatus(psId: string, isPublished: boolean) {
 /**
  * Normalize string for comparison.
  */
-function norm(str: string): string {
+export function norm(str: string): string {
   return (str || '').toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Canonical lookup for an official team from OFFICIAL_QUALIFIED_TEAMS
+ */
+export function getOfficialSquadRecord(identifier?: string) {
+  if (!identifier) return undefined;
+  const clean = identifier.trim();
+  const n = norm(clean);
+  return OFFICIAL_QUALIFIED_TEAMS.find(t => 
+    t.squadId.toLowerCase() === clean.toLowerCase() ||
+    norm(t.teamName) === n ||
+    t.teamName.toLowerCase() === clean.toLowerCase() ||
+    (t.leaderEmail && t.leaderEmail.toLowerCase() === clean.toLowerCase())
+  );
 }
 
 /**
@@ -153,64 +198,60 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
   totalEvaluations: number;
 }> {
   try {
-    // 1. Fetch round2_ps_selections to get authoritative squad assignments and PS mappings
-    const { data: psSelections, error: psError } = await supabase
-      .from('round2_ps_selections')
-      .select('*');
+    // 1. Concurrently fetch round2_ps_selections, round2_evaluations, and evaluations table
+    const [psRes, evalRes, pubRes] = await Promise.all([
+      supabase.from('round2_ps_selections').select('*'),
+      supabase.from('round2_evaluations').select('*'),
+      supabase.from('evaluations').select('*').eq('week', 'week1')
+    ]);
 
-    if (psError) {
-      console.warn('[HPL] round2_ps_selections fetch error:', psError.message);
-    }
+    const selectionsList = psRes.data || [];
+    const rawEvals = evalRes.data || [];
+    const pubRows = pubRes.data || [];
 
-    const selectionsList = psSelections || [];
-
-    // Map selection by id, squad_id, and team_name for ultra-robust lookups
-    const selectionById = new Map<string, any>();
-    const selectionBySquadId = new Map<string, any>();
-    const selectionByName = new Map<string, any>();
-    const selectionByCode = new Map<string, any>();
-
-    selectionsList.forEach(row => {
-      if (row.id) selectionById.set(row.id, row);
-      if (row.squad_id) selectionBySquadId.set(row.squad_id.toUpperCase().trim(), row);
-      if (row.team_name) selectionByName.set(norm(row.team_name), row);
-      // Map team codes like HPL-018 to rank 18
-      const rankNum = row.rank || (row.squad_id ? parseInt(row.squad_id.replace(/\D/g, ''), 10) : null);
-      if (rankNum) {
-        const code = `HPL-${String(rankNum).padStart(3, '0')}`;
-        selectionByCode.set(code.toUpperCase(), row);
+    // Check publication markers from Supabase `evaluations` table
+    pubRows.forEach((row: any) => {
+      if (row.squad_id && row.squad_id.startsWith('__PUBLISHED_')) {
+        const match = row.squad_id.match(/__PUBLISHED_(ps-\d{2}|all)__/);
+        if (match && match[1]) {
+          markPsPublishedInMemory(match[1]);
+        }
+      } else if (row.ps_id && Number(row.marks) > 0) {
+        // If marks are saved in evaluations table for a PS, it was published by admin
+        markPsPublishedInMemory(row.ps_id);
       }
     });
 
-    // 2. Fetch all mentor evaluations from round2_evaluations
-    const { data: evalRows, error: evalError } = await supabase
-      .from('round2_evaluations')
-      .select('*');
+    // Also check if any round2_evaluations row has status === 'published'
+    rawEvals.forEach((row: any) => {
+      if (row.status === 'published') {
+        const off = getOfficialSquadRecord(row.team_name || row.squad_id);
+        if (off) {
+          const rank = off.rank;
+          const psId = rank <= 10 ? 'ps-01' : rank <= 20 ? 'ps-02' : rank <= 30 ? 'ps-03' : 'ps-04';
+          markPsPublishedInMemory(psId);
+        }
+      }
+    });
 
-    if (evalError) {
-      console.error('[HPL] round2_evaluations fetch error:', evalError.message);
-    }
-
-    const rawEvals = evalRows || [];
-
-    // 3. Deduplicate mentor evaluations for each team:
-    // When mentors submitted, the system recorded dual entries (e.g. "Review 1 · Wed" & "Week 1 · Wed")
-    // for the same mentor on the same team. We deduplicate by (team_identifier, mentor_id) taking the latest.
+    // 2. Deduplicate mentor evaluations for each team:
+    // Deduplicate by (canonicalSquadId, mentorKey) taking latest submitted
     const dedupedMentorMap = new Map<string, MentorEvaluationEntry>();
 
     rawEvals.forEach(row => {
-      const teamKey = row.selection_id || row.team_code || norm(row.team_name) || row.team_id;
-      const mentorKey = row.mentor_id || row.mentor_name || 'unknown';
-      const uniqueKey = `${teamKey}:::${mentorKey}`;
+      const official = getOfficialSquadRecord(row.team_name || row.squad_id || row.team_code);
+      const canonicalKey = official ? official.squadId : (norm(row.team_name) || row.team_code || row.squad_id || row.selection_id || row.id);
+      const mentorKey = (row.mentor_name || row.mentor_id || 'unknown').toLowerCase().trim();
+      const uniqueKey = `${canonicalKey}:::${mentorKey}`;
 
       const entry: MentorEvaluationEntry = {
         id: row.id,
         mentorId: row.mentor_id || '',
         mentorName: row.mentor_name || 'Mentor',
         teamId: row.team_id || row.selection_id || '',
-        teamName: row.team_name || '',
-        teamCode: row.team_code || '',
-        squadId: row.squad_id || '',
+        teamName: official?.teamName || row.team_name || '',
+        teamCode: row.team_code || (official ? `HPL-${String(official.rank).padStart(3, '0')}` : ''),
+        squadId: official?.squadId || row.squad_id || '',
         mark1: Number(row.mark1) || 0,
         mark2: Number(row.mark2) || 0,
         mark3: Number(row.mark3) || 0,
@@ -235,36 +276,110 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
       }
     });
 
-    // 4. Group deduplicated mentor evaluations by team
-    const evalsByTeamKey = new Map<string, MentorEvaluationEntry[]>();
+    // 3. Multi-index evaluations by every possible identifier for guaranteed lookup
+    const evalsByLookupKey = new Map<string, MentorEvaluationEntry[]>();
 
-    dedupedMentorMap.forEach((entry, key) => {
-      const [teamKey] = key.split(':::');
-      if (!evalsByTeamKey.has(teamKey)) {
-        evalsByTeamKey.set(teamKey, []);
+    dedupedMentorMap.forEach(entry => {
+      const keysToRegister = new Set<string>();
+      if (entry.squadId) keysToRegister.add(entry.squadId.toUpperCase().trim());
+      if (entry.teamName) {
+        keysToRegister.add(norm(entry.teamName));
+        keysToRegister.add(entry.teamName.toLowerCase().trim());
       }
-      evalsByTeamKey.get(teamKey)!.push(entry);
+      if (entry.teamCode) keysToRegister.add(entry.teamCode.toUpperCase().trim());
+      if (entry.teamId) keysToRegister.add(entry.teamId);
+
+      const official = getOfficialSquadRecord(entry.teamName || entry.squadId);
+      if (official) {
+        keysToRegister.add(official.squadId.toUpperCase().trim());
+        keysToRegister.add(norm(official.teamName));
+        keysToRegister.add(`HPL-${String(official.rank).padStart(3, '0')}`);
+        keysToRegister.add(`HPL-${String(official.rank).padStart(2, '0')}`);
+      }
+
+      keysToRegister.forEach(k => {
+        if (!evalsByLookupKey.has(k)) {
+          evalsByLookupKey.set(k, []);
+        }
+        evalsByLookupKey.get(k)!.push(entry);
+      });
     });
 
-    // 5. Build final aggregated team evaluation list
+    // 4. Build final aggregated team evaluation list
     const aggregatedTeams: TeamAggregatedEvaluation[] = [];
     const processedTeamKeys = new Set<string>();
 
-    // Process from selections list first (ensures every team in the round is present)
-    selectionsList.forEach(sel => {
-      const rankNum = sel.rank || (sel.squad_id ? parseInt(sel.squad_id.replace(/\D/g, ''), 10) : 1);
+    // Build base roster from selectionsList, merged with OFFICIAL_QUALIFIED_TEAMS if needed
+    const allRosterTeams: Array<{
+      id?: string;
+      squad_id: string;
+      team_name: string;
+      ps_id?: string;
+      ps_title?: string;
+      ps_code?: string;
+      leader_name?: string;
+      leader_email?: string;
+      rank?: number;
+      total_marks?: number;
+      average_marks?: number;
+    }> = [...selectionsList];
+
+    // Ensure all 40 official teams exist even if not yet present in round2_ps_selections
+    OFFICIAL_QUALIFIED_TEAMS.slice(0, 40).forEach((t, idx) => {
+      const alreadyInList = allRosterTeams.some(r => 
+        r.squad_id === t.squadId || 
+        norm(r.team_name) === norm(t.teamName)
+      );
+      if (!alreadyInList) {
+        let psId = 'ps-01';
+        let psCode = 'PS 01';
+        let psTitle = 'AyurEssence';
+        if (idx >= 10 && idx < 20) {
+          psId = 'ps-02';
+          psCode = 'PS 02';
+          psTitle = 'SMARTBUS';
+        } else if (idx >= 20 && idx < 30) {
+          psId = 'ps-03';
+          psCode = 'PS 03';
+          psTitle = 'Sahayak';
+        } else if (idx >= 30) {
+          psId = 'ps-04';
+          psCode = 'PS 04';
+          psTitle = 'SWMS';
+        }
+
+        allRosterTeams.push({
+          id: `off-${t.squadId}`,
+          squad_id: t.squadId,
+          team_name: t.teamName,
+          leader_email: t.leaderEmail,
+          leader_name: 'Team Leader',
+          rank: t.rank,
+          ps_id: psId,
+          ps_code: psCode,
+          ps_title: psTitle
+        });
+      }
+    });
+
+    // Process all roster teams
+    allRosterTeams.forEach(sel => {
+      const official = getOfficialSquadRecord(sel.team_name || sel.squad_id);
+      const rankNum = sel.rank || official?.rank || (sel.squad_id ? parseInt(sel.squad_id.replace(/\D/g, ''), 10) : 1);
+      const squadId = official?.squadId || sel.squad_id || `HPL-R2-${String(rankNum).padStart(2, '0')}`;
+      const teamName = official?.teamName || sel.team_name || 'Team';
       const teamCode = `HPL-${String(rankNum).padStart(3, '0')}`;
 
-      // Find evaluations by selection_id, teamCode, or normalized team name
+      // Find evaluations by any lookup key
       const teamEvals = 
-        evalsByTeamKey.get(sel.id) ||
-        evalsByTeamKey.get(teamCode) ||
-        evalsByTeamKey.get(norm(sel.team_name)) ||
+        evalsByLookupKey.get(squadId.toUpperCase().trim()) ||
+        evalsByLookupKey.get(norm(teamName)) ||
+        evalsByLookupKey.get(teamCode) ||
+        (sel.id ? evalsByLookupKey.get(sel.id) : undefined) ||
         [];
 
-      processedTeamKeys.add(sel.id);
-      processedTeamKeys.add(teamCode);
-      processedTeamKeys.add(norm(sel.team_name));
+      processedTeamKeys.add(squadId.toUpperCase().trim());
+      processedTeamKeys.add(norm(teamName));
 
       // Calculate rubric totals across mentors
       const rubricTotals = { mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0 };
@@ -283,9 +398,7 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         }
       });
 
-      // Prefer calculated total from mentor evaluations; fallback to sel.total_marks if evaluations table had no rows
       const finalTotal = teamEvals.length > 0 ? calculatedTotalMarks : (Number(sel.total_marks) || 0);
-
       const mCount = teamEvals.length || 1;
       const rubricAverages = {
         mark1: parseFloat((rubricTotals.mark1 / mCount).toFixed(1)),
@@ -295,33 +408,40 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         mark5: parseFloat((rubricTotals.mark5 / mCount).toFixed(1)),
       };
 
-      // Check if DB row has average marks directly, otherwise calculate average across reviewing mentors
-      const dbAvg = Number(
-        (sel as any).average_marks ?? 
-        (sel as any).avg_marks ?? 
-        (sel as any).average_score ?? 
-        (sel as any).average ?? 
-        (sel as any).avg
-      );
       const calculatedAvg = teamEvals.length > 0
         ? parseFloat((calculatedTotalMarks / teamEvals.length).toFixed(1))
-        : (Number(sel.total_marks) || 0);
+        : (Number(sel.average_marks) || Number(sel.total_marks) || 0);
 
+      const dbAvg = Number((sel as any).average_marks ?? (sel as any).avg_marks);
       const averageMarks = (!isNaN(dbAvg) && dbAvg > 0) ? dbAvg : calculatedAvg;
 
-      const pubStatus = getPsPublishStatus(sel.ps_id || 'ps-01');
+      // PS mapping
+      let psId = sel.ps_id || 'ps-01';
+      let psCode = sel.ps_code || 'PS 01';
+      let psTitle = sel.ps_title || 'AyurEssence';
+      if (!sel.ps_id && rankNum) {
+        if (rankNum > 10 && rankNum <= 20) {
+          psId = 'ps-02'; psCode = 'PS 02'; psTitle = 'SMARTBUS';
+        } else if (rankNum > 20 && rankNum <= 30) {
+          psId = 'ps-03'; psCode = 'PS 03'; psTitle = 'Sahayak';
+        } else if (rankNum > 30) {
+          psId = 'ps-04'; psCode = 'PS 04'; psTitle = 'SWMS';
+        }
+      }
+
+      const pubStatus = getPsPublishStatus(psId);
 
       aggregatedTeams.push({
-        id: sel.id,
-        squadId: sel.squad_id || `HPL-R2-${String(rankNum).padStart(2, '0')}`,
-        teamName: sel.team_name || 'Team',
-        teamCode: teamCode,
-        selectionId: sel.id,
-        psId: sel.ps_id || 'ps-01',
-        psTitle: sel.ps_title || 'AyurEssence',
-        psCode: sel.ps_code || 'PS 01',
+        id: sel.id || squadId,
+        squadId,
+        teamName,
+        teamCode,
+        selectionId: sel.id || squadId,
+        psId,
+        psTitle,
+        psCode,
         leaderName: sel.leader_name || 'Leader',
-        leaderEmail: sel.leader_email || '',
+        leaderEmail: sel.leader_email || official?.leaderEmail || '',
         rank: rankNum,
         mentorEvaluations: teamEvals,
         evaluationsCount: teamEvals.length,
@@ -333,60 +453,6 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         feedbacks,
         isPublished: pubStatus.isPublished,
         publishedAt: pubStatus.publishedAt,
-      });
-    });
-
-    // Also include any evaluations in round2_evaluations that weren't in round2_ps_selections
-    evalsByTeamKey.forEach((teamEvals, teamKey) => {
-      if (processedTeamKeys.has(teamKey)) return;
-
-      const first = teamEvals[0];
-      const rubricTotals = { mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0 };
-      const feedbacks: Array<{ mentorName: string; text: string }> = [];
-      let totalMarks = 0;
-
-      teamEvals.forEach(me => {
-        rubricTotals.mark1 += me.mark1;
-        rubricTotals.mark2 += me.mark2;
-        rubricTotals.mark3 += me.mark3;
-        rubricTotals.mark4 += me.mark4;
-        rubricTotals.mark5 += me.mark5;
-        totalMarks += me.total;
-        if (me.feedback) {
-          feedbacks.push({ mentorName: me.mentorName, text: me.feedback });
-        }
-      });
-
-      const mCount = teamEvals.length || 1;
-      const rubricAverages = {
-        mark1: parseFloat((rubricTotals.mark1 / mCount).toFixed(1)),
-        mark2: parseFloat((rubricTotals.mark2 / mCount).toFixed(1)),
-        mark3: parseFloat((rubricTotals.mark3 / mCount).toFixed(1)),
-        mark4: parseFloat((rubricTotals.mark4 / mCount).toFixed(1)),
-        mark5: parseFloat((rubricTotals.mark5 / mCount).toFixed(1)),
-      };
-
-      aggregatedTeams.push({
-        id: first.id,
-        squadId: first.squadId || (first.teamName ? `HPL-${first.teamName.toUpperCase().replace(/\s+/g, '').slice(0, 4)}` : 'HPL-TEAM'),
-        teamName: first.teamName || 'Team',
-        teamCode: first.teamCode || first.evaluation || 'HPL-000',
-        selectionId: first.teamId || first.id,
-        psId: 'ps-01',
-        psTitle: 'AyurEssence',
-        psCode: 'PS 01',
-        leaderName: 'Team Leader',
-        leaderEmail: '',
-        rank: 99,
-        mentorEvaluations: teamEvals,
-        evaluationsCount: teamEvals.length,
-        totalMarks,
-        averageMarks: teamEvals.length > 0 ? parseFloat((totalMarks / teamEvals.length).toFixed(1)) : totalMarks,
-        maxPossibleMarks: 150,
-        rubricTotals,
-        rubricAverages,
-        feedbacks,
-        isPublished: false,
       });
     });
 
@@ -412,9 +478,10 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
  * Publish a specific Problem Statement's marks to the public Leaderboard.
  * Syncs to:
  * 1. Supabase `evaluations` table (week1 records read by LeaderboardPage)
- * 2. Supabase `round2_ps_selections` table (total_marks & total_score)
- * 3. LocalStorage cache for immediate UI sync and offline persistence
- * 4. Broadcasts custom event for multi-tab real-time sync
+ * 2. Supabase `round2_evaluations` table (marks status as 'published')
+ * 3. Supabase `round2_ps_selections` table (total_marks & average_marks)
+ * 4. LocalStorage cache for immediate UI sync and offline persistence
+ * 5. Broadcasts custom event for multi-tab real-time sync
  */
 export async function publishPsMarksToLeaderboard(
   psId: string,
@@ -433,13 +500,14 @@ export async function publishPsMarksToLeaderboard(
 
     const now = new Date().toISOString();
 
-    // 1. Prepare evaluations table payload with average marks as requested
+    // 1. Prepare evaluations table payload with official squad IDs and average marks
     const evalPayloads = teamsToPublish.map(t => {
-      // Concatenate mentor feedback comments for this team
+      const official = getOfficialSquadRecord(t.teamName || t.squadId);
+      const squadId = official?.squadId || t.squadId;
       const combinedFeedback = t.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
       return {
-        squad_id: t.squadId,
-        team_name: t.teamName,
+        squad_id: squadId,
+        team_name: official?.teamName || t.teamName,
         ps_id: t.psId,
         week: 'week1',
         marks: t.averageMarks, // Publish average marks (e.g. 41.3)
@@ -449,63 +517,154 @@ export async function publishPsMarksToLeaderboard(
       };
     });
 
-    // 2. Upsert to `evaluations` table
-    const { error: evalUpsertError } = await supabase
-      .from('evaluations')
-      .upsert(evalPayloads, { onConflict: 'squad_id,week' });
-
-    if (evalUpsertError) {
-      console.warn('[HPL] Notice on evaluations upsert:', evalUpsertError.message);
+    // 2. Safe save to `evaluations` table:
+    // First, clear old records for these teams to avoid unique constraint or conflict issues
+    try {
+      const squadIds = evalPayloads.map(p => p.squad_id).filter(Boolean);
+      if (squadIds.length > 0) {
+        await supabase
+          .from('evaluations')
+          .delete()
+          .eq('week', 'week1')
+          .in('squad_id', squadIds);
+      }
+      const teamNames = evalPayloads.map(p => p.team_name).filter(Boolean);
+      if (teamNames.length > 0) {
+        await supabase
+          .from('evaluations')
+          .delete()
+          .eq('week', 'week1')
+          .in('team_name', teamNames);
+      }
+    } catch (delErr) {
+      console.warn('[HPL] Notice clearing prior evaluations:', delErr);
     }
 
-    // 3. Update `round2_ps_selections` table for each team
+    // Direct insert to `evaluations`
+    const { error: evalInsertError } = await supabase
+      .from('evaluations')
+      .insert(evalPayloads);
+
+    if (evalInsertError) {
+      console.warn('[HPL] Direct evaluations insert note, trying upsert:', evalInsertError.message);
+      for (const p of evalPayloads) {
+        try {
+          await supabase.from('evaluations').upsert(p);
+        } catch {}
+      }
+    }
+
+    // Insert database-level publication marker row so all clients worldwide know this PS is published
+    try {
+      const markerPsList = psId === 'all' ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'] : [psId];
+      for (const mId of markerPsList) {
+        await supabase.from('evaluations').upsert({
+          squad_id: `__PUBLISHED_${mId}__`,
+          team_name: `PUBLISHED_${mId}`,
+          ps_id: mId,
+          week: 'week1',
+          marks: 1,
+          feedback: `PUBLISHED_BY_${adminEmail}`,
+          graded_by: adminEmail,
+          updated_at: now
+        });
+      }
+    } catch (markerErr) {
+      console.warn('[HPL] Notice on publish marker upsert:', markerErr);
+    }
+
+    // 3. Mark evaluations as 'published' in `round2_evaluations`
     for (const t of teamsToPublish) {
       try {
-        await supabase
-          .from('round2_ps_selections')
-          .update({
-            total_marks: t.averageMarks,
-            average_marks: t.averageMarks,
-            total_score: t.totalMarks
-          })
-          .eq('squad_id', t.squadId);
+        if (t.teamName) {
+          await supabase
+            .from('round2_evaluations')
+            .update({ status: 'published' })
+            .ilike('team_name', t.teamName);
+        }
+        if (t.squadId) {
+          await supabase
+            .from('round2_evaluations')
+            .update({ status: 'published' })
+            .eq('squad_id', t.squadId);
+        }
+      } catch (e) {
+        console.warn(`Could not update round2_evaluations status for ${t.teamName}:`, e);
+      }
+    }
+
+    // 4. Update `round2_ps_selections` table for each team
+    for (const t of teamsToPublish) {
+      try {
+        if (t.id && !t.id.startsWith('off-')) {
+          await supabase
+            .from('round2_ps_selections')
+            .update({
+              total_marks: t.averageMarks,
+              average_marks: t.averageMarks,
+              total_score: t.totalMarks
+            })
+            .eq('id', t.id);
+        }
+        if (t.squadId) {
+          await supabase
+            .from('round2_ps_selections')
+            .update({
+              total_marks: t.averageMarks,
+              average_marks: t.averageMarks,
+              total_score: t.totalMarks
+            })
+            .eq('squad_id', t.squadId);
+        }
+        if (t.teamName) {
+          await supabase
+            .from('round2_ps_selections')
+            .update({
+              total_marks: t.averageMarks,
+              average_marks: t.averageMarks,
+              total_score: t.totalMarks
+            })
+            .ilike('team_name', t.teamName);
+        }
       } catch (e) {
         console.warn(`Could not update round2_ps_selections for ${t.squadId}:`, e);
       }
     }
 
-    // 4. Update localStorage evaluations cache for immediate zero-latency Leaderboard sync
+    // 5. Update localStorage evaluations cache for immediate zero-latency Leaderboard sync
     try {
       const cacheKey = 'hpl_evaluations_cache_week1';
       const existingRaw = localStorage.getItem(cacheKey);
       const cacheMap = existingRaw ? JSON.parse(existingRaw) : {};
       evalPayloads.forEach(p => {
-        cacheMap[p.squad_id] = {
-          ...p,
-          created_at: now,
-          updated_at: now
-        };
+        const item = { ...p, created_at: now, updated_at: now };
+        cacheMap[p.squad_id] = item;
+        cacheMap[p.squad_id.toLowerCase()] = item;
+        cacheMap[p.team_name] = item;
+        cacheMap[norm(p.team_name)] = item;
       });
       localStorage.setItem(cacheKey, JSON.stringify(cacheMap));
     } catch (e) {
       console.warn('Could not update localStorage cache:', e);
     }
 
-    // 5. Mark PS as published
+    // 6. Mark PS as published in-memory and in localStorage
     if (psId === 'all') {
       ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => setPsPublishStatus(id, true));
     } else {
       setPsPublishStatus(psId, true);
     }
 
-    // 6. Broadcast events for real-time reactivity across all browser tabs
+    // 7. Broadcast events for real-time reactivity across all browser tabs
     window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: 'week1', psId } }));
     window.dispatchEvent(new Event('hpl-selection-update'));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'hpl_evaluations_cache_week1' }));
 
-    console.log(`[HPL] ✅ Published ${teamsToPublish.length} teams for ${psId} to Leaderboard!`);
+    console.log(`[HPL] ✅ Successfully published ${teamsToPublish.length} teams for ${psId} to Leaderboard!`);
     return { success: true, publishedCount: teamsToPublish.length };
   } catch (err: any) {
     console.error('[HPL] publishPsMarksToLeaderboard exception:', err);
     return { success: false, publishedCount: 0, error: err?.message || 'Server error publishing marks.' };
   }
 }
+

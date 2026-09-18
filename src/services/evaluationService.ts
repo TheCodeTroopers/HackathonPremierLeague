@@ -60,7 +60,7 @@ export async function fetchEvaluationsByWeek(week: string = 'week1'): Promise<Re
       const map: Record<string, TeamEvaluationRecord> = { ...cached };
       for (const row of data) {
         if (row.squad_id) {
-          map[row.squad_id] = {
+          const rec: TeamEvaluationRecord = {
             id: row.id,
             squad_id: row.squad_id,
             team_name: row.team_name,
@@ -72,6 +72,15 @@ export async function fetchEvaluationsByWeek(week: string = 'week1'): Promise<Re
             created_at: row.created_at,
             updated_at: row.updated_at
           };
+          map[row.squad_id] = rec;
+          map[row.squad_id.toLowerCase()] = rec;
+          map[row.squad_id.toUpperCase()] = rec;
+          if (row.team_name) {
+            map[row.team_name] = rec;
+            map[row.team_name.toLowerCase().trim()] = rec;
+            const norm = row.team_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (norm) map[norm] = rec;
+          }
         }
       }
       setCachedEvaluations(week, map);

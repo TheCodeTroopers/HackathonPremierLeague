@@ -85,7 +85,7 @@ export async function fetchRound2PsSelectionsFromDB(): Promise<Round2PsSelection
   try {
     const { data, error } = await supabase
       .from('round2_ps_selections')
-      .select('squad_id, team_name, leader_email, ps_id, ps_title, ps_code, locked_at, rank')
+      .select('*')
       .order('locked_at', { ascending: true });
     if (error) {
       console.error('[HPL] fetch round2_ps_selections error:', error.message);
