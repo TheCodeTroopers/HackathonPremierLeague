@@ -105,16 +105,15 @@ export interface TeamAggregatedEvaluation {
 
 export type Round2ReviewRound = 'review1' | 'review2';
 
-export function isReview1(evalStr?: string): boolean {
-  if (!evalStr) return true;
-  const clean = evalStr.toLowerCase();
-  return clean.includes('wed') || clean.includes('review 1') || clean.includes('review1');
-}
-
 export function isReview2(evalStr?: string): boolean {
   if (!evalStr) return false;
   const clean = evalStr.toLowerCase();
-  return clean.includes('sat') || clean.includes('review 2') || clean.includes('review2');
+  return clean.includes('sat') || clean.includes('review 2') || clean.includes('review2') || clean.includes('r2');
+}
+
+export function isReview1(evalStr?: string): boolean {
+  if (!evalStr) return true;
+  return !isReview2(evalStr);
 }
 
 const PUBLISHED_KEY_PREFIX = 'hpl_published_ps_';
@@ -136,9 +135,15 @@ export function markPsPublishedInMemory(psId: string, reviewType: Round2ReviewRo
 
 /**
  * Check if a Problem Statement's marks have been published to the leaderboard.
- * Checks both in-memory synced DB cache and localStorage per review round.
+ * Review 1 (Wednesday) is permanently published and live.
+ * Review 2 (Saturday) is pending admin publication.
  */
 export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound = 'review1'): { isPublished: boolean; publishedAt?: string } {
+  // Review 1 (Wednesday sprint) is officially published and live
+  if (reviewType === 'review1') {
+    return { isPublished: true, publishedAt: '2026-09-17T00:00:00.000Z' };
+  }
+
   if (psId === 'all') {
     const allPublished = ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id, reviewType).isPublished);
     return { isPublished: allPublished };
@@ -149,11 +154,6 @@ export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound =
     return { isPublished: true, publishedAt: new Date().toISOString() };
   }
 
-  // Legacy fallback for review1 if published prior to review distinction
-  if (reviewType === 'review1' && dbPublishedPsSet.has(psId)) {
-    return { isPublished: true, publishedAt: new Date().toISOString() };
-  }
-
   try {
     const rawKey = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${key}`);
     if (rawKey) {
@@ -161,17 +161,6 @@ export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound =
       if (parsed.isPublished) {
         dbPublishedPsSet.add(key);
         return { isPublished: true, publishedAt: parsed.publishedAt };
-      }
-    }
-
-    if (reviewType === 'review1') {
-      const rawLegacy = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
-      if (rawLegacy) {
-        const parsed = JSON.parse(rawLegacy);
-        if (parsed.isPublished) {
-          dbPublishedPsSet.add(key);
-          return { isPublished: true, publishedAt: parsed.publishedAt };
-        }
       }
     }
 
@@ -262,6 +251,17 @@ export async function fetchRound2AggregatedEvaluations(
       if (!r || !r.id) return false;
       if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) return false;
       return reviewType === 'review2' ? isReview2(r.evaluation) : isReview1(r.evaluation);
+    });
+
+    // 1.5. Detect persistent published sentinel rows across all devices
+    rawEvals.forEach((r: any) => {
+      if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) {
+        const keyPart = r.team_name.replace('__PUBLISHED_', '');
+        const parts = keyPart.split('_');
+        const pubPsId = parts[0];
+        const pubReview = (parts[1] as Round2ReviewRound) || 'review1';
+        markPsPublishedInMemory(pubPsId, pubReview);
+      }
     });
 
     // Check if any round2_evaluations row for this review has status === 'published'
@@ -486,9 +486,7 @@ export async function fetchRound2AggregatedEvaluations(
       }
 
       const pubStatus = getPsPublishStatus(psId, reviewType);
-      const isReviewPublished = reviewType === 'review2'
-        ? pubStatus.isPublished
-        : (pubStatus.isPublished || getPsPublishStatus(psId).isPublished);
+      const isReviewPublished = reviewType === 'review1' ? true : pubStatus.isPublished;
 
       aggregatedTeams.push({
         id: sel.id || squadId,
@@ -579,6 +577,21 @@ export async function publishPsMarksToLeaderboard(
       } catch (e) {
         console.warn(`[HPL] Notice updating round2_evaluations status for ${t.teamName}:`, e);
       }
+    }
+
+    // 1.5. Insert persistent sentinel row in Supabase so publication state persists globally
+    try {
+      const psListToMark = psId === 'all' ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'] : [psId];
+      for (const pid of psListToMark) {
+        await supabase.from('round2_evaluations').insert({
+          team_name: `__PUBLISHED_${pid}_${reviewType}`,
+          mentor_name: adminEmail,
+          evaluation: reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
+          status: 'published'
+        });
+      }
+    } catch (e) {
+      console.warn('[HPL] Notice writing published sentinel to Supabase:', e);
     }
 
     // 2. Mark PS as published in-memory and in localStorage for this reviewType

@@ -254,10 +254,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Only show marks and graded status if officially published by admin!
-        const isGraded = team.isPublished && team.evaluationsCount > 0 && (team.averageMarks || 0) > 0;
+        // Review 1 (Wednesday) is permanently published and live!
+        // Review 2 (Saturday) is pending admin publication.
+        const isPublished = selectedReview === 'review1' ? true : team.isPublished;
+        const isGraded = isPublished && team.evaluationsCount > 0 && (team.averageMarks || 0) > 0;
         const marks = isGraded ? (team.averageMarks || 0) : 0;
-        const feedback = team.isPublished ? team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n') : '';
+        const feedback = isPublished ? team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n') : '';
 
         const rawName = team.teamName || '';
         const teamName = (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mindmatrix' || team.squadId === 'HPL-R2-27') ? 'mindmesh' : rawName;
