@@ -103,17 +103,32 @@ export interface TeamAggregatedEvaluation {
   publishedAt?: string;
 }
 
+export type Round2ReviewRound = 'review1' | 'review2';
+
+export function isReview1(evalStr?: string): boolean {
+  if (!evalStr) return true;
+  const clean = evalStr.toLowerCase();
+  return clean.includes('wed') || clean.includes('review 1') || clean.includes('review1');
+}
+
+export function isReview2(evalStr?: string): boolean {
+  if (!evalStr) return false;
+  const clean = evalStr.toLowerCase();
+  return clean.includes('sat') || clean.includes('review 2') || clean.includes('review2');
+}
+
 const PUBLISHED_KEY_PREFIX = 'hpl_published_ps_';
 
 // Global in-memory set of published Problem Statement IDs (synced with Supabase)
 const dbPublishedPsSet = new Set<string>();
 
-export function markPsPublishedInMemory(psId: string) {
+export function markPsPublishedInMemory(psId: string, reviewType: Round2ReviewRound = 'review1') {
   if (!psId) return;
-  dbPublishedPsSet.add(psId);
+  const key = `${psId}_${reviewType}`;
+  dbPublishedPsSet.add(key);
   try {
     localStorage.setItem(
-      `${PUBLISHED_KEY_PREFIX}${psId}`,
+      `${PUBLISHED_KEY_PREFIX}${key}`,
       JSON.stringify({ isPublished: true, publishedAt: new Date().toISOString() })
     );
   } catch {}
@@ -121,26 +136,46 @@ export function markPsPublishedInMemory(psId: string) {
 
 /**
  * Check if a Problem Statement's marks have been published to the leaderboard.
- * Checks both in-memory synced DB cache and localStorage.
+ * Checks both in-memory synced DB cache and localStorage per review round.
  */
-export function getPsPublishStatus(psId: string): { isPublished: boolean; publishedAt?: string } {
+export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound = 'review1'): { isPublished: boolean; publishedAt?: string } {
   if (psId === 'all') {
-    const allPublished = ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id).isPublished);
+    const allPublished = ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id, reviewType).isPublished);
     return { isPublished: allPublished };
   }
 
-  if (dbPublishedPsSet.has(psId)) {
+  const key = `${psId}_${reviewType}`;
+  if (dbPublishedPsSet.has(key)) {
+    return { isPublished: true, publishedAt: new Date().toISOString() };
+  }
+
+  // Legacy fallback for review1 if published prior to review distinction
+  if (reviewType === 'review1' && dbPublishedPsSet.has(psId)) {
     return { isPublished: true, publishedAt: new Date().toISOString() };
   }
 
   try {
-    const raw = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
-    if (!raw) return { isPublished: false };
-    const parsed = JSON.parse(raw);
-    if (parsed.isPublished) {
-      dbPublishedPsSet.add(psId);
+    const rawKey = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${key}`);
+    if (rawKey) {
+      const parsed = JSON.parse(rawKey);
+      if (parsed.isPublished) {
+        dbPublishedPsSet.add(key);
+        return { isPublished: true, publishedAt: parsed.publishedAt };
+      }
     }
-    return { isPublished: true, publishedAt: parsed.publishedAt };
+
+    if (reviewType === 'review1') {
+      const rawLegacy = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
+      if (rawLegacy) {
+        const parsed = JSON.parse(rawLegacy);
+        if (parsed.isPublished) {
+          dbPublishedPsSet.add(key);
+          return { isPublished: true, publishedAt: parsed.publishedAt };
+        }
+      }
+    }
+
+    return { isPublished: false };
   } catch {
     return { isPublished: false };
   }
@@ -149,17 +184,18 @@ export function getPsPublishStatus(psId: string): { isPublished: boolean; publis
 /**
  * Record publication status in localStorage and in-memory cache.
  */
-export function setPsPublishStatus(psId: string, isPublished: boolean) {
+export function setPsPublishStatus(psId: string, isPublished: boolean, reviewType: Round2ReviewRound = 'review1') {
   try {
+    const key = `${psId}_${reviewType}`;
     if (isPublished) {
-      dbPublishedPsSet.add(psId);
+      dbPublishedPsSet.add(key);
       localStorage.setItem(
-        `${PUBLISHED_KEY_PREFIX}${psId}`,
+        `${PUBLISHED_KEY_PREFIX}${key}`,
         JSON.stringify({ isPublished: true, publishedAt: new Date().toISOString() })
       );
     } else {
-      dbPublishedPsSet.delete(psId);
-      localStorage.removeItem(`${PUBLISHED_KEY_PREFIX}${psId}`);
+      dbPublishedPsSet.delete(key);
+      localStorage.removeItem(`${PUBLISHED_KEY_PREFIX}${key}`);
     }
   } catch (e) {
     console.warn('Could not save publish status:', e);
@@ -201,10 +237,12 @@ export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
 }
 
 /**
- * Fetch all evaluation rows from `round2_evaluations` and join with `round2_ps_selections`.
- * Groups multiple mentor evaluations per team, sums rubric marks, and aggregates total out of 150.
+ * Fetch evaluation rows from `round2_evaluations` filtered specifically for Review 1 (Wed) or Review 2 (Sat).
+ * Groups mentor evaluations per team for that review round, and computes average marks out of 50.
  */
-export async function fetchRound2AggregatedEvaluations(): Promise<{
+export async function fetchRound2AggregatedEvaluations(
+  reviewType: Round2ReviewRound = 'review1'
+): Promise<{
   teams: TeamAggregatedEvaluation[];
   rubrics: RubricDefinition[];
   totalEvaluations: number;
@@ -219,22 +257,17 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
     const selectionsList = psRes.data || [];
     const rawEvals = evalRes.data || [];
 
-    // Filter out marker rows from being processed as actual team reviews
-    const markerRows = rawEvals.filter((r: any) => r.team_name && r.team_name.startsWith('__PUBLISHED_'));
-    const actualEvals = rawEvals.filter((r: any) => !r.team_name || !r.team_name.startsWith('__PUBLISHED_'));
-
-    // Check publication markers
-    markerRows.forEach((row: any) => {
-      const match = row.team_name.match(/__PUBLISHED_(ps-\d{2}|all)__/);
-      if (match && match[1]) {
-        markPsPublishedInMemory(match[1]);
-      }
+    // Filter to ONLY reviews matching the selected review round (Wed Review 1 vs Sat Review 2)
+    const actualEvals = rawEvals.filter((r: any) => {
+      if (!r || !r.id) return false;
+      if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) return false;
+      return reviewType === 'review2' ? isReview2(r.evaluation) : isReview1(r.evaluation);
     });
 
-    // Also check if any round2_evaluations row has status === 'published'
+    // Check if any round2_evaluations row for this review has status === 'published'
     actualEvals.forEach((row: any) => {
       if (row.status === 'published') {
-        const off = getOfficialSquadRecord(row.team_name || row.squad_id);
+        const off = getOfficialSquadRecord(row.squad_id, row.team_name);
         const sel = selectionsList.find(s => 
           (row.selection_id && s.id === row.selection_id) ||
           (s.team_name && norm(s.team_name) === norm(row.team_name)) ||
@@ -242,20 +275,19 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         );
         const psId = sel?.ps_id || (off ? (off.rank <= 10 ? 'ps-01' : off.rank <= 20 ? 'ps-02' : off.rank <= 30 ? 'ps-03' : 'ps-04') : undefined);
         if (psId) {
-          markPsPublishedInMemory(psId);
+          markPsPublishedInMemory(psId, reviewType);
         }
       }
     });
 
-    // 2. Deduplicate mentor evaluations for each team:
-    // Deduplicate by (canonicalSquadId, mentorKey) taking latest submitted
+    // 2. Deduplicate mentor evaluations for each team for this specific review
     const dedupedMentorMap = new Map<string, MentorEvaluationEntry>();
 
     actualEvals.forEach(row => {
       const official = getOfficialSquadRecord(row.squad_id, row.team_name, row.team_code);
       const canonicalKey = official ? official.squadId : (norm(row.team_name) || row.team_code || row.squad_id || row.selection_id || row.id);
       const mentorKey = (row.mentor_name || row.mentor_id || 'unknown').toLowerCase().trim();
-      const uniqueKey = `${canonicalKey}:::${mentorKey}`;
+      const uniqueKey = `${canonicalKey}:::${mentorKey}:::${reviewType}`;
       const canonicalTeamName = official?.teamName || (norm(row.team_name) === 'mindmatrix' ? 'mindmesh' : (row.team_name || ''));
 
       const entry: MentorEvaluationEntry = {
@@ -420,7 +452,9 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         }
       });
 
-      const finalTotal = teamEvals.length > 0 ? calculatedTotalMarks : (Number(sel.total_marks) || 0);
+      const finalTotal = teamEvals.length > 0
+        ? calculatedTotalMarks
+        : (reviewType === 'review1' ? (Number(sel.total_marks) || 0) : 0);
       const mCount = teamEvals.length || 1;
       const rubricAverages = {
         mark1: parseFloat((rubricTotals.mark1 / mCount).toFixed(1)),
@@ -432,9 +466,9 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
 
       const calculatedAvg = teamEvals.length > 0
         ? parseFloat((calculatedTotalMarks / teamEvals.length).toFixed(1))
-        : (Number(sel.average_marks) || Number(sel.total_marks) || 0);
+        : (reviewType === 'review1' ? (Number(sel.average_marks) || Number(sel.total_marks) || 0) : 0);
 
-      const dbAvg = Number((sel as any).average_marks ?? (sel as any).avg_marks);
+      const dbAvg = reviewType === 'review1' ? Number((sel as any).average_marks ?? (sel as any).avg_marks) : NaN;
       const averageMarks = (!isNaN(dbAvg) && dbAvg > 0) ? dbAvg : calculatedAvg;
 
       // PS mapping
@@ -451,7 +485,10 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         }
       }
 
-      const pubStatus = getPsPublishStatus(psId);
+      const pubStatus = getPsPublishStatus(psId, reviewType);
+      const isReviewPublished = reviewType === 'review2'
+        ? pubStatus.isPublished
+        : (pubStatus.isPublished || getPsPublishStatus(psId).isPublished);
 
       aggregatedTeams.push({
         id: sel.id || squadId,
@@ -473,7 +510,7 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
         rubricTotals,
         rubricAverages,
         feedbacks,
-        isPublished: pubStatus.isPublished,
+        isPublished: isReviewPublished,
         publishedAt: pubStatus.publishedAt,
       });
     });
@@ -508,7 +545,8 @@ export async function fetchRound2AggregatedEvaluations(): Promise<{
 export async function publishPsMarksToLeaderboard(
   psId: string,
   teams: TeamAggregatedEvaluation[],
-  adminEmail: string = 'admin@hpl'
+  adminEmail: string = 'admin@hpl',
+  reviewType: Round2ReviewRound = 'review1'
 ): Promise<{ success: boolean; publishedCount: number; error?: string }> {
   try {
     // Filter teams belonging to this PS (or all if psId === 'all')
@@ -520,42 +558,42 @@ export async function publishPsMarksToLeaderboard(
       return { success: false, publishedCount: 0, error: 'No teams found to publish for this Problem Statement.' };
     }
 
-    const now = new Date().toISOString();
-
-    // 1. Mark evaluations as 'published' in `round2_evaluations` table
+    // 1. Mark evaluations as 'published' in `round2_evaluations` table for the specific review round
+    const evalPattern = reviewType === 'review2' ? '%Sat%' : '%Wed%';
     for (const t of teamsToPublish) {
       try {
         if (t.teamName) {
           await supabase
             .from('round2_evaluations')
             .update({ status: 'published' })
-            .ilike('team_name', t.teamName);
+            .ilike('team_name', t.teamName)
+            .ilike('evaluation', evalPattern);
         }
         if (t.squadId) {
           await supabase
             .from('round2_evaluations')
             .update({ status: 'published' })
-            .eq('squad_id', t.squadId);
+            .eq('squad_id', t.squadId)
+            .ilike('evaluation', evalPattern);
         }
       } catch (e) {
         console.warn(`[HPL] Notice updating round2_evaluations status for ${t.teamName}:`, e);
       }
     }
 
-
-    // 3. Mark PS as published in-memory and in localStorage
+    // 2. Mark PS as published in-memory and in localStorage for this reviewType
     if (psId === 'all') {
-      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => setPsPublishStatus(id, true));
+      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => setPsPublishStatus(id, true, reviewType));
     } else {
-      setPsPublishStatus(psId, true);
+      setPsPublishStatus(psId, true, reviewType);
     }
 
-    // 4. Broadcast events for real-time reactivity across all browser tabs
-    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: 'week1', psId } }));
+    // 3. Broadcast events for real-time reactivity across all browser tabs
+    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: 'week1', psId, reviewType } }));
     window.dispatchEvent(new Event('hpl-selection-update'));
-    window.dispatchEvent(new StorageEvent('storage', { key: `${PUBLISHED_KEY_PREFIX}${psId}` }));
+    window.dispatchEvent(new StorageEvent('storage', { key: `${PUBLISHED_KEY_PREFIX}${psId}_${reviewType}` }));
 
-    console.log(`[HPL] ✅ Successfully published ${teamsToPublish.length} teams for ${psId} to Leaderboard!`);
+    console.log(`[HPL] ✅ Successfully published ${teamsToPublish.length} teams for ${psId} (${reviewType}) to Leaderboard!`);
     return { success: true, publishedCount: teamsToPublish.length };
   } catch (err: any) {
     console.error('[HPL] publishPsMarksToLeaderboard exception:', err);

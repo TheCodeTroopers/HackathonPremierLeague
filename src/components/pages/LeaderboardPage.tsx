@@ -26,7 +26,8 @@ import {
   Zap,
   Info,
   X,
-  PartyPopper
+  PartyPopper,
+  Calendar
 } from 'lucide-react';
 import { ROUND2_PROBLEM_STATEMENTS } from './ProblemStatementsPage';
 import { StageConfettiBlaster, playPartyBlasterSound } from '../common/StageConfettiBlaster';
@@ -49,6 +50,7 @@ import {
 import {
   fetchRound2AggregatedEvaluations,
   TeamAggregatedEvaluation,
+  Round2ReviewRound,
   getPsPublishStatus,
   norm
 } from '../../services/round2EvaluationService';
@@ -157,6 +159,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   // Tabs: 'week1' (active), 'week2' (coming soon), 'week3' (coming soon), 'overall'
   const [activeTab, setActiveTab] = useState<'week1' | 'week2' | 'playoffs' | 'overall'>('week1');
   
+  // Review Round Checkpoint: 'review1' (Wednesday) vs 'review2' (Saturday)
+  const [selectedReview, setSelectedReview] = useState<Round2ReviewRound>('review1');
+
   // PS Filter: 'ps-01', 'ps-02', 'ps-03', 'ps-04' (defaults to PS 01)
   const [selectedPsFilter, setSelectedPsFilter] = useState<string>('ps-01');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -190,13 +195,14 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   const containerRef = useRef<HTMLDivElement>(null);
   const underlineRef = useRef<SVGPathElement>(null);
 
-  // Load Problem Statement selections and evaluations from backend
-  const loadLeaderboardData = useCallback(async (manual = false) => {
+  // Load Problem Statement selections and evaluations from backend for current review round
+  const loadLeaderboardData = useCallback(async (manual = false, reviewOverride?: Round2ReviewRound) => {
     if (manual) setIsRefreshing(true);
+    const targetReview = reviewOverride || selectedReview;
     try {
       const [dbRows, aggRes] = await Promise.all([
         fetchRound2PsSelectionsFromDB(),
-        fetchRound2AggregatedEvaluations()
+        fetchRound2AggregatedEvaluations(targetReview)
       ]);
       setRound2DbRows(dbRows);
       setRound2AggTeams(aggRes.teams || []);
@@ -207,7 +213,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [selectedReview]);
+
+  // Reload data whenever selectedReview changes
+  useEffect(() => {
+    loadLeaderboardData(false, selectedReview);
+  }, [selectedReview]);
 
   // Initial load and Realtime Subscriptions
   useEffect(() => {
@@ -243,9 +254,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        const marks = team.averageMarks || 0;
-        const isGraded = team.evaluationsCount > 0 && marks > 0;
-        const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
+        // Only show marks and graded status if officially published by admin!
+        const isGraded = team.isPublished && team.evaluationsCount > 0 && (team.averageMarks || 0) > 0;
+        const marks = isGraded ? (team.averageMarks || 0) : 0;
+        const feedback = team.isPublished ? team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n') : '';
 
         const rawName = team.teamName || '';
         const teamName = (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mindmatrix' || team.squadId === 'HPL-R2-27') ? 'mindmesh' : rawName;
@@ -614,16 +626,61 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
 
         </div>
 
-        {/* ── 2. PROBLEM STATEMENT (4 PS) FILTER BAR ── */}
-        <div className="bg-[#EDE8DC] rounded-2xl p-3 sm:p-4 border border-[#1E1B4B]/15 shadow-2xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-[#1E1B4B]">
-              <Filter className="w-4 h-4 text-[#582A9C]" />
-              <span>Filter By Problem Statement:</span>
+        {/* ── 2. PROBLEM STATEMENT (4 PS) & REVIEW FILTER BAR ── */}
+        <div className="bg-[#EDE8DC] rounded-2xl p-3 sm:p-4 border border-[#1E1B4B]/15 shadow-2xs space-y-3.5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            
+            {/* Left: Review Round Checkpoint Dropdown Menu & Quick Switcher */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold uppercase text-[#1E1B4B]">
+                <Calendar className="w-4 h-4 text-[#EA580C]" />
+                <span>Evaluation Review:</span>
+              </div>
+
+              {/* Dropdown Menu */}
+              <div className="relative inline-block">
+                <select
+                  value={selectedReview}
+                  onChange={(e) => setSelectedReview(e.target.value as Round2ReviewRound)}
+                  className="appearance-none bg-[#F6F3EB] border-2 border-[#582A9C] text-[#3B1A6B] font-mono text-xs font-black py-1.5 pl-3 pr-8 rounded-xl cursor-pointer shadow-2xs hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#582A9C]"
+                >
+                  <option value="review1">Review 1 · Wednesday (Published)</option>
+                  <option value="review2">Review 2 · Saturday (Pending)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+
+              {/* Quick Pills */}
+              <div className="hidden sm:inline-flex p-0.5 bg-[#E4DDD0] rounded-xl border border-[#1E1B4B]/10">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReview('review1')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedReview === 'review1'
+                      ? 'bg-[#3B1A6B] text-white shadow-2xs'
+                      : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+                  }`}
+                >
+                  <span>Review 1</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500 text-white font-bold">PUB</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedReview('review2')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedReview === 'review2'
+                      ? 'bg-[#3B1A6B] text-white shadow-2xs'
+                      : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+                  }`}
+                >
+                  <span>Review 2</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-950 border border-amber-500/40 font-bold">PENDING</span>
+                </button>
+              </div>
             </div>
 
-            {/* Search Team Input */}
-            <div className="relative w-full sm:w-64">
+            {/* Right: Search Team Input */}
+            <div className="relative w-full md:w-64">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
@@ -643,6 +700,12 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Problem Statement Filter Header */}
+          <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-[#1E1B4B] pt-1 border-t border-[#1E1B4B]/10">
+            <Filter className="w-3.5 h-3.5 text-[#582A9C]" />
+            <span>Problem Statement Track:</span>
           </div>
 
           {/* The 4 Problem Statements Pill Buttons */}
@@ -854,6 +917,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                                 }`}>
                                   {team.psCode}
                                 </span>
+                                <span className="text-gray-300 text-[10px]">&bull;</span>
+                                <span className="font-mono text-[9px] text-gray-500 font-bold">
+                                  {selectedReview === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed'}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -899,7 +966,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                         <th className="py-3.5 px-3 sm:px-4">TEAM / SQUAD</th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">PROBLEM STATEMENT</th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">EVALUATION</th>
-                        <th className="py-3.5 px-3 sm:px-4 text-center">WEEK 1 MARKS</th>
+                        <th className="py-3.5 px-3 sm:px-4 text-center">
+                          {selectedReview === 'review2' ? 'REVIEW 2 MARKS' : 'REVIEW 1 MARKS'}
+                        </th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">STATUS</th>
                       </tr>
                     </thead>
@@ -987,10 +1056,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
 
                               {/* 4. Evaluation Round */}
                               <td className="py-3 px-2 sm:px-3 text-center font-mono text-gray-600 text-[11px] font-bold">
-                                Week 1
+                                {selectedReview === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed'}
                               </td>
 
-                              {/* 5. Week 1 Marks */}
+                              {/* 5. Marks */}
                               <td className="py-3 px-3 sm:px-4 text-center">
                                 <div className="inline-flex flex-col items-center">
                                   <span className={`font-mono font-black text-base sm:text-lg ${
@@ -1082,7 +1151,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                     Awaiting Evaluation Marks
                   </span>
                   <p className="text-[11px] font-sans text-gray-600 mt-1 max-w-xs leading-relaxed">
-                    Week 1 marks for {selectedPsFilter.toUpperCase()} are currently pending jury review. Top performers will appear here once scores are submitted by the admin.
+                    {selectedReview === 'review2'
+                      ? `Review 2 · Saturday marks for ${selectedPsFilter.toUpperCase()} are currently pending admin publication. Scores will appear here once officially published.`
+                      : `Review 1 · Wednesday marks for ${selectedPsFilter.toUpperCase()} are currently pending jury review. Top performers will appear here once scores are submitted by the admin.`}
                   </p>
                 </div>
               ) : (

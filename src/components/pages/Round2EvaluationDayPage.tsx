@@ -24,7 +24,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  Menu
+  Menu,
+  Calendar
 } from 'lucide-react';
 import { 
   fetchRound2AggregatedEvaluations,
@@ -32,6 +33,7 @@ import {
   TeamAggregatedEvaluation,
   RubricDefinition,
   DEFAULT_ROUND2_RUBRICS,
+  Round2ReviewRound,
   getPsPublishStatus
 } from '../../services/round2EvaluationService';
 import { AdminLoginGate } from '../auth/AdminLoginGate';
@@ -47,6 +49,9 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => isCurrentAdminAuthenticated());
   const [adminSession, setAdminSession] = useState(() => getActiveAdminSession());
+
+  // Selected Review Round: 'review1' (Wednesday) vs 'review2' (Saturday)
+  const [selectedReview, setSelectedReview] = useState<Round2ReviewRound>('review1');
 
   // Evaluation Data State
   const [round2Evals, setRound2Evals] = useState<TeamAggregatedEvaluation[]>([]);
@@ -65,16 +70,17 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
 
   // Load evaluations from Supabase
-  const loadData = useCallback(async (isManualRefetch = false) => {
+  const loadData = useCallback(async (isManualRefetch = false, reviewOverride?: Round2ReviewRound) => {
     setIsLoading(true);
+    const targetReview = reviewOverride || selectedReview;
     try {
-      const res = await fetchRound2AggregatedEvaluations();
+      const res = await fetchRound2AggregatedEvaluations(targetReview);
       setRound2Evals(res.teams);
       setRound2Rubrics(res.rubrics);
       setTotalLiveMentorEvals(res.totalEvaluations);
       setLastRefetchTime(new Date());
       if (isManualRefetch) {
-        setPublishSuccessMsg(`Refetched ${res.totalEvaluations} live mentor reviews from Supabase!`);
+        setPublishSuccessMsg(`Refetched ${res.totalEvaluations} live mentor reviews for ${targetReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'} from Supabase!`);
         setTimeout(() => setPublishSuccessMsg(''), 4000);
       }
     } catch (err) {
@@ -82,13 +88,13 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedReview]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadData();
+      loadData(false, selectedReview);
     }
-  }, [isAuthenticated, loadData]);
+  }, [isAuthenticated, selectedReview]);
 
   // PS Counts & Averages for Filter Buttons
   const psCounts = useMemo(() => {
@@ -171,11 +177,11 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
 
     const avg = gradedTeams > 0 ? (sumAvg / gradedTeams).toFixed(1) : '0';
     const isPublished = selectedPsFilter === 'all'
-      ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id).isPublished)
-      : getPsPublishStatus(selectedPsFilter).isPublished;
+      ? ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id, selectedReview).isPublished)
+      : getPsPublishStatus(selectedPsFilter, selectedReview).isPublished;
 
     return { totalTeams, gradedTeams, fullyGradedCount, avg, highestAvg, highestTotal, isPublished };
-  }, [filteredTeams, selectedPsFilter]);
+  }, [filteredTeams, selectedPsFilter, selectedReview]);
 
   // Handle Leaderboard Publish Confirmation
   const handleConfirmPublish = async () => {
@@ -185,11 +191,12 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
       const res = await publishPsMarksToLeaderboard(
         publishModalPsId,
         round2Evals,
-        adminSession?.email || 'admin@hpl'
+        adminSession?.email || 'admin@hpl',
+        selectedReview
       );
       if (res.success) {
-        setPublishSuccessMsg(`Successfully published average marks for ${res.publishedCount} teams to the live Leaderboard!`);
-        await loadData();
+        setPublishSuccessMsg(`Successfully published ${selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'} average marks for ${res.publishedCount} teams to the live Leaderboard!`);
+        await loadData(false, selectedReview);
         setTimeout(() => setPublishSuccessMsg(''), 6000);
       } else {
         alert(res.error || 'Failed to publish marks to leaderboard.');
@@ -343,14 +350,14 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   Round 2 Evaluation Day
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-[#4F46E5] font-mono text-xs font-black uppercase border border-indigo-200">
-                  Wednesday Sprint
+                  {selectedReview === 'review2' ? 'Saturday Sprint · Review 2' : 'Wednesday Sprint · Review 1'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-bold border border-emerald-300">
                   {totalLiveMentorEvals} Live Submissions
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-                Dedicated evaluation portal. Filter by Problem Statement, review individual rubric scores, and publish verified average marks to the public Leaderboard.
+                Dedicated evaluation portal. Switch review checkpoints, inspect rubric scores, and publish verified marks to the public Leaderboard.
               </p>
             </div>
           </div>
@@ -362,21 +369,16 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
               type="button"
               onClick={() => loadData(true)}
               disabled={isLoading}
-              className="px-4 py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-[#1E1B4B] text-xs font-mono font-bold flex items-center gap-2 cursor-pointer shadow-2xs active:scale-98 transition-all"
-              title="Refetch live evaluation marks from Supabase"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#1E1B4B]/20 hover:bg-slate-50 text-[#1E1B4B] font-mono text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              title="Manually refetch latest evaluations from database"
             >
-              <RefreshCw className={`w-4 h-4 text-[#4F46E5] ${isLoading ? 'animate-spin' : ''}`} />
-              <span className="font-display uppercase tracking-wider">Refetch Data</span>
-              {lastRefetchTime && (
-                <span className="text-[10px] text-slate-400 font-mono hidden xs:inline border-l border-slate-200 pl-2">
-                  {lastRefetchTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
+              <RefreshCw className={`w-3.5 h-3.5 text-[#4F46E5] ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Fetching...' : 'Refetch Data'}</span>
             </button>
 
-            {/* Admin Badge */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
-              <div className="w-7 h-7 rounded-full bg-[#1E1B4B] text-white flex items-center justify-center font-display font-bold text-xs">
+            {/* Admin Info Pill */}
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
+              <div className="w-7 h-7 rounded-lg bg-[#4F46E5] text-white flex items-center justify-center font-display font-black text-xs">
                 AD
               </div>
               <div className="text-left hidden sm:block">
@@ -402,6 +404,45 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
             </button>
           </div>
         )}
+
+        {/* ── 2.5 EVALUATION REVIEW CHECKPOINT SELECTOR ── */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-slate-800 uppercase">
+            <Calendar className="w-4 h-4 text-[#4F46E5]" />
+            <span>Select Evaluation Checkpoint:</span>
+          </div>
+
+          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setSelectedReview('review1')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                selectedReview === 'review1'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Review 1 · Wednesday</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500 text-white font-bold">
+                Review 1
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedReview('review2')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                selectedReview === 'review2'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Review 2 · Saturday</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 font-bold">
+                Review 2
+              </span>
+            </button>
+          </div>
+        </div>
 
         {/* ── 3. PROBLEM STATEMENT TABS FILTER (SEPARATE VIEW FOR EACH PS) ── */}
         <div className="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-2xs space-y-2.5">
@@ -438,7 +479,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
             {ROUND2_PROBLEM_STATEMENTS.map(ps => {
               const stats = psCounts[ps.id] || { total: 10, graded: 0, avg: 0 };
               const isSelected = selectedPsFilter === ps.id;
-              const isPublished = getPsPublishStatus(ps.id).isPublished;
+              const isPublished = getPsPublishStatus(ps.id, selectedReview).isPublished;
 
               return (
                 <button
@@ -1101,7 +1142,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                     Confirm Leaderboard Publishing
                   </h3>
                   <p className="text-xs font-mono text-slate-500 mt-1">
-                    Track: <strong className="text-[#4F46E5]">{psLabel}</strong>
+                    Track: <strong className="text-[#4F46E5]">{psLabel}</strong> &bull; Round: <strong className="text-[#4F46E5]">{selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'}</strong>
                   </p>
                 </div>
                 <button
@@ -1133,7 +1174,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                     Are you sure you want to publish these marks live?
                   </p>
                   <p className="text-amber-800 leading-relaxed">
-                    This will synchronize the mentor-evaluated <strong>average marks</strong> directly to the public Leaderboard page for all teams in <strong>{psLabel}</strong>. Participants and visitors will immediately see the updated rankings based on their average score.
+                    This will synchronize the mentor-evaluated <strong>average marks</strong> directly to the public Leaderboard page for <strong>{selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'}</strong> for all teams in <strong>{psLabel}</strong>. Participants and visitors will immediately see the updated rankings based on their average score.
                   </p>
                 </div>
               </div>
