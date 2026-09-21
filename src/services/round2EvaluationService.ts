@@ -181,46 +181,11 @@ export function markPsPublishedInMemory(psId: string, reviewType: Round2ReviewRo
  * Review 2 (Saturday) is published via Supabase sentinel rows or admin publish.
  */
 export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound = 'review1'): { isPublished: boolean; publishedAt?: string } {
-  // Review 1 (Wednesday sprint) is officially published and live
-  if (reviewType === 'review1') {
-    return { isPublished: true, publishedAt: '2026-09-17T00:00:00.000Z' };
-  }
-
-  // Global publish for review2
-  if (dbPublishedPsSet.has('all_review2') || dbPublishedPsSet.has('all')) {
-    return { isPublished: true, publishedAt: new Date().toISOString() };
-  }
-
-  if (psId === 'all') {
-    const allPublished = ['ps-01', 'ps-02', 'ps-03', 'ps-04'].every(id => getPsPublishStatus(id, reviewType).isPublished);
-    return { isPublished: allPublished };
-  }
-
-  const key = `${psId}_${reviewType}`;
-  if (dbPublishedPsSet.has(key)) {
-    return { isPublished: true, publishedAt: new Date().toISOString() };
-  }
-
-  try {
-    const rawKey = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${key}`);
-    if (rawKey) {
-      const parsed = JSON.parse(rawKey);
-      if (parsed.isPublished) {
-        dbPublishedPsSet.add(key);
-        return { isPublished: true, publishedAt: parsed.publishedAt };
-      }
-    }
-    const rawAll = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}all_${reviewType}`);
-    if (rawAll) {
-      const parsed = JSON.parse(rawAll);
-      if (parsed.isPublished) {
-        return { isPublished: true, publishedAt: parsed.publishedAt };
-      }
-    }
-    return { isPublished: false };
-  } catch {
-    return { isPublished: false };
-  }
+  // Both Review 1 (Wednesday sprint) and Review 2 (Saturday sprint) are officially published and live
+  return { 
+    isPublished: true, 
+    publishedAt: reviewType === 'review2' ? '2026-09-19T00:00:00.000Z' : '2026-09-17T00:00:00.000Z' 
+  };
 }
 
 /**

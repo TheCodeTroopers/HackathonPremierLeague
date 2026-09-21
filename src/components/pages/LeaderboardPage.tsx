@@ -248,12 +248,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     return calculateStrictAllocations(round2DbRows, {});
   }, [round2DbRows]);
 
-  // Check if Review 2 is published either globally, for any PS, or on any fetched team
-  const isReview2Published = useMemo(() => {
-    return getPsPublishStatus('all', 'review2').isPublished || 
-      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].some(id => getPsPublishStatus(id, 'review2').isPublished) ||
-      round2AggTeams.some(t => t.isPublished);
-  }, [round2AggTeams]);
+  // Review 2 is officially published and live
+  const isReview2Published = true;
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
@@ -261,12 +257,11 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Review 1 (Wednesday) is permanently published and live!
-        // Review 2 (Saturday) is published once published by admin.
-        const isPublished = selectedReview === 'review1' ? true : (team.isPublished || isReview2Published);
-        const isGraded = isPublished && team.evaluationsCount > 0;
+        // Both Review 1 (Wednesday) and Review 2 (Saturday) evaluations are officially live
+        const isPublished = true;
+        const isGraded = team.evaluationsCount > 0;
         const marks = isGraded ? (team.averageMarks ?? 0) : 0;
-        const feedback = isPublished ? team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n') : '';
+        const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
 
         const rawName = team.teamName || '';
         const teamName = (rawName.toLowerCase().replace(/[^a-z0-9]/g, '') === 'mindmatrix' || team.squadId === 'HPL-R2-27') ? 'mindmesh' : rawName;
