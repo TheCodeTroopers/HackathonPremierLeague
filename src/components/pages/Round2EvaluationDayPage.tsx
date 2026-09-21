@@ -367,7 +367,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
             {/* ── EXPLICIT REFETCH BUTTON ── */}
             <button
               type="button"
-              onClick={() => loadData(true)}
+              onClick={() => loadData(true, selectedReview)}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#1E1B4B]/20 hover:bg-slate-50 text-[#1E1B4B] font-mono text-xs font-bold shadow-2xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
               title="Manually refetch latest evaluations from database"
@@ -415,7 +415,10 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
           <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
             <button
               type="button"
-              onClick={() => setSelectedReview('review1')}
+              onClick={() => {
+                setSelectedReview('review1');
+                loadData(false, 'review1');
+              }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 selectedReview === 'review1'
                   ? 'bg-[#1E1B4B] text-white shadow-xs'
@@ -429,7 +432,10 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
             </button>
             <button
               type="button"
-              onClick={() => setSelectedReview('review2')}
+              onClick={() => {
+                setSelectedReview('review2');
+                loadData(false, 'review2');
+              }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
                 selectedReview === 'review2'
                   ? 'bg-[#1E1B4B] text-white shadow-xs'
@@ -680,8 +686,8 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
               <Send className="w-3.5 h-3.5 text-amber-300" />
               <span>
                 {selectedPsFilter === 'all'
-                  ? 'Publish All to Leaderboard'
-                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} to Leaderboard`}
+                  ? `Publish All (${selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`
+                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} (${selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`}
               </span>
             </button>
           </div>
@@ -699,7 +705,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   <th className="py-3.5 px-3">Reviewing Mentors</th>
                   <th className="py-3.5 px-3 text-center">Rubrics (R1–R5)</th>
                   <th className="py-3.5 px-4 text-center min-w-[140px]">
-                    Wednesday Marks
+                    {selectedReview === 'review2' ? 'Saturday Review 2 Marks' : 'Wednesday Review 1 Marks'}
                     <span className="block text-[9px] text-indigo-200 normal-case font-mono font-normal">
                       (Avg / 50 &bull; Total / 150)
                     </span>

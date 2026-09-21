@@ -248,6 +248,13 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     return calculateStrictAllocations(round2DbRows, {});
   }, [round2DbRows]);
 
+  // Check if Review 2 is published either globally, for any PS, or on any fetched team
+  const isReview2Published = useMemo(() => {
+    return getPsPublishStatus('all', 'review2').isPublished || 
+      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].some(id => getPsPublishStatus(id, 'review2').isPublished) ||
+      round2AggTeams.some(t => t.isPublished);
+  }, [round2AggTeams]);
+
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
     // 1. Primary Source of Truth: Use live aggregated evaluations from round2_evaluations
@@ -255,10 +262,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
         // Review 1 (Wednesday) is permanently published and live!
-        // Review 2 (Saturday) is pending admin publication.
-        const isPublished = selectedReview === 'review1' ? true : team.isPublished;
-        const isGraded = isPublished && team.evaluationsCount > 0 && (team.averageMarks || 0) > 0;
-        const marks = isGraded ? (team.averageMarks || 0) : 0;
+        // Review 2 (Saturday) is published once published by admin.
+        const isPublished = selectedReview === 'review1' ? true : (team.isPublished || isReview2Published);
+        const isGraded = isPublished && team.evaluationsCount > 0;
+        const marks = isGraded ? (team.averageMarks ?? 0) : 0;
         const feedback = isPublished ? team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n') : '';
 
         const rawName = team.teamName || '';
@@ -347,7 +354,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     });
 
     return items;
-  }, [round2AggTeams, allocationState.lockedMap]);
+  }, [round2AggTeams, allocationState.lockedMap, selectedReview, isReview2Published]);
 
 
 
@@ -646,8 +653,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   onChange={(e) => setSelectedReview(e.target.value as Round2ReviewRound)}
                   className="appearance-none bg-[#F6F3EB] border-2 border-[#582A9C] text-[#3B1A6B] font-mono text-xs font-black py-1.5 pl-3 pr-8 rounded-xl cursor-pointer shadow-2xs hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#582A9C]"
                 >
-                  <option value="review1">Review 1 · Wednesday (Published)</option>
-                  <option value="review2">Review 2 · Saturday (Pending)</option>
+                  <option value="review1">Review 1 · Wednesday (Live)</option>
+                  <option value="review2">Review 2 · Saturday ({isReview2Published ? 'Live' : 'Pending'})</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -664,7 +671,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   }`}
                 >
                   <span>Review 1</span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500 text-white font-bold">PUB</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500 text-white font-bold">LIVE</span>
                 </button>
                 <button
                   type="button"
@@ -676,7 +683,13 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   }`}
                 >
                   <span>Review 2</span>
-                  <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-950 border border-amber-500/40 font-bold">PENDING</span>
+                  <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                    isReview2Published
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-amber-500/20 text-amber-950 border border-amber-500/40'
+                  }`}>
+                    {isReview2Published ? 'LIVE' : 'PENDING'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -859,7 +872,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   ) : (
                     rankedTeams.map((team, index) => {
                       const displayRank = index + 1;
-                      const hasMarks = team.marks > 0;
+                      const hasMarks = team.isGraded;
 
                       return (
                         <div
@@ -872,15 +885,15 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                             {/* Rank Indicator */}
                             <div className="flex-shrink-0 w-6 xs:w-7 text-center font-bold">
                               {hasMarks ? (
-                                displayRank === 1 ? (
+                                team.marks > 0 && displayRank === 1 ? (
                                   <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-amber-400 border border-amber-600 text-amber-950 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥇
                                   </div>
-                                ) : displayRank === 2 ? (
+                                ) : team.marks > 0 && displayRank === 2 ? (
                                   <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-slate-300 border border-slate-400 text-slate-800 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥈
                                   </div>
-                                ) : displayRank === 3 ? (
+                                ) : team.marks > 0 && displayRank === 3 ? (
                                   <div className="w-6 h-6 xs:w-7 xs:h-7 rounded-lg bg-amber-700/25 border border-amber-700 text-amber-900 font-black flex items-center justify-center mx-auto shadow-2xs text-xs">
                                     🥉
                                   </div>
@@ -986,7 +999,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                       ) : (
                         rankedTeams.map((team, index) => {
                           const displayRank = index + 1;
-                          const hasMarks = team.marks > 0;
+                          const hasMarks = team.isGraded;
 
                           return (
                             <tr 
@@ -998,22 +1011,22 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                               <td className="py-3 px-3 sm:px-4 text-center font-bold">
                                 {hasMarks ? (
                                   <>
-                                    {displayRank === 1 && (
+                                    {team.marks > 0 && displayRank === 1 && (
                                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-400 border border-amber-600 text-amber-950 font-black flex items-center justify-center mx-auto shadow-2xs text-xs sm:text-sm">
                                         🥇
                                       </div>
                                     )}
-                                    {displayRank === 2 && (
+                                    {team.marks > 0 && displayRank === 2 && (
                                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-slate-300 border border-slate-400 text-slate-800 font-black flex items-center justify-center mx-auto shadow-2xs text-xs sm:text-sm">
                                         🥈
                                       </div>
                                     )}
-                                    {displayRank === 3 && (
+                                    {team.marks > 0 && displayRank === 3 && (
                                       <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-700/25 border border-amber-700 text-amber-900 font-black flex items-center justify-center mx-auto shadow-2xs text-xs sm:text-sm">
                                         🥉
                                       </div>
                                     )}
-                                    {displayRank > 3 && (
+                                    {(team.marks === 0 || displayRank > 3) && (
                                       <span className="font-mono font-bold text-gray-500 text-xs sm:text-sm">
                                         #{displayRank}
                                       </span>

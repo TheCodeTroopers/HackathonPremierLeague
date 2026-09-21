@@ -105,15 +105,57 @@ export interface TeamAggregatedEvaluation {
 
 export type Round2ReviewRound = 'review1' | 'review2';
 
-export function isReview2(evalStr?: string): boolean {
-  if (!evalStr) return false;
-  const clean = evalStr.toLowerCase();
-  return clean.includes('sat') || clean.includes('review 2') || clean.includes('review2') || clean.includes('r2');
+export function isReview2(evalStr?: string, createdAt?: string): boolean {
+  if (evalStr) {
+    const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // 1. Explicit Wednesday / Review 1 check - MUST NEVER be treated as Review 2!
+    if (
+      clean.includes('wed') ||
+      clean.includes('wednesday') ||
+      clean.includes('review1') ||
+      clean.includes('rev1') ||
+      clean.includes('eval1') ||
+      clean.includes('checkpoint1') ||
+      clean.includes('cp1') ||
+      clean.includes('week1wed') ||
+      clean.includes('week2wed')
+    ) {
+      return false;
+    }
+
+    // 2. Explicit Saturday / Review 2 check
+    if (
+      clean.includes('sat') ||
+      clean.includes('saturday') ||
+      clean.includes('review2') ||
+      clean.includes('rev2') ||
+      clean.includes('eval2') ||
+      clean.includes('checkpoint2') ||
+      clean.includes('cp2') ||
+      clean.includes('week1sat') ||
+      clean.includes('week2sat')
+    ) {
+      return true;
+    }
+  }
+
+  // 3. Fallback to timestamp only if evaluation label had no day keyword
+  if (createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime())) {
+        if (d >= new Date('2026-09-19T00:00:00Z')) {
+          return true;
+        }
+      }
+    } catch {}
+  }
+  return false;
 }
 
-export function isReview1(evalStr?: string): boolean {
-  if (!evalStr) return true;
-  return !isReview2(evalStr);
+export function isReview1(evalStr?: string, createdAt?: string): boolean {
+  return !isReview2(evalStr, createdAt);
 }
 
 const PUBLISHED_KEY_PREFIX = 'hpl_published_ps_';
@@ -136,12 +178,17 @@ export function markPsPublishedInMemory(psId: string, reviewType: Round2ReviewRo
 /**
  * Check if a Problem Statement's marks have been published to the leaderboard.
  * Review 1 (Wednesday) is permanently published and live.
- * Review 2 (Saturday) is pending admin publication.
+ * Review 2 (Saturday) is published via Supabase sentinel rows or admin publish.
  */
 export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound = 'review1'): { isPublished: boolean; publishedAt?: string } {
   // Review 1 (Wednesday sprint) is officially published and live
   if (reviewType === 'review1') {
     return { isPublished: true, publishedAt: '2026-09-17T00:00:00.000Z' };
+  }
+
+  // Global publish for review2
+  if (dbPublishedPsSet.has('all_review2') || dbPublishedPsSet.has('all')) {
+    return { isPublished: true, publishedAt: new Date().toISOString() };
   }
 
   if (psId === 'all') {
@@ -163,7 +210,13 @@ export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound =
         return { isPublished: true, publishedAt: parsed.publishedAt };
       }
     }
-
+    const rawAll = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}all_${reviewType}`);
+    if (rawAll) {
+      const parsed = JSON.parse(rawAll);
+      if (parsed.isPublished) {
+        return { isPublished: true, publishedAt: parsed.publishedAt };
+      }
+    }
     return { isPublished: false };
   } catch {
     return { isPublished: false };
@@ -199,13 +252,15 @@ export function norm(str?: string | null): string {
 }
 
 /**
- * Canonical lookup for an official team from OFFICIAL_QUALIFIED_TEAMS
+ * Canonical lookup for an official team from OFFICIAL_QUALIFIED_TEAMS.
+ * Supports exact match, normalized match, squad numeric ranks, and fuzzy team names.
  */
 export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
   for (const identifier of identifiers) {
     if (!identifier) continue;
     const clean = identifier.trim();
     const n = norm(clean);
+    if (!n) continue;
 
     // Explicit alias: 'mindmatrix' -> rank 27 'mindmesh'
     if (n === 'mindmatrix' || n === 'mindmesh' || n === 'hplr227' || n === 'squad27') {
@@ -213,6 +268,7 @@ export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
       if (team27) return team27;
     }
 
+    // Direct match by squadId, teamName, email
     const found = OFFICIAL_QUALIFIED_TEAMS.find(t => 
       t.squadId.toLowerCase() === clean.toLowerCase() ||
       norm(t.squadId) === n ||
@@ -221,6 +277,20 @@ export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
       (t.leaderEmail && t.leaderEmail.toLowerCase() === clean.toLowerCase())
     );
     if (found) return found;
+
+    // Numeric rank match: e.g. "HPL-12", "HPL12", "12", "squad 12" -> rank 12
+    const numOnly = parseInt(clean.replace(/\D/g, ''), 10);
+    if (!isNaN(numOnly) && numOnly >= 1 && numOnly <= 40) {
+      const matchByRank = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === numOnly);
+      if (matchByRank) return matchByRank;
+    }
+
+    // Fuzzy/substring match for team name (e.g. "wakanda" -> "wakanda forever", "hackblaze" -> "Hackblaze")
+    const fuzzy = OFFICIAL_QUALIFIED_TEAMS.find(t => {
+      const tNorm = norm(t.teamName);
+      return (n.length >= 4 && tNorm.includes(n)) || (tNorm.length >= 4 && n.includes(tNorm));
+    });
+    if (fuzzy) return fuzzy;
   }
   return undefined;
 }
@@ -239,8 +309,8 @@ export async function fetchRound2AggregatedEvaluations(
   try {
     // 1. Concurrently fetch round2_ps_selections and round2_evaluations
     const [psRes, evalRes] = await Promise.all([
-      supabase.from('round2_ps_selections').select('*'),
-      supabase.from('round2_evaluations').select('*')
+      supabase.from('round2_ps_selections').select('*').limit(5000),
+      supabase.from('round2_evaluations').select('*').limit(5000)
     ]);
 
     const selectionsList = psRes.data || [];
@@ -250,7 +320,9 @@ export async function fetchRound2AggregatedEvaluations(
     const actualEvals = rawEvals.filter((r: any) => {
       if (!r || !r.id) return false;
       if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) return false;
-      return reviewType === 'review2' ? isReview2(r.evaluation) : isReview1(r.evaluation);
+      return reviewType === 'review2' 
+        ? isReview2(r.evaluation, r.created_at) 
+        : isReview1(r.evaluation, r.created_at);
     });
 
     // 1.5. Detect persistent published sentinel rows across all devices
@@ -265,13 +337,15 @@ export async function fetchRound2AggregatedEvaluations(
     });
 
     // Check if any round2_evaluations row for this review has status === 'published'
+    let anyPublishedForThisReview = false;
     actualEvals.forEach((row: any) => {
       if (row.status === 'published') {
-        const off = getOfficialSquadRecord(row.squad_id, row.team_name);
+        anyPublishedForThisReview = true;
+        const off = getOfficialSquadRecord(row.team_name);
         const sel = selectionsList.find(s => 
           (row.selection_id && s.id === row.selection_id) ||
-          (s.team_name && norm(s.team_name) === norm(row.team_name)) ||
-          (s.squad_id && s.squad_id === row.squad_id)
+          (row.team_id && s.id === row.team_id) ||
+          (s.team_name && norm(s.team_name) === norm(row.team_name))
         );
         const psId = sel?.ps_id || (off ? (off.rank <= 10 ? 'ps-01' : off.rank <= 20 ? 'ps-02' : off.rank <= 30 ? 'ps-03' : 'ps-04') : undefined);
         if (psId) {
@@ -279,6 +353,11 @@ export async function fetchRound2AggregatedEvaluations(
         }
       }
     });
+
+    if (anyPublishedForThisReview) {
+      markPsPublishedInMemory('all', reviewType);
+      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => markPsPublishedInMemory(id, reviewType));
+    }
 
     // 2. Deduplicate mentor evaluations for each team for this specific review
     const dedupedMentorMap = new Map<string, MentorEvaluationEntry>();
@@ -327,7 +406,18 @@ export async function fetchRound2AggregatedEvaluations(
 
     dedupedMentorMap.forEach(entry => {
       const keysToRegister = new Set<string>();
-      if (entry.squadId) keysToRegister.add(entry.squadId.toUpperCase().trim());
+      if (entry.squadId) {
+        keysToRegister.add(entry.squadId.toUpperCase().trim());
+        keysToRegister.add(norm(entry.squadId));
+        const num = entry.squadId.replace(/\D/g, '');
+        if (num) {
+          keysToRegister.add(`HPL-R2-${num.padStart(2, '0')}`);
+          keysToRegister.add(`HPL-${num.padStart(3, '0')}`);
+          keysToRegister.add(`HPL-${num.padStart(2, '0')}`);
+          keysToRegister.add(`HPL${num}`);
+          keysToRegister.add(num);
+        }
+      }
       if (entry.teamName) {
         keysToRegister.add(norm(entry.teamName));
         keysToRegister.add(entry.teamName.toLowerCase().trim());
@@ -344,9 +434,14 @@ export async function fetchRound2AggregatedEvaluations(
       const official = getOfficialSquadRecord(entry.squadId, entry.teamName);
       if (official) {
         keysToRegister.add(official.squadId.toUpperCase().trim());
+        keysToRegister.add(norm(official.squadId));
         keysToRegister.add(norm(official.teamName));
+        keysToRegister.add(official.teamName.toLowerCase().trim());
         keysToRegister.add(`HPL-${String(official.rank).padStart(3, '0')}`);
         keysToRegister.add(`HPL-${String(official.rank).padStart(2, '0')}`);
+        keysToRegister.add(`HPL-R2-${String(official.rank).padStart(2, '0')}`);
+        keysToRegister.add(`HPL${official.rank}`);
+        keysToRegister.add(String(official.rank));
       }
 
       keysToRegister.forEach(k => {
@@ -423,14 +518,67 @@ export async function fetchRound2AggregatedEvaluations(
       const teamName = (norm(rawName) === 'mindmatrix' || norm(rawName) === 'mindmesh' || norm(squadId) === 'hplr227') ? 'mindmesh' : rawName;
       const teamCode = `HPL-${String(rankNum).padStart(3, '0')}`;
 
-      // Find evaluations by any lookup key
-      const teamEvals = 
-        evalsByLookupKey.get(squadId.toUpperCase().trim()) ||
-        evalsByLookupKey.get(norm(teamName)) ||
-        (norm(teamName) === 'mindmesh' ? (evalsByLookupKey.get('mindmatrix') || evalsByLookupKey.get('mindmesh')) : undefined) ||
-        evalsByLookupKey.get(teamCode) ||
-        (sel.id ? evalsByLookupKey.get(sel.id) : undefined) ||
-        [];
+      // Collect candidate keys across all formats for this team
+      const candidateKeys = new Set<string>();
+      if (squadId) {
+        candidateKeys.add(squadId.toUpperCase().trim());
+        candidateKeys.add(norm(squadId));
+        const numPart = squadId.replace(/\D/g, '');
+        if (numPart) {
+          candidateKeys.add(`HPL-R2-${numPart.padStart(2, '0')}`);
+          candidateKeys.add(`HPL-${numPart.padStart(3, '0')}`);
+          candidateKeys.add(`HPL-${numPart.padStart(2, '0')}`);
+          candidateKeys.add(`HPL${numPart}`);
+          candidateKeys.add(numPart);
+        }
+      }
+      if (teamName) {
+        candidateKeys.add(norm(teamName));
+        candidateKeys.add(teamName.toLowerCase().trim());
+      }
+      if (rawName) {
+        candidateKeys.add(norm(rawName));
+        candidateKeys.add(rawName.toLowerCase().trim());
+      }
+      if (teamCode) {
+        candidateKeys.add(teamCode.toUpperCase().trim());
+      }
+      if (sel.id) {
+        candidateKeys.add(sel.id);
+      }
+      if (official) {
+        candidateKeys.add(official.squadId.toUpperCase().trim());
+        candidateKeys.add(norm(official.squadId));
+        candidateKeys.add(norm(official.teamName));
+        candidateKeys.add(official.teamName.toLowerCase().trim());
+        candidateKeys.add(`HPL-${String(official.rank).padStart(3, '0')}`);
+        candidateKeys.add(`HPL-${String(official.rank).padStart(2, '0')}`);
+        candidateKeys.add(`HPL-R2-${String(official.rank).padStart(2, '0')}`);
+        candidateKeys.add(`HPL${official.rank}`);
+        candidateKeys.add(String(official.rank));
+      }
+      if (norm(teamName) === 'mindmesh' || norm(teamName) === 'mindmatrix' || norm(squadId) === 'hplr227') {
+        candidateKeys.add('mindmesh');
+        candidateKeys.add('mindmatrix');
+        candidateKeys.add('HPL-R2-27');
+        candidateKeys.add('hplr227');
+      }
+
+      // Merge and deduplicate all mentor evaluations across candidate keys
+      const teamMentorMap = new Map<string, MentorEvaluationEntry>();
+      candidateKeys.forEach(k => {
+        const found = evalsByLookupKey.get(k);
+        if (found) {
+          found.forEach(e => {
+            const mKey = (e.mentorId || e.mentorName || 'm').toLowerCase().trim();
+            const existing = teamMentorMap.get(mKey);
+            if (!existing || new Date(e.createdAt) >= new Date(existing.createdAt)) {
+              teamMentorMap.set(mKey, e);
+            }
+          });
+        }
+      });
+      const teamEvals = Array.from(teamMentorMap.values());
 
       processedTeamKeys.add(squadId.toUpperCase().trim());
       processedTeamKeys.add(norm(teamName));
@@ -468,8 +616,13 @@ export async function fetchRound2AggregatedEvaluations(
         ? parseFloat((calculatedTotalMarks / teamEvals.length).toFixed(1))
         : (reviewType === 'review1' ? (Number(sel.average_marks) || Number(sel.total_marks) || 0) : 0);
 
+      // LIVE DYNAMIC SOURCE OF TRUTH:
+      // If live mentor evaluations exist in round2_evaluations, ALWAYS use calculatedAvg!
+      // NEVER overwrite live evaluations with static/stale dbAvg.
       const dbAvg = reviewType === 'review1' ? Number((sel as any).average_marks ?? (sel as any).avg_marks) : NaN;
-      const averageMarks = (!isNaN(dbAvg) && dbAvg > 0) ? dbAvg : calculatedAvg;
+      const averageMarks = teamEvals.length > 0 
+        ? calculatedAvg 
+        : (reviewType === 'review1' && !isNaN(dbAvg) && dbAvg > 0 ? dbAvg : 0);
 
       // PS mapping
       let psId = sel.ps_id || 'ps-01';
@@ -557,22 +710,20 @@ export async function publishPsMarksToLeaderboard(
     }
 
     // 1. Mark evaluations as 'published' in `round2_evaluations` table for the specific review round
-    const evalPattern = reviewType === 'review2' ? '%Sat%' : '%Wed%';
     for (const t of teamsToPublish) {
       try {
+        const candidateIds = t.mentorEvaluations.map(m => m.id).filter(Boolean);
+        if (candidateIds.length > 0) {
+          await supabase
+            .from('round2_evaluations')
+            .update({ status: 'published' })
+            .in('id', candidateIds);
+        }
         if (t.teamName) {
           await supabase
             .from('round2_evaluations')
             .update({ status: 'published' })
-            .ilike('team_name', t.teamName)
-            .ilike('evaluation', evalPattern);
-        }
-        if (t.squadId) {
-          await supabase
-            .from('round2_evaluations')
-            .update({ status: 'published' })
-            .eq('squad_id', t.squadId)
-            .ilike('evaluation', evalPattern);
+            .ilike('team_name', t.teamName);
         }
       } catch (e) {
         console.warn(`[HPL] Notice updating round2_evaluations status for ${t.teamName}:`, e);
@@ -587,6 +738,12 @@ export async function publishPsMarksToLeaderboard(
           team_name: `__PUBLISHED_${pid}_${reviewType}`,
           mentor_name: adminEmail,
           evaluation: reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
+          mark1: 0,
+          mark2: 0,
+          mark3: 0,
+          mark4: 0,
+          mark5: 0,
+          total: 0,
           status: 'published'
         });
       }
