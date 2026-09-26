@@ -27,6 +27,8 @@ import {
     Trophy,
     Shield,
     MessageCircle,
+    MessageSquare,
+    Clock,
     FileText,
     Target,
     Layers,
@@ -71,14 +73,23 @@ import {
     saveRound2TeamRoster,
     STRICT_CAP_PER_TRACK 
 } from '../../services/round2AllocationService';
+import {
+    isReview1,
+    isReview2,
+    isReview3,
+    DEFAULT_ROUND2_RUBRICS,
+    MentorEvaluationEntry,
+    getOfficialSquadRecord,
+    norm
+} from '../../services/round2EvaluationService';
 
 interface TeamAccessPageProps {
-    view?: 'login' | 'profile' | 'select' | 'portal';
+    view?: 'login' | 'profile' | 'select' | 'portal' | 'feedback';
     squadId: string | null;
     onNavigate: (page: PageRoute) => void;
 }
 
-type TabKey = 'overview' | 'roster' | 'challenge' | 'settings';
+type TabKey = 'overview' | 'roster' | 'challenge' | 'feedback' | 'settings';
 
 const SELECTIONS_KEY = 'hpl-round2-ps-selections';
 type Selections = Record<string, string>;
@@ -114,6 +125,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     // Map initial tab based on route view and lock status
     const [activeTab, setActiveTab] = useState<TabKey>(() => {
         if (view === 'select') return 'challenge';
+        if (view === 'feedback') return 'feedback';
         if (view === 'profile' || view === 'portal') return 'overview';
 
         const session = getActiveTeamSession();
@@ -202,6 +214,184 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const [selectedPs, setSelectedPs] = useState('');
     const [psError, setPsError] = useState('');
     const [lockSuccessMessage, setLockSuccessMessage] = useState('');
+
+    // Team Mentor Evaluations & Feedback state (strictly isolated for THIS team)
+    const [teamEvaluations, setTeamEvaluations] = useState<{
+        review1: MentorEvaluationEntry[];
+        review2: MentorEvaluationEntry[];
+        review3: MentorEvaluationEntry[];
+    }>({ review1: [], review2: [], review3: [] });
+    const [isLoadingFeedback, setIsLoadingFeedback] = useState<boolean>(true);
+    const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'review1' | 'review2' | 'review3'>('all');
+
+    // Helper to calculate summary metrics for a review round
+    const getReviewMetrics = (evals: MentorEvaluationEntry[]) => {
+        const count = evals.length;
+        if (count === 0) {
+            return {
+                isGraded: false,
+                evaluationsCount: 0,
+                averageMarks: 0,
+                totalMarks: 0,
+                rubricAverages: { mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0 }
+            };
+        }
+
+        let sumTotal = 0;
+        const sumRubrics = { mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0 };
+
+        evals.forEach(e => {
+            sumTotal += e.total;
+            sumRubrics.mark1 += e.mark1;
+            sumRubrics.mark2 += e.mark2;
+            sumRubrics.mark3 += e.mark3;
+            sumRubrics.mark4 += e.mark4;
+            sumRubrics.mark5 += e.mark5;
+        });
+
+        const avg = parseFloat((sumTotal / count).toFixed(1));
+        const rubricAverages = {
+            mark1: parseFloat((sumRubrics.mark1 / count).toFixed(1)),
+            mark2: parseFloat((sumRubrics.mark2 / count).toFixed(1)),
+            mark3: parseFloat((sumRubrics.mark3 / count).toFixed(1)),
+            mark4: parseFloat((sumRubrics.mark4 / count).toFixed(1)),
+            mark5: parseFloat((sumRubrics.mark5 / count).toFixed(1)),
+        };
+
+        return {
+            isGraded: true,
+            evaluationsCount: count,
+            averageMarks: avg,
+            totalMarks: sumTotal,
+            rubricAverages
+        };
+    };
+
+    const r1Metrics = useMemo(() => getReviewMetrics(teamEvaluations.review1), [teamEvaluations.review1]);
+    const r2Metrics = useMemo(() => getReviewMetrics(teamEvaluations.review2), [teamEvaluations.review2]);
+    const r3Metrics = useMemo(() => getReviewMetrics(teamEvaluations.review3), [teamEvaluations.review3]);
+
+    // Fetch strictly isolated mentor evaluations and remarks for THIS team
+    useEffect(() => {
+        if (!team) return;
+        let isMounted = true;
+
+        const loadTeamFeedback = async () => {
+            setIsLoadingFeedback(true);
+            try {
+                const { data, error } = await supabase
+                    .from('round2_evaluations')
+                    .select('*')
+                    .limit(5000);
+
+                if (error) {
+                    console.error('[HPL] Error loading team feedback:', error);
+                    return;
+                }
+
+                if (!isMounted) return;
+
+                const rawRows = data || [];
+                // STRICT ISOLATION FILTER: Match rows belonging ONLY to THIS team!
+                const myRows = rawRows.filter((row: any) => {
+                    if (!row || !row.id) return false;
+                    if (row.team_name && row.team_name.startsWith('__PUBLISHED_')) return false;
+
+                    const official = getOfficialSquadRecord(row.team_name, row.team_code, row.squad_id);
+                    if (official) {
+                        return official.rank === team.rank || 
+                               norm(official.teamName) === norm(team.name) ||
+                               official.squadId.toLowerCase() === team.squadId.toLowerCase();
+                    }
+
+                    const rNorm = norm(row.team_name);
+                    const tNorm = norm(team.name);
+                    if (rNorm && tNorm && (rNorm === tNorm || rNorm.includes(tNorm) || tNorm.includes(rNorm))) {
+                        return true;
+                    }
+
+                    if (row.team_code) {
+                        const c = row.team_code.toUpperCase().trim();
+                        if (c === team.squadId.toUpperCase() || c === `HPL-${String(team.rank).padStart(3, '0')}`) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+
+                // Deduplicate and group into Review 1, Review 2, Review 3
+                const r1Map = new Map<string, MentorEvaluationEntry>();
+                const r2Map = new Map<string, MentorEvaluationEntry>();
+                const r3Map = new Map<string, MentorEvaluationEntry>();
+
+                myRows.forEach((row: any) => {
+                    const mKey = (row.mentor_name || row.mentor_id || 'mentor').toLowerCase().trim();
+                    const entry: MentorEvaluationEntry = {
+                        id: row.id,
+                        mentorId: row.mentor_id || '',
+                        mentorName: row.mentor_name || 'Mentor',
+                        teamId: row.team_id || row.selection_id || '',
+                        teamName: team.name,
+                        teamCode: row.team_code || team.squadId,
+                        squadId: team.squadId,
+                        mark1: Number(row.mark1) || 0,
+                        mark2: Number(row.mark2) || 0,
+                        mark3: Number(row.mark3) || 0,
+                        mark4: Number(row.mark4) || 0,
+                        mark5: Number(row.mark5) || 0,
+                        total: Number(row.total) || (
+                            (Number(row.mark1) || 0) +
+                            (Number(row.mark2) || 0) +
+                            (Number(row.mark3) || 0) +
+                            (Number(row.mark4) || 0) +
+                            (Number(row.mark5) || 0)
+                        ),
+                        feedback: (row.feedback || '').trim(),
+                        evaluation: row.evaluation || '',
+                        status: row.status || 'submitted',
+                        createdAt: row.created_at || new Date().toISOString()
+                    };
+
+                    if (isReview3(row.evaluation, row.created_at)) {
+                        const existing = r3Map.get(mKey);
+                        if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
+                            r3Map.set(mKey, entry);
+                        }
+                    } else if (isReview2(row.evaluation, row.created_at)) {
+                        const existing = r2Map.get(mKey);
+                        if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
+                            r2Map.set(mKey, entry);
+                        }
+                    } else {
+                        const existing = r1Map.get(mKey);
+                        if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
+                            r1Map.set(mKey, entry);
+                        }
+                    }
+                });
+
+                setTeamEvaluations({
+                    review1: Array.from(r1Map.values()),
+                    review2: Array.from(r2Map.values()),
+                    review3: Array.from(r3Map.values())
+                });
+            } catch (err) {
+                console.error('[HPL] Failed to load team feedback:', err);
+            } finally {
+                setIsLoadingFeedback(false);
+            }
+        };
+
+        loadTeamFeedback();
+
+        // Listen for evaluation updates
+        window.addEventListener('hpl-evaluations-update', loadTeamFeedback);
+        return () => {
+            isMounted = false;
+            window.removeEventListener('hpl-evaluations-update', loadTeamFeedback);
+        };
+    }, [team]);
 
     // Fetch this team's registration details from Supabase
     useEffect(() => {
@@ -861,11 +1051,14 @@ const allocationState = useMemo(() => {
         return list;
     }, [leaderName, registration, team, activeSession, leaderPhone, member2Name, member2Email, member3Name, member3Email, member4Name, member4Email, member5Name, member5Email]);
 
+    const totalReviewsCount = teamEvaluations.review1.length + teamEvaluations.review2.length + teamEvaluations.review3.length;
+
     // Navigation items definitions
     const navItems = [
         { key: 'overview' as TabKey, label: 'Overview', icon: LayoutDashboard, badge: null },
         { key: 'roster' as TabKey, label: 'Profile & Members', icon: Users, badge: `${teamMembersList.length || 4}` },
         { key: 'challenge' as TabKey, label: 'Problem Statement', icon: Compass, badge: activeLockedPs ? 'Selected' : 'Choose' },
+        { key: 'feedback' as TabKey, label: 'Mentor Feedback', icon: MessageSquare, badge: totalReviewsCount > 0 ? `${totalReviewsCount} Reviews` : 'Awaiting' },
         { key: 'settings' as TabKey, label: 'Change Password', icon: Settings, badge: null }
     ];
 
@@ -1640,6 +1833,108 @@ const allocationState = useMemo(() => {
                                     </form>
                                 </div>
 
+                                {/* Mentor Feedback & Evaluations Summary Card */}
+                                <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-3xl p-6 shadow-[5px_5px_0px_#1E1B4B] space-y-4">
+                                    <div className="flex items-center justify-between border-b-2 border-[#1E1B4B]/10 pb-3">
+                                        <div>
+                                            <h3 className="font-display font-black text-lg text-[#1E1B4B] uppercase tracking-tight flex items-center gap-2">
+                                                <MessageSquare className="w-5 h-5 text-amber-600" />
+                                                <span>Mentor Feedback & Evaluations</span>
+                                            </h3>
+                                            <p className="text-xs text-slate-500">
+                                                Private evaluation history, rubric marks, and mentor critique notes.
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                setActiveTab('feedback');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="text-xs font-display font-black uppercase text-indigo-700 hover:text-indigo-900 flex items-center gap-1 cursor-pointer"
+                                        >
+                                            <span>View All Reviews</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        {/* Review 1 Quick Card */}
+                                        <div 
+                                            onClick={() => {
+                                                setActiveTab('feedback');
+                                                setFeedbackFilter('review1');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="p-4 rounded-2xl border-2 border-[#1E1B4B]/15 bg-white hover:border-[#1E1B4B] transition-all cursor-pointer space-y-1.5 shadow-2xs"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-mono text-[10px] font-bold uppercase text-slate-500">Review 1 · Wed</span>
+                                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                                                    r1Metrics.isGraded ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                    {r1Metrics.isGraded ? 'Graded' : 'Pending'}
+                                                </span>
+                                            </div>
+                                            <div className="text-xl font-display font-black text-[#1E1B4B]">
+                                                {r1Metrics.isGraded ? `${r1Metrics.averageMarks} Pts` : '—'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 font-mono">
+                                                {r1Metrics.isGraded ? `${r1Metrics.evaluationsCount} mentor feedback notes` : 'Awaiting review'}
+                                            </div>
+                                        </div>
+
+                                        {/* Review 2 Quick Card */}
+                                        <div 
+                                            onClick={() => {
+                                                setActiveTab('feedback');
+                                                setFeedbackFilter('review2');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="p-4 rounded-2xl border-2 border-[#1E1B4B]/15 bg-white hover:border-[#1E1B4B] transition-all cursor-pointer space-y-1.5 shadow-2xs"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-mono text-[10px] font-bold uppercase text-slate-500">Review 2 · Sat (W1)</span>
+                                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                                                    r2Metrics.isGraded ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                    {r2Metrics.isGraded ? 'Graded' : 'Pending'}
+                                                </span>
+                                            </div>
+                                            <div className="text-xl font-display font-black text-[#1E1B4B]">
+                                                {r2Metrics.isGraded ? `${r2Metrics.averageMarks} Pts` : '—'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 font-mono">
+                                                {r2Metrics.isGraded ? `${r2Metrics.evaluationsCount} mentor feedback notes` : 'Awaiting review'}
+                                            </div>
+                                        </div>
+
+                                        {/* Review 3 Quick Card */}
+                                        <div 
+                                            onClick={() => {
+                                                setActiveTab('feedback');
+                                                setFeedbackFilter('review3');
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className="p-4 rounded-2xl border-2 border-[#1E1B4B]/15 bg-white hover:border-[#1E1B4B] transition-all cursor-pointer space-y-1.5 shadow-2xs"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="font-mono text-[10px] font-bold uppercase text-slate-500">Review 3 · Sat (W2)</span>
+                                                <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${
+                                                    r3Metrics.isGraded ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                    {r3Metrics.isGraded ? 'Graded' : 'Pending'}
+                                                </span>
+                                            </div>
+                                            <div className="text-xl font-display font-black text-[#1E1B4B]">
+                                                {r3Metrics.isGraded ? `${r3Metrics.averageMarks} Pts` : '—'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-500 font-mono">
+                                                {r3Metrics.isGraded ? `${r3Metrics.evaluationsCount} mentor feedback notes` : 'Awaiting review'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
                         )}
 
@@ -2222,7 +2517,145 @@ const allocationState = useMemo(() => {
                         )}
 
                         {/* ═════════════════════════════════════════════════════════════ */}
-                        {/* TAB 4: SETTINGS & CHANGE PASSWORD                             */}
+                        {/* TAB 4: MENTOR FEEDBACK & EVALUATION HISTORY (STRICTLY PRIVATE) */}
+                        {/* ═════════════════════════════════════════════════════════════ */}
+                        {activeTab === 'feedback' && (
+                            <div className="space-y-6 animate-in fade-in duration-200">
+                                
+                                {/* Hero Card */}
+                                <div className="bg-[#FFFDF7] border-2 border-[#1E1B4B] rounded-3xl p-6 sm:p-8 shadow-[5px_5px_0px_#1E1B4B] space-y-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#1E1B4B]/10 pb-5">
+                                        <div>
+                                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-mono font-bold uppercase tracking-wider mb-2">
+                                                <LockKeyhole className="w-3.5 h-3.5 text-emerald-700" />
+                                                <span>Private to {team.name} ({team.squadId})</span>
+                                            </div>
+                                            <h2 className="font-display font-black text-2xl sm:text-3xl text-[#1E1B4B] uppercase tracking-tight flex items-center gap-2.5">
+                                                <MessageSquare className="w-7 h-7 text-amber-500" />
+                                                <span>Mentor Evaluation & Feedback</span>
+                                            </h2>
+                                            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                                                Access confidential review-by-review scoring, 5-rubric breakdowns, and direct written commentary from your evaluation panel across all checkpoints.
+                                            </p>
+                                        </div>
+
+                                        {/* Status Tag */}
+                                        <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center p-3 sm:px-5 sm:py-3 rounded-2xl bg-amber-50 border-2 border-amber-300">
+                                            <span className="text-[10px] font-mono font-bold uppercase text-amber-800">Completed Reviews</span>
+                                            <span className="font-display font-black text-2xl text-[#1E1B4B]">
+                                                {Number(r1Metrics.isGraded) + Number(r2Metrics.isGraded) + Number(r3Metrics.isGraded)} / 3
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Security & Isolation Disclaimer */}
+                                    <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3 text-xs text-blue-900">
+                                        <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                        <p className="leading-relaxed">
+                                            <strong className="font-bold">Confidential Squad Dossier:</strong> These mentor comments and rubric points are strictly isolated and visible only to your team members. They are not displayed on the public leaderboard.
+                                        </p>
+                                    </div>
+
+                                    {/* Checkpoint Filter Tabs */}
+                                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                                        <button
+                                            onClick={() => setFeedbackFilter('all')}
+                                            className={`px-4 py-2 rounded-xl text-xs font-display font-black uppercase tracking-wider transition-all cursor-pointer ${
+                                                feedbackFilter === 'all'
+                                                    ? 'bg-[#1E1B4B] text-white shadow-[2px_2px_0px_#1E1B4B]'
+                                                    : 'bg-white text-slate-700 border border-[#1E1B4B]/20 hover:border-[#1E1B4B]'
+                                            }`}
+                                        >
+                                            All Checkpoints ({teamEvaluations.review1.length + teamEvaluations.review2.length + teamEvaluations.review3.length})
+                                        </button>
+                                        <button
+                                            onClick={() => setFeedbackFilter('review1')}
+                                            className={`px-4 py-2 rounded-xl text-xs font-display font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                feedbackFilter === 'review1'
+                                                    ? 'bg-[#1E1B4B] text-white shadow-[2px_2px_0px_#1E1B4B]'
+                                                    : 'bg-white text-slate-700 border border-[#1E1B4B]/20 hover:border-[#1E1B4B]'
+                                            }`}
+                                        >
+                                            <span>Review 1 · Wed</span>
+                                            {r1Metrics.isGraded && (
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setFeedbackFilter('review2')}
+                                            className={`px-4 py-2 rounded-xl text-xs font-display font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                feedbackFilter === 'review2'
+                                                    ? 'bg-[#1E1B4B] text-white shadow-[2px_2px_0px_#1E1B4B]'
+                                                    : 'bg-white text-slate-700 border border-[#1E1B4B]/20 hover:border-[#1E1B4B]'
+                                            }`}
+                                        >
+                                            <span>Review 2 · Sat (W1)</span>
+                                            {r2Metrics.isGraded && (
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setFeedbackFilter('review3')}
+                                            className={`px-4 py-2 rounded-xl text-xs font-display font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                feedbackFilter === 'review3'
+                                                    ? 'bg-[#1E1B4B] text-white shadow-[2px_2px_0px_#1E1B4B]'
+                                                    : 'bg-white text-slate-700 border border-[#1E1B4B]/20 hover:border-[#1E1B4B]'
+                                            }`}
+                                        >
+                                            <span>Review 3 · Sat (W2)</span>
+                                            {r3Metrics.isGraded && (
+                                                <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {isLoadingFeedback ? (
+                                    <div className="bg-white border-2 border-[#1E1B4B] rounded-3xl p-12 text-center shadow-[4px_4px_0px_#1E1B4B]">
+                                        <div className="inline-block animate-spin w-8 h-8 border-4 border-amber-400 border-t-[#1E1B4B] rounded-full mb-3"></div>
+                                        <p className="font-display font-black text-sm uppercase text-[#1E1B4B]">
+                                            Loading Confidential Team Evaluations...
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {(feedbackFilter === 'all' || feedbackFilter === 'review1') && (
+                                            <ReviewSprintFeedbackCard 
+                                                roundKey="review1"
+                                                title="Review 1 · Week 1 (Wed)"
+                                                subtitle="Initial Architecture, Tech Stack Selection & Problem Scope"
+                                                metrics={r1Metrics}
+                                                evaluations={teamEvaluations.review1}
+                                            />
+                                        )}
+
+                                        {(feedbackFilter === 'all' || feedbackFilter === 'review2') && (
+                                            <ReviewSprintFeedbackCard 
+                                                roundKey="review2"
+                                                title="Review 2 · Week 1 (Sat)"
+                                                subtitle="Working Prototype, Core Feature Integration & Mid-Sprint Progress"
+                                                metrics={r2Metrics}
+                                                evaluations={teamEvaluations.review2}
+                                            />
+                                        )}
+
+                                        {(feedbackFilter === 'all' || feedbackFilter === 'review3') && (
+                                            <ReviewSprintFeedbackCard 
+                                                roundKey="review3"
+                                                title="Review 3 · Week 2 (Sat)"
+                                                subtitle="Final Sprint Polish, Real-Time Demo Defense & Scalability"
+                                                metrics={r3Metrics}
+                                                evaluations={teamEvaluations.review3}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                            </div>
+                        )}
+
+                        {/* ═════════════════════════════════════════════════════════════ */}
+                        {/* TAB 5: SETTINGS & CHANGE PASSWORD                             */}
                         {/* ═════════════════════════════════════════════════════════════ */}
                         {activeTab === 'settings' && (
                             <div className="space-y-6 animate-in fade-in duration-200">
@@ -2329,6 +2762,217 @@ const allocationState = useMemo(() => {
                 </div>
             </div>
 
+        </div>
+    );
+};
+
+interface ReviewSprintFeedbackCardProps {
+    roundKey: 'review1' | 'review2' | 'review3';
+    title: string;
+    subtitle: string;
+    metrics: {
+        isGraded: boolean;
+        evaluationsCount: number;
+        averageMarks: number;
+        totalMarks: number;
+        rubricAverages: { mark1: number; mark2: number; mark3: number; mark4: number; mark5: number };
+    };
+    evaluations: MentorEvaluationEntry[];
+}
+
+const ReviewSprintFeedbackCard: React.FC<ReviewSprintFeedbackCardProps> = ({
+    roundKey,
+    title,
+    subtitle,
+    metrics,
+    evaluations
+}) => {
+    return (
+        <div className="bg-white border-2 border-[#1E1B4B] rounded-3xl p-6 sm:p-8 shadow-[5px_5px_0px_#1E1B4B] space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#1E1B4B]/10 pb-5">
+                <div>
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="font-mono text-xs font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-lg">
+                            {roundKey === 'review1' ? 'Checkpoint 1' : roundKey === 'review2' ? 'Checkpoint 2' : 'Checkpoint 3'}
+                        </span>
+                        {metrics.isGraded ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Evaluated by {metrics.evaluationsCount} Mentor{metrics.evaluationsCount > 1 ? 's' : ''}</span>
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">
+                                <Clock className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Pending Evaluation</span>
+                            </span>
+                        )}
+                    </div>
+                    <h3 className="font-display font-black text-xl sm:text-2xl text-[#1E1B4B] uppercase tracking-tight">
+                        {title}
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        {subtitle}
+                    </p>
+                </div>
+
+                {/* Score badge */}
+                <div className="flex items-center gap-3">
+                    <div className="p-3 sm:px-5 sm:py-2.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-right">
+                        <span className="block text-[10px] font-mono font-bold uppercase text-amber-800">
+                            {metrics.isGraded ? 'Checkpoint Average' : 'Status'}
+                        </span>
+                        {metrics.isGraded ? (
+                            <div className="flex items-baseline justify-end gap-1">
+                                <span className="font-display font-black text-2xl sm:text-3xl text-[#1E1B4B]">
+                                    {metrics.averageMarks}
+                                </span>
+                                <span className="text-xs font-bold text-slate-500">/ 50</span>
+                            </div>
+                        ) : (
+                            <span className="font-display font-black text-sm uppercase text-slate-500">
+                                In Progress
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Rubrics Breakdown Grid (if graded) */}
+            {metrics.isGraded && (
+                <div className="space-y-3 bg-[#FFFDF7] border-2 border-[#1E1B4B]/15 rounded-2xl p-4 sm:p-5">
+                    <div className="flex items-center justify-between">
+                        <h4 className="font-display font-black text-xs uppercase tracking-wider text-[#1E1B4B] flex items-center gap-1.5">
+                            <Layers className="w-4 h-4 text-indigo-600" />
+                            <span>5-Rubric Performance Breakdown (Average / 10)</span>
+                        </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                        {DEFAULT_ROUND2_RUBRICS.map((rubric) => {
+                            const score = metrics.rubricAverages[rubric.key] || 0;
+                            const pct = Math.min(100, Math.max(0, (score / 10) * 100));
+                            return (
+                                <div key={rubric.key} className="p-3 rounded-xl bg-white border border-[#1E1B4B]/10 space-y-1.5">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="font-bold text-slate-700 truncate" title={rubric.label}>
+                                            {rubric.label.split('&')[0].trim()}
+                                        </span>
+                                        <span className="font-mono font-black text-[#1E1B4B]">
+                                            {score}/10
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                                            style={{ width: `${pct}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Mentor Evaluation Remarks */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h4 className="font-display font-black text-sm uppercase tracking-wider text-[#1E1B4B] flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-amber-600" />
+                        <span>Mentor Feedback Notes & Breakdown</span>
+                    </h4>
+                    <span className="text-xs font-mono text-slate-500">
+                        {evaluations.length} evaluation{evaluations.length === 1 ? '' : 's'} recorded
+                    </span>
+                </div>
+
+                {evaluations.length === 0 ? (
+                    <div className="p-8 text-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 space-y-2">
+                        <Clock className="w-8 h-8 text-slate-400 mx-auto" />
+                        <p className="font-display font-black text-sm uppercase text-slate-700">
+                            Awaiting Evaluation From Panel Mentors
+                        </p>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                            Mentors are evaluating your sprint deliverables. Rubric marks and direct actionable feedback will be published here once submitted.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                        {evaluations.map((m, idx) => (
+                            <div 
+                                key={m.id || idx}
+                                className="p-5 rounded-2xl border-2 border-[#1E1B4B]/15 bg-white space-y-4 hover:border-[#1E1B4B]/30 transition-all shadow-xs"
+                            >
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-[#1E1B4B] text-white flex items-center justify-center font-display font-black text-xs uppercase shadow-xs">
+                                            {m.mentorName ? m.mentorName.charAt(0) : 'M'}
+                                        </div>
+                                        <div>
+                                            <div className="font-display font-black text-sm text-[#1E1B4B] uppercase tracking-wide flex items-center gap-2">
+                                                <span>{m.mentorName || 'Panel Mentor'}</span>
+                                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                                    Mentor #{idx + 1}
+                                                </span>
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 font-mono">
+                                                {m.createdAt ? new Date(m.createdAt).toLocaleString(undefined, { 
+                                                    dateStyle: 'medium', 
+                                                    timeStyle: 'short' 
+                                                }) : 'Submitted'}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 self-start sm:self-center">
+                                        <span className="text-xs font-mono font-bold text-slate-500 uppercase">Score:</span>
+                                        <span className="px-3 py-1 rounded-xl bg-amber-100 border border-amber-300 font-display font-black text-sm text-[#1E1B4B]">
+                                            {m.total} / 50
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Rubric Badges */}
+                                <div className="flex flex-wrap gap-2 text-[11px] font-mono">
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                                        Architecture: <strong className="text-[#1E1B4B] font-bold">{m.mark1}/10</strong>
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                                        Functionality: <strong className="text-[#1E1B4B] font-bold">{m.mark2}/10</strong>
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                                        Code Quality: <strong className="text-[#1E1B4B] font-bold">{m.mark3}/10</strong>
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                                        Innovation: <strong className="text-[#1E1B4B] font-bold">{m.mark4}/10</strong>
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-700">
+                                        Defense & Demo: <strong className="text-[#1E1B4B] font-bold">{m.mark5}/10</strong>
+                                    </span>
+                                </div>
+
+                                {/* Written Feedback Remarks */}
+                                <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-1.5">
+                                    <div className="text-[10px] font-mono font-bold uppercase text-amber-800 flex items-center gap-1.5">
+                                        <MessageCircle className="w-3.5 h-3.5 text-amber-700" />
+                                        <span>Mentor's Actionable Feedback & Remarks</span>
+                                    </div>
+                                    {m.feedback ? (
+                                        <p className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed italic">
+                                            "{m.feedback}"
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-slate-500 italic">
+                                            No written remarks provided. Numerical scores recorded above.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
