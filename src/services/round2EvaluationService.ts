@@ -103,9 +103,61 @@ export interface TeamAggregatedEvaluation {
   publishedAt?: string;
 }
 
-export type Round2ReviewRound = 'review1' | 'review2';
+export type Round2ReviewRound = 'review1' | 'review2' | 'review3';
+
+export function isReview3(evalStr?: string, createdAt?: string): boolean {
+  if (evalStr) {
+    const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // 1. Explicit Week 2 or Review 3 / 4 check
+    if (
+      clean.includes('week2') ||
+      clean.includes('review3') ||
+      clean.includes('rev3') ||
+      clean.includes('eval3') ||
+      clean.includes('checkpoint3') ||
+      clean.includes('cp3') ||
+      clean.includes('review4') ||
+      clean.includes('rev4') ||
+      clean.includes('eval4') ||
+      clean.includes('cp4')
+    ) {
+      return true;
+    }
+  }
+
+  // 2. Fallback to timestamp if evaluation label is generic or not week1/wed/review1/review2
+  if (createdAt) {
+    if (evalStr) {
+      const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (
+        clean.includes('week1') ||
+        clean.includes('review1') ||
+        clean.includes('review2') ||
+        clean.includes('wed')
+      ) {
+        return false;
+      }
+    }
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime())) {
+        // Week 2 Saturday starts from Sept 24, 2026 onwards
+        if (d >= new Date('2026-09-24T00:00:00Z')) {
+          return true;
+        }
+      }
+    } catch {}
+  }
+  return false;
+}
 
 export function isReview2(evalStr?: string, createdAt?: string): boolean {
+  // If it matches Review 3, it cannot be Review 2
+  if (isReview3(evalStr, createdAt)) {
+    return false;
+  }
+
   if (evalStr) {
     const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
 
@@ -118,34 +170,32 @@ export function isReview2(evalStr?: string, createdAt?: string): boolean {
       clean.includes('eval1') ||
       clean.includes('checkpoint1') ||
       clean.includes('cp1') ||
-      clean.includes('week1wed') ||
-      clean.includes('week2wed')
+      clean.includes('week1wed')
     ) {
       return false;
     }
 
-    // 2. Explicit Saturday / Review 2 check
+    // 2. Explicit Saturday / Review 2 check (Week 1)
     if (
-      clean.includes('sat') ||
-      clean.includes('saturday') ||
+      clean.includes('week1sat') ||
       clean.includes('review2') ||
       clean.includes('rev2') ||
       clean.includes('eval2') ||
       clean.includes('checkpoint2') ||
       clean.includes('cp2') ||
-      clean.includes('week1sat') ||
-      clean.includes('week2sat')
+      clean.includes('sat') ||
+      clean.includes('saturday')
     ) {
       return true;
     }
   }
 
-  // 3. Fallback to timestamp only if evaluation label had no day keyword
+  // 3. Fallback to timestamp only if evaluation label had no day keyword (Week 1: Sept 19 to Sept 23)
   if (createdAt) {
     try {
       const d = new Date(createdAt);
       if (!isNaN(d.getTime())) {
-        if (d >= new Date('2026-09-19T00:00:00Z')) {
+        if (d >= new Date('2026-09-19T00:00:00Z') && d < new Date('2026-09-24T00:00:00Z')) {
           return true;
         }
       }
@@ -155,7 +205,9 @@ export function isReview2(evalStr?: string, createdAt?: string): boolean {
 }
 
 export function isReview1(evalStr?: string, createdAt?: string): boolean {
-  return !isReview2(evalStr, createdAt);
+  if (isReview3(evalStr, createdAt)) return false;
+  if (isReview2(evalStr, createdAt)) return false;
+  return true;
 }
 
 const PUBLISHED_KEY_PREFIX = 'hpl_published_ps_';
@@ -177,15 +229,36 @@ export function markPsPublishedInMemory(psId: string, reviewType: Round2ReviewRo
 
 /**
  * Check if a Problem Statement's marks have been published to the leaderboard.
- * Review 1 (Wednesday) is permanently published and live.
- * Review 2 (Saturday) is published via Supabase sentinel rows or admin publish.
+ * Review 1 (Wednesday sprint) and Review 2 (Saturday Week 1 sprint) are officially published and live.
+ * Review 3 (Saturday Week 2 sprint) is Draft / Pending by default until admin explicitly clicks Publish.
  */
 export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound = 'review1'): { isPublished: boolean; publishedAt?: string } {
-  // Both Review 1 (Wednesday sprint) and Review 2 (Saturday sprint) are officially published and live
-  return { 
-    isPublished: true, 
-    publishedAt: reviewType === 'review2' ? '2026-09-19T00:00:00.000Z' : '2026-09-17T00:00:00.000Z' 
-  };
+  if (reviewType === 'review1') {
+    return { isPublished: true, publishedAt: '2026-09-17T00:00:00.000Z' };
+  }
+  if (reviewType === 'review2') {
+    return { isPublished: true, publishedAt: '2026-09-19T00:00:00.000Z' };
+  }
+
+  // Review 3 check
+  const key = `${psId}_${reviewType}`;
+  const allKey = `all_${reviewType}`;
+
+  if (dbPublishedPsSet.has(key) || dbPublishedPsSet.has(allKey)) {
+    return { isPublished: true, publishedAt: new Date().toISOString() };
+  }
+
+  try {
+    const raw = localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${key}`) || localStorage.getItem(`${PUBLISHED_KEY_PREFIX}${allKey}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.isPublished) {
+        return { isPublished: true, publishedAt: parsed.publishedAt };
+      }
+    }
+  } catch {}
+
+  return { isPublished: false };
 }
 
 /**
@@ -281,13 +354,17 @@ export async function fetchRound2AggregatedEvaluations(
     const selectionsList = psRes.data || [];
     const rawEvals = evalRes.data || [];
 
-    // Filter to ONLY reviews matching the selected review round (Wed Review 1 vs Sat Review 2)
+    // Filter to ONLY reviews matching the selected review round (Wed Review 1 vs Sat Review 2 vs Sat Review 3)
     const actualEvals = rawEvals.filter((r: any) => {
       if (!r || !r.id) return false;
       if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) return false;
-      return reviewType === 'review2' 
-        ? isReview2(r.evaluation, r.created_at) 
-        : isReview1(r.evaluation, r.created_at);
+      if (reviewType === 'review3') {
+        return isReview3(r.evaluation, r.created_at);
+      } else if (reviewType === 'review2') {
+        return isReview2(r.evaluation, r.created_at);
+      } else {
+        return isReview1(r.evaluation, r.created_at);
+      }
     });
 
     // 1.5. Detect persistent published sentinel rows across all devices
@@ -355,7 +432,7 @@ export async function fetchRound2AggregatedEvaluations(
           (Number(row.mark5) || 0)
         ),
         feedback: (row.feedback || '').trim(),
-        evaluation: row.evaluation || 'Week 1 · Wed',
+        evaluation: row.evaluation || (reviewType === 'review3' ? 'Week 2 · Sat' : reviewType === 'review2' ? 'Week 1 · Sat' : 'Week 1 · Wed'),
         status: row.status || 'submitted',
         createdAt: row.created_at || new Date().toISOString()
       };
@@ -604,7 +681,7 @@ export async function fetchRound2AggregatedEvaluations(
       }
 
       const pubStatus = getPsPublishStatus(psId, reviewType);
-      const isReviewPublished = reviewType === 'review1' ? true : pubStatus.isPublished;
+      const isReviewPublished = (reviewType === 'review1' || reviewType === 'review2') ? true : pubStatus.isPublished;
 
       aggregatedTeams.push({
         id: sel.id || squadId,
@@ -684,12 +761,6 @@ export async function publishPsMarksToLeaderboard(
             .update({ status: 'published' })
             .in('id', candidateIds);
         }
-        if (t.teamName) {
-          await supabase
-            .from('round2_evaluations')
-            .update({ status: 'published' })
-            .ilike('team_name', t.teamName);
-        }
       } catch (e) {
         console.warn(`[HPL] Notice updating round2_evaluations status for ${t.teamName}:`, e);
       }
@@ -702,7 +773,7 @@ export async function publishPsMarksToLeaderboard(
         await supabase.from('round2_evaluations').insert({
           team_name: `__PUBLISHED_${pid}_${reviewType}`,
           mentor_name: adminEmail,
-          evaluation: reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
+          evaluation: reviewType === 'review3' ? 'Review 3 · Sat' : reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
           mark1: 0,
           mark2: 0,
           mark3: 0,
@@ -724,7 +795,7 @@ export async function publishPsMarksToLeaderboard(
     }
 
     // 3. Broadcast events for real-time reactivity across all browser tabs
-    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: 'week1', psId, reviewType } }));
+    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: reviewType === 'review3' ? 'week2' : 'week1', psId, reviewType } }));
     window.dispatchEvent(new Event('hpl-selection-update'));
     window.dispatchEvent(new StorageEvent('storage', { key: `${PUBLISHED_KEY_PREFIX}${psId}_${reviewType}` }));
 

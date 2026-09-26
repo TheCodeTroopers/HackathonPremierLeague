@@ -80,7 +80,9 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
       setTotalLiveMentorEvals(res.totalEvaluations);
       setLastRefetchTime(new Date());
       if (isManualRefetch) {
-        setPublishSuccessMsg(`Refetched ${res.totalEvaluations} live mentor reviews for ${targetReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'} from Supabase!`);
+        setPublishSuccessMsg(`Refetched ${res.totalEvaluations} live mentor reviews for ${
+          targetReview === 'review3' ? 'Review 3 (Saturday Week 2)' : targetReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
+        } from Supabase!`);
         setTimeout(() => setPublishSuccessMsg(''), 4000);
       }
     } catch (err) {
@@ -195,7 +197,9 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
         selectedReview
       );
       if (res.success) {
-        setPublishSuccessMsg(`Successfully published ${selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'} average marks for ${res.publishedCount} teams to the live Leaderboard!`);
+        setPublishSuccessMsg(`Successfully published ${
+          selectedReview === 'review3' ? 'Review 3 (Saturday Week 2)' : selectedReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
+        } average marks for ${res.publishedCount} teams to the live Leaderboard!`);
         await loadData(false, selectedReview);
         setTimeout(() => setPublishSuccessMsg(''), 6000);
       } else {
@@ -350,7 +354,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   Round 2 Evaluation Day
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-[#4F46E5] font-mono text-xs font-black uppercase border border-indigo-200">
-                  {selectedReview === 'review2' ? 'Saturday Sprint · Review 2' : 'Wednesday Sprint · Review 1'}
+                  {selectedReview === 'review3' ? 'Saturday Sprint · Review 3 (Week 2)' : selectedReview === 'review2' ? 'Saturday Sprint · Review 2 (Week 1)' : 'Wednesday Sprint · Review 1'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-bold border border-emerald-300">
                   {totalLiveMentorEvals} Live Submissions
@@ -412,7 +416,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
             <span>Select Evaluation Checkpoint:</span>
           </div>
 
-          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 flex-wrap gap-1">
             <button
               type="button"
               onClick={() => {
@@ -442,9 +446,26 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span>Review 2 · Saturday</span>
-              <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 font-bold">
+              <span>Review 2 · Saturday (W1)</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold border border-emerald-300">
                 Review 2
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedReview('review3');
+                loadData(false, 'review3');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                selectedReview === 'review3'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Review 3 · Saturday (W2)</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 font-bold">
+                Review 3
               </span>
             </button>
           </div>
@@ -647,7 +668,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   'Problem Statement',
                   'Mentors Evaluated',
                   'Average Marks (Out of 50)',
-                  'Wednesday Total Marks (Out of 150)',
+                  selectedReview === 'review3' ? 'Saturday Review 3 Total Marks (Out of 150)' : selectedReview === 'review2' ? 'Saturday Review 2 Total Marks (Out of 150)' : 'Wednesday Review 1 Total Marks (Out of 150)',
                   'Publish Status'
                 ];
                 const rows = filteredTeams.map((t, idx) => [
@@ -686,8 +707,8 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
               <Send className="w-3.5 h-3.5 text-amber-300" />
               <span>
                 {selectedPsFilter === 'all'
-                  ? `Publish All (${selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`
-                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} (${selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`}
+                  ? `Publish All (${selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`
+                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} (${selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`}
               </span>
             </button>
           </div>
@@ -705,7 +726,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   <th className="py-3.5 px-3">Reviewing Mentors</th>
                   <th className="py-3.5 px-3 text-center">Rubrics (R1–R5)</th>
                   <th className="py-3.5 px-4 text-center min-w-[140px]">
-                    {selectedReview === 'review2' ? 'Saturday Review 2 Marks' : 'Wednesday Review 1 Marks'}
+                    {selectedReview === 'review3' ? 'Saturday Review 3 Marks (Week 2)' : selectedReview === 'review2' ? 'Saturday Review 2 Marks (Week 1)' : 'Wednesday Review 1 Marks'}
                     <span className="block text-[9px] text-indigo-200 normal-case font-mono font-normal">
                       (Avg / 50 &bull; Total / 150)
                     </span>
@@ -1148,7 +1169,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                     Confirm Leaderboard Publishing
                   </h3>
                   <p className="text-xs font-mono text-slate-500 mt-1">
-                    Track: <strong className="text-[#4F46E5]">{psLabel}</strong> &bull; Round: <strong className="text-[#4F46E5]">{selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'}</strong>
+                    Track: <strong className="text-[#4F46E5]">{psLabel}</strong> &bull; Round: <strong className="text-[#4F46E5]">{selectedReview === 'review3' ? 'Review 3 (Saturday Week 2)' : selectedReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'}</strong>
                   </p>
                 </div>
                 <button
@@ -1180,7 +1201,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                     Are you sure you want to publish these marks live?
                   </p>
                   <p className="text-amber-800 leading-relaxed">
-                    This will synchronize the mentor-evaluated <strong>average marks</strong> directly to the public Leaderboard page for <strong>{selectedReview === 'review2' ? 'Review 2 (Saturday)' : 'Review 1 (Wednesday)'}</strong> for all teams in <strong>{psLabel}</strong>. Participants and visitors will immediately see the updated rankings based on their average score.
+                    This will synchronize the mentor-evaluated <strong>average marks</strong> directly to the public Leaderboard page for <strong>{selectedReview === 'review3' ? 'Review 3 (Saturday Week 2)' : selectedReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'}</strong> for all teams in <strong>{psLabel}</strong>. Participants and visitors will immediately see the updated rankings based on their average score.
                   </p>
                 </div>
               </div>

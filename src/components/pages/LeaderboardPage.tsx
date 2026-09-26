@@ -248,8 +248,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     return calculateStrictAllocations(round2DbRows, {});
   }, [round2DbRows]);
 
-  // Review 2 is officially published and live
+  // Review 1 & Review 2 are officially published and live
   const isReview2Published = true;
+  // Review 3 is published only when explicitly published by admin
+  const isReview3Published = getPsPublishStatus('all', 'review3').isPublished || round2AggTeams.some(t => t.isPublished);
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
@@ -257,9 +259,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Both Review 1 (Wednesday) and Review 2 (Saturday) evaluations are officially live
-        const isPublished = true;
-        const isGraded = team.evaluationsCount > 0;
+        // Review 1 and Review 2 are live; Review 3 requires explicit publishing
+        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2') ? true : isReview3Published;
+        const isGraded = isPublished && team.evaluationsCount > 0;
         const marks = isGraded ? (team.averageMarks ?? 0) : 0;
         const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
 
@@ -349,7 +351,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     });
 
     return items;
-  }, [round2AggTeams, allocationState.lockedMap, selectedReview, isReview2Published]);
+  }, [round2AggTeams, allocationState.lockedMap, selectedReview, isReview2Published, isReview3Published]);
 
 
 
@@ -649,7 +651,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   className="appearance-none bg-[#F6F3EB] border-2 border-[#582A9C] text-[#3B1A6B] font-mono text-xs font-black py-1.5 pl-3 pr-8 rounded-xl cursor-pointer shadow-2xs hover:bg-white focus:outline-none focus:ring-2 focus:ring-[#582A9C]"
                 >
                   <option value="review1">Review 1 · Wednesday (Live)</option>
-                  <option value="review2">Review 2 · Saturday ({isReview2Published ? 'Live' : 'Pending'})</option>
+                  <option value="review2">Review 2 · Saturday Week 1 (Live)</option>
+                  <option value="review3">Review 3 · Saturday Week 2 ({isReview3Published ? 'Live' : 'Pending'})</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -678,12 +681,24 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   }`}
                 >
                   <span>Review 2</span>
+                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500 text-white font-bold">LIVE</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedReview('review3')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedReview === 'review3'
+                      ? 'bg-[#3B1A6B] text-white shadow-2xs'
+                      : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+                  }`}
+                >
+                  <span>Review 3</span>
                   <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
-                    isReview2Published
+                    isReview3Published
                       ? 'bg-emerald-500 text-white'
                       : 'bg-amber-500/20 text-amber-950 border border-amber-500/40'
                   }`}>
-                    {isReview2Published ? 'LIVE' : 'PENDING'}
+                    {isReview3Published ? 'LIVE' : 'PENDING'}
                   </span>
                 </button>
               </div>
@@ -929,7 +944,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                                 </span>
                                 <span className="text-gray-300 text-[10px]">&bull;</span>
                                 <span className="font-mono text-[9px] text-gray-500 font-bold">
-                                  {selectedReview === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed'}
+                                  {selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
                                 </span>
                               </div>
                             </div>
@@ -977,7 +992,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                         <th className="py-3.5 px-2 sm:px-3 text-center">PROBLEM STATEMENT</th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">EVALUATION</th>
                         <th className="py-3.5 px-3 sm:px-4 text-center">
-                          {selectedReview === 'review2' ? 'REVIEW 2 MARKS' : 'REVIEW 1 MARKS'}
+                          {selectedReview === 'review3' ? 'REVIEW 3 MARKS' : selectedReview === 'review2' ? 'REVIEW 2 MARKS' : 'REVIEW 1 MARKS'}
                         </th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">STATUS</th>
                       </tr>
@@ -1066,7 +1081,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
 
                               {/* 4. Evaluation Round */}
                               <td className="py-3 px-2 sm:px-3 text-center font-mono text-gray-600 text-[11px] font-bold">
-                                {selectedReview === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed'}
+                                {selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
                               </td>
 
                               {/* 5. Marks */}
