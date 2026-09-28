@@ -248,10 +248,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     return calculateStrictAllocations(round2DbRows, {});
   }, [round2DbRows]);
 
-  // Review 1 & Review 2 are officially published and live
+  // Review 1, Review 2 & Review 3 are officially published and live
   const isReview2Published = true;
-  // Review 3 is published only when explicitly published by admin
-  const isReview3Published = getPsPublishStatus('all', 'review3').isPublished || round2AggTeams.some(t => t.isPublished);
+  const isReview3Published = true;
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
@@ -259,8 +258,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Review 1 and Review 2 are live; Review 3 requires explicit publishing
-        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2') ? true : isReview3Published;
+        // Review 1, Review 2, and Review 3 are live
+        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3') ? true : (team.isPublished || isReview3Published);
         const isGraded = isPublished && team.evaluationsCount > 0;
         const marks = isGraded ? (team.averageMarks ?? 0) : 0;
         const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
@@ -652,7 +651,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                 >
                   <option value="review1">Review 1 · Wednesday (Live)</option>
                   <option value="review2">Review 2 · Saturday Week 1 (Live)</option>
-                  <option value="review3">Review 3 · Saturday Week 2 ({isReview3Published ? 'Live' : 'Pending'})</option>
+                  <option value="review3">Review 3 · Saturday Week 2 (Live)</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -693,12 +692,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   }`}
                 >
                   <span>Review 3</span>
-                  <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
-                    isReview3Published
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-amber-500/20 text-amber-950 border border-amber-500/40'
-                  }`}>
-                    {isReview3Published ? 'LIVE' : 'PENDING'}
+                  <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-emerald-500 text-white">
+                    LIVE
                   </span>
                 </button>
               </div>
@@ -1176,7 +1171,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                     Awaiting Evaluation Marks
                   </span>
                   <p className="text-[11px] font-sans text-gray-600 mt-1 max-w-xs leading-relaxed">
-                    {selectedReview === 'review2'
+                    {selectedReview === 'review3'
+                      ? `Review 3 · Saturday Week 2 marks for ${selectedPsFilter.toUpperCase()} are currently pending jury review. Scores will appear here once officially published.`
+                      : selectedReview === 'review2'
                       ? `Review 2 · Saturday marks for ${selectedPsFilter.toUpperCase()} are currently pending admin publication. Scores will appear here once officially published.`
                       : `Review 1 · Wednesday marks for ${selectedPsFilter.toUpperCase()} are currently pending jury review. Top performers will appear here once scores are submitted by the admin.`}
                   </p>
