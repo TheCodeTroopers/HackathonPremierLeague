@@ -106,37 +106,44 @@ export interface TeamAggregatedEvaluation {
 export type Round2ReviewRound = 'review1' | 'review2' | 'review3' | 'review4';
 
 export function isReview4(evalStr?: string, createdAt?: string): boolean {
+  let isAfterSept29 = false;
+  if (createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime()) && d >= new Date('2026-09-29T00:00:00Z')) {
+        isAfterSept29 = true;
+      }
+    } catch {}
+  }
+
   if (evalStr) {
     const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // 1. Explicit Review 4 / Week 3 / Wednesday sprint checks
+    // 1. Explicit Review 4 / Week 3 checks
     if (
       clean.includes('review4') ||
       clean.includes('rev4') ||
       clean.includes('eval4') ||
       clean.includes('checkpoint4') ||
       clean.includes('cp4') ||
-      clean.includes('week3wed') ||
       clean.includes('week3')
     ) {
+      if (clean.includes('sat') && !isAfterSept29) {
+        return false;
+      }
+      return true;
+    }
+
+    if (isAfterSept29 && (clean.includes('wed') || clean.includes('wednesday'))) {
       return true;
     }
   }
 
-  // 2. Fallback to timestamp if created on/after Sept 29, 2026 and contains 'wed'
-  if (createdAt) {
-    try {
-      const d = new Date(createdAt);
-      if (!isNaN(d.getTime()) && d >= new Date('2026-09-29T00:00:00Z')) {
-        if (evalStr) {
-          const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
-          if (clean.includes('wed') || clean.includes('wednesday')) {
-            return true;
-          }
-        }
-      }
-    } catch {}
+  // Fallback: any evaluation created on or after Sept 29, 2026 is Review 4
+  if (isAfterSept29) {
+    return true;
   }
+
   return false;
 }
 
@@ -349,6 +356,30 @@ export function getOfficialSquadRecord(...identifiers: (string | undefined)[]) {
       if (team27) return team27;
     }
 
+    // Explicit alias: 'gramintel' / 'gramltel' -> rank 40 'gramltel ai'
+    if (n.includes('gramintel') || n.includes('gramltel') || n === 'hplr240' || n === 'squad40') {
+      const team40 = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === 40);
+      if (team40) return team40;
+    }
+
+    // Explicit alias: 'kisanmitra' -> rank 14 'kisan mitra'
+    if (n.includes('kisanmitra') || n.includes('kisan') || n === 'hplr214') {
+      const team14 = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === 14);
+      if (team14) return team14;
+    }
+
+    // Explicit alias: 'diffusion' / 'difusin' -> rank 34 'team diffusion'
+    if (n.includes('diffusion') || n.includes('difusin') || n === 'hplr234') {
+      const team34 = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === 34);
+      if (team34) return team34;
+    }
+
+    // Explicit alias: 'error404' -> rank 33 'error404:not found'
+    if (n.includes('error404') || n === 'hplr233') {
+      const team33 = OFFICIAL_QUALIFIED_TEAMS.find(t => t.rank === 33);
+      if (team33) return team33;
+    }
+
     // Direct match by squadId, teamName, email
     const found = OFFICIAL_QUALIFIED_TEAMS.find(t => 
       t.squadId.toLowerCase() === clean.toLowerCase() ||
@@ -469,13 +500,15 @@ export async function fetchRound2AggregatedEvaluations(
         mark3: Number(row.mark3) || 0,
         mark4: Number(row.mark4) || 0,
         mark5: Number(row.mark5) || 0,
-        total: Number(row.total) || (
-          (Number(row.mark1) || 0) +
-          (Number(row.mark2) || 0) +
-          (Number(row.mark3) || 0) +
-          (Number(row.mark4) || 0) +
-          (Number(row.mark5) || 0)
-        ),
+        total: (Number(row.total) !== undefined && !isNaN(Number(row.total)) && Number(row.total) > 0)
+          ? Number(row.total)
+          : (
+            (Number(row.mark1) || 0) +
+            (Number(row.mark2) || 0) +
+            (Number(row.mark3) || 0) +
+            (Number(row.mark4) || 0) +
+            (Number(row.mark5) || 0)
+          ),
         feedback: (row.feedback || '').trim(),
         evaluation: row.evaluation || (reviewType === 'review4' ? 'Review 4 · Wed' : reviewType === 'review3' ? 'Week 2 · Sat' : reviewType === 'review2' ? 'Week 1 · Sat' : 'Week 1 · Wed'),
         status: row.status || 'submitted',
@@ -483,7 +516,13 @@ export async function fetchRound2AggregatedEvaluations(
       };
 
       const existing = dedupedMentorMap.get(uniqueKey);
-      if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
+      if (!existing) {
+        dedupedMentorMap.set(uniqueKey, entry);
+      } else if (existing.total === 0 && entry.total > 0) {
+        dedupedMentorMap.set(uniqueKey, entry);
+      } else if (existing.total > 0 && entry.total === 0) {
+        // Keep existing valid score
+      } else if (new Date(entry.createdAt) >= new Date(existing.createdAt)) {
         dedupedMentorMap.set(uniqueKey, entry);
       }
     });
@@ -659,7 +698,13 @@ export async function fetchRound2AggregatedEvaluations(
           found.forEach(e => {
             const mKey = (e.mentorId || e.mentorName || 'm').toLowerCase().trim();
             const existing = teamMentorMap.get(mKey);
-            if (!existing || new Date(e.createdAt) >= new Date(existing.createdAt)) {
+            if (!existing) {
+              teamMentorMap.set(mKey, e);
+            } else if (existing.total === 0 && e.total > 0) {
+              teamMentorMap.set(mKey, e);
+            } else if (existing.total > 0 && e.total === 0) {
+              // Keep existing score > 0
+            } else if (new Date(e.createdAt) >= new Date(existing.createdAt)) {
               teamMentorMap.set(mKey, e);
             }
           });
@@ -670,12 +715,19 @@ export async function fetchRound2AggregatedEvaluations(
       processedTeamKeys.add(squadId.toUpperCase().trim());
       processedTeamKeys.add(norm(teamName));
 
-      // Calculate rubric totals across mentors
+      // Separate mentors who actually evaluated (> 0 marks or rubrics) from empty 0 placeholders
+      const scoredEvals = teamEvals.filter(me => 
+        me.total > 0 || 
+        (me.mark1 + me.mark2 + me.mark3 + me.mark4 + me.mark5) > 0
+      );
+      const activeEvals = scoredEvals.length > 0 ? scoredEvals : teamEvals;
+
+      // Calculate rubric totals across scoring mentors
       const rubricTotals = { mark1: 0, mark2: 0, mark3: 0, mark4: 0, mark5: 0 };
       const feedbacks: Array<{ mentorName: string; text: string }> = [];
       let calculatedTotalMarks = 0;
 
-      teamEvals.forEach(me => {
+      activeEvals.forEach(me => {
         rubricTotals.mark1 += me.mark1;
         rubricTotals.mark2 += me.mark2;
         rubricTotals.mark3 += me.mark3;
@@ -687,10 +739,17 @@ export async function fetchRound2AggregatedEvaluations(
         }
       });
 
-      const finalTotal = teamEvals.length > 0
+      // Also collect any feedback remarks from other mentors even if marks are 0
+      teamEvals.forEach(me => {
+        if (me.feedback && !feedbacks.some(f => f.mentorName === me.mentorName && f.text === me.feedback)) {
+          feedbacks.push({ mentorName: me.mentorName, text: me.feedback });
+        }
+      });
+
+      const finalTotal = activeEvals.length > 0
         ? calculatedTotalMarks
         : (reviewType === 'review1' ? (Number(sel.total_marks) || 0) : 0);
-      const mCount = teamEvals.length || 1;
+      const mCount = activeEvals.length || 1;
       const rubricAverages = {
         mark1: parseFloat((rubricTotals.mark1 / mCount).toFixed(1)),
         mark2: parseFloat((rubricTotals.mark2 / mCount).toFixed(1)),
@@ -699,15 +758,15 @@ export async function fetchRound2AggregatedEvaluations(
         mark5: parseFloat((rubricTotals.mark5 / mCount).toFixed(1)),
       };
 
-      const calculatedAvg = teamEvals.length > 0
-        ? parseFloat((calculatedTotalMarks / teamEvals.length).toFixed(1))
+      const calculatedAvg = activeEvals.length > 0
+        ? parseFloat((calculatedTotalMarks / activeEvals.length).toFixed(1))
         : (reviewType === 'review1' ? (Number(sel.average_marks) || Number(sel.total_marks) || 0) : 0);
 
       // LIVE DYNAMIC SOURCE OF TRUTH:
       // If live mentor evaluations exist in round2_evaluations, ALWAYS use calculatedAvg!
       // NEVER overwrite live evaluations with static/stale dbAvg.
       const dbAvg = reviewType === 'review1' ? Number((sel as any).average_marks ?? (sel as any).avg_marks) : NaN;
-      const averageMarks = teamEvals.length > 0 
+      const averageMarks = activeEvals.length > 0 
         ? calculatedAvg 
         : (reviewType === 'review1' && !isNaN(dbAvg) && dbAvg > 0 ? dbAvg : 0);
 
@@ -741,7 +800,7 @@ export async function fetchRound2AggregatedEvaluations(
         leaderEmail: sel.leader_email || official?.leaderEmail || '',
         rank: rankNum,
         mentorEvaluations: teamEvals,
-        evaluationsCount: teamEvals.length,
+        evaluationsCount: scoredEvals.length > 0 ? scoredEvals.length : teamEvals.length,
         totalMarks: finalTotal,
         averageMarks,
         maxPossibleMarks: 150,

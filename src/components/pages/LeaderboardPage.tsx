@@ -259,11 +259,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Review 1, Review 2, Review 3, and Review 4 are officially published and live
         const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3' || selectedReview === 'review4') 
           ? true 
           : (team.isPublished || isReview4Published);
-        const isGraded = isPublished && team.evaluationsCount > 0;
+        const isGraded = isPublished && (team.evaluationsCount > 0 || (team.averageMarks !== undefined && team.averageMarks > 0) || (team.totalMarks !== undefined && team.totalMarks > 0));
         const marks = isGraded ? (team.averageMarks ?? 0) : 0;
         const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
 

@@ -685,7 +685,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   'Problem Statement',
                   'Mentors Evaluated',
                   'Average Marks (Out of 50)',
-                  selectedReview === 'review3' ? 'Saturday Review 3 Total Marks (Out of 150)' : selectedReview === 'review2' ? 'Saturday Review 2 Total Marks (Out of 150)' : 'Wednesday Review 1 Total Marks (Out of 150)',
+                  selectedReview === 'review4' ? 'Wednesday Review 4 Total Marks (Out of 150)' : selectedReview === 'review3' ? 'Saturday Review 3 Total Marks (Out of 150)' : selectedReview === 'review2' ? 'Saturday Review 2 Total Marks (Out of 150)' : 'Wednesday Review 1 Total Marks (Out of 150)',
                   'Publish Status'
                 ];
                 const rows = filteredTeams.map((t, idx) => [
@@ -724,8 +724,8 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
               <Send className="w-3.5 h-3.5 text-amber-300" />
               <span>
                 {selectedPsFilter === 'all'
-                  ? `Publish All (${selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`
-                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} (${selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`}
+                  ? `Publish All (${selectedReview === 'review4' ? 'Review 4' : selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`
+                  : `Publish ${ROUND2_PROBLEM_STATEMENTS.find(p => p.id === selectedPsFilter)?.psCode || 'PS'} (${selectedReview === 'review4' ? 'Review 4' : selectedReview === 'review3' ? 'Review 3' : selectedReview === 'review2' ? 'Review 2' : 'Review 1'}) to Leaderboard`}
               </span>
             </button>
           </div>
@@ -743,7 +743,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   <th className="py-3.5 px-3">Reviewing Mentors</th>
                   <th className="py-3.5 px-3 text-center">Rubrics (R1–R5)</th>
                   <th className="py-3.5 px-4 text-center min-w-[140px]">
-                    {selectedReview === 'review3' ? 'Saturday Review 3 Marks (Week 2)' : selectedReview === 'review2' ? 'Saturday Review 2 Marks (Week 1)' : 'Wednesday Review 1 Marks'}
+                    {selectedReview === 'review4' ? 'Wednesday Review 4 Marks (Week 3)' : selectedReview === 'review3' ? 'Saturday Review 3 Marks (Week 2)' : selectedReview === 'review2' ? 'Saturday Review 2 Marks (Week 1)' : 'Wednesday Review 1 Marks'}
                     <span className="block text-[9px] text-indigo-200 normal-case font-mono font-normal">
                       (Avg / 50 &bull; Total / 150)
                     </span>
