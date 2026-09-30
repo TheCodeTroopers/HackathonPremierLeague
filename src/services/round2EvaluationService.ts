@@ -279,6 +279,9 @@ export function getPsPublishStatus(psId: string, reviewType: Round2ReviewRound =
   if (reviewType === 'review3') {
     return { isPublished: true, publishedAt: '2026-09-28T00:00:00.000Z' };
   }
+  if (reviewType === 'review4') {
+    return { isPublished: true, publishedAt: '2026-09-30T00:00:00.000Z' };
+  }
 
   // Dynamic review check
   const key = `${psId}_${reviewType}`;
@@ -723,7 +726,7 @@ export async function fetchRound2AggregatedEvaluations(
       }
 
       const pubStatus = getPsPublishStatus(psId, reviewType);
-      const isReviewPublished = (reviewType === 'review1' || reviewType === 'review2' || reviewType === 'review3') ? true : pubStatus.isPublished;
+      const isReviewPublished = (reviewType === 'review1' || reviewType === 'review2' || reviewType === 'review3' || reviewType === 'review4') ? true : pubStatus.isPublished;
 
       aggregatedTeams.push({
         id: sel.id || squadId,

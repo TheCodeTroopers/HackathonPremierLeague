@@ -248,11 +248,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     return calculateStrictAllocations(round2DbRows, {});
   }, [round2DbRows]);
 
-  // Review 1, Review 2 & Review 3 are officially published and live
+  // Review 1, Review 2, Review 3 & Review 4 are officially published and live
   const isReview2Published = true;
   const isReview3Published = true;
-  // Review 4 is published dynamically via admin / database
-  const isReview4Published = getPsPublishStatus('all', 'review4').isPublished || round2AggTeams.some(t => t.isPublished);
+  const isReview4Published = true;
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
@@ -260,8 +259,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Review 1, Review 2, and Review 3 are live; Review 4 requires admin publication
-        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3') 
+        // Review 1, Review 2, Review 3, and Review 4 are officially published and live
+        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3' || selectedReview === 'review4') 
           ? true 
           : (team.isPublished || isReview4Published);
         const isGraded = isPublished && team.evaluationsCount > 0;
@@ -656,7 +655,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   <option value="review1">Review 1 · Wednesday (Live)</option>
                   <option value="review2">Review 2 · Saturday Week 1 (Live)</option>
                   <option value="review3">Review 3 · Saturday Week 2 (Live)</option>
-                  <option value="review4">Review 4 · Wednesday Week 3 ({isReview4Published ? 'Live' : 'Pending'})</option>
+                  <option value="review4">Review 4 · Wednesday Week 3 (Live)</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -711,12 +710,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   }`}
                 >
                   <span>Review 4</span>
-                  <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
-                    isReview4Published
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-amber-500/20 text-amber-950 border border-amber-500/40'
-                  }`}>
-                    {isReview4Published ? 'LIVE' : 'PENDING'}
+                  <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-emerald-500 text-white">
+                    LIVE
                   </span>
                 </button>
               </div>
@@ -1010,7 +1005,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                         <th className="py-3.5 px-2 sm:px-3 text-center">PROBLEM STATEMENT</th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">EVALUATION</th>
                         <th className="py-3.5 px-3 sm:px-4 text-center">
-                          {selectedReview === 'review3' ? 'REVIEW 3 MARKS' : selectedReview === 'review2' ? 'REVIEW 2 MARKS' : 'REVIEW 1 MARKS'}
+                          {selectedReview === 'review4' ? 'REVIEW 4 MARKS' : selectedReview === 'review3' ? 'REVIEW 3 MARKS' : selectedReview === 'review2' ? 'REVIEW 2 MARKS' : 'REVIEW 1 MARKS'}
                         </th>
                         <th className="py-3.5 px-2 sm:px-3 text-center">STATUS</th>
                       </tr>
