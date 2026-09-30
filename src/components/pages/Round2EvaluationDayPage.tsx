@@ -81,7 +81,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
       setLastRefetchTime(new Date());
       if (isManualRefetch) {
         setPublishSuccessMsg(`Refetched ${res.totalEvaluations} live mentor reviews for ${
-          targetReview === 'review3' ? 'Review 3 (Saturday Week 2)' : targetReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
+          targetReview === 'review4' ? 'Review 4 (Wednesday Week 3)' : targetReview === 'review3' ? 'Review 3 (Saturday Week 2)' : targetReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
         } from Supabase!`);
         setTimeout(() => setPublishSuccessMsg(''), 4000);
       }
@@ -198,7 +198,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
       );
       if (res.success) {
         setPublishSuccessMsg(`Successfully published ${
-          selectedReview === 'review3' ? 'Review 3 (Saturday Week 2)' : selectedReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
+          selectedReview === 'review4' ? 'Review 4 (Wednesday Week 3)' : selectedReview === 'review3' ? 'Review 3 (Saturday Week 2)' : selectedReview === 'review2' ? 'Review 2 (Saturday Week 1)' : 'Review 1 (Wednesday)'
         } average marks for ${res.publishedCount} teams to the live Leaderboard!`);
         await loadData(false, selectedReview);
         setTimeout(() => setPublishSuccessMsg(''), 6000);
@@ -354,7 +354,7 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
                   Round 2 Evaluation Day
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-[#4F46E5] font-mono text-xs font-black uppercase border border-indigo-200">
-                  {selectedReview === 'review3' ? 'Saturday Sprint · Review 3 (Week 2)' : selectedReview === 'review2' ? 'Saturday Sprint · Review 2 (Week 1)' : 'Wednesday Sprint · Review 1'}
+                  {selectedReview === 'review4' ? 'Wednesday Sprint · Review 4 (Week 3)' : selectedReview === 'review3' ? 'Saturday Sprint · Review 3 (Week 2)' : selectedReview === 'review2' ? 'Saturday Sprint · Review 2 (Week 1)' : 'Wednesday Sprint · Review 1'}
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-bold border border-emerald-300">
                   {totalLiveMentorEvals} Live Submissions
@@ -466,6 +466,23 @@ export const Round2EvaluationDayPage: React.FC<Round2EvaluationDayPageProps> = (
               <span>Review 3 · Saturday (W2)</span>
               <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-200 text-amber-900 font-bold">
                 Review 3
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedReview('review4');
+                loadData(false, 'review4');
+              }}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                selectedReview === 'review4'
+                  ? 'bg-[#1E1B4B] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Review 4 · Wednesday (W3)</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-200 text-purple-900 font-bold">
+                Review 4
               </span>
             </button>
           </div>

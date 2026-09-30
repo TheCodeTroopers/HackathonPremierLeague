@@ -77,6 +77,7 @@ import {
     isReview1,
     isReview2,
     isReview3,
+    isReview4,
     MentorEvaluationEntry,
     getOfficialSquadRecord,
     norm
@@ -219,9 +220,10 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
         review1: MentorEvaluationEntry[];
         review2: MentorEvaluationEntry[];
         review3: MentorEvaluationEntry[];
-    }>({ review1: [], review2: [], review3: [] });
+        review4: MentorEvaluationEntry[];
+    }>({ review1: [], review2: [], review3: [], review4: [] });
     const [isLoadingFeedback, setIsLoadingFeedback] = useState<boolean>(true);
-    const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'review1' | 'review2' | 'review3'>('all');
+    const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'review1' | 'review2' | 'review3' | 'review4'>('all');
 
     // Helper to calculate feedback summary for a review round (pure feedback, no marks)
     const getReviewFeedbackSummary = (evals: MentorEvaluationEntry[]) => {
@@ -239,6 +241,7 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
     const r1Feedback = useMemo(() => getReviewFeedbackSummary(teamEvaluations.review1), [teamEvaluations.review1]);
     const r2Feedback = useMemo(() => getReviewFeedbackSummary(teamEvaluations.review2), [teamEvaluations.review2]);
     const r3Feedback = useMemo(() => getReviewFeedbackSummary(teamEvaluations.review3), [teamEvaluations.review3]);
+    const r4Feedback = useMemo(() => getReviewFeedbackSummary(teamEvaluations.review4), [teamEvaluations.review4]);
 
     // Fetch strictly isolated mentor evaluations and remarks for THIS team
     useEffect(() => {
@@ -289,10 +292,11 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                     return false;
                 });
 
-                // Deduplicate and group into Review 1, Review 2, Review 3
+                // Deduplicate and group into Review 1, Review 2, Review 3, Review 4
                 const r1Map = new Map<string, MentorEvaluationEntry>();
                 const r2Map = new Map<string, MentorEvaluationEntry>();
                 const r3Map = new Map<string, MentorEvaluationEntry>();
+                const r4Map = new Map<string, MentorEvaluationEntry>();
 
                 myRows.forEach((row: any) => {
                     const mKey = (row.mentor_name || row.mentor_id || 'mentor').toLowerCase().trim();
@@ -322,7 +326,12 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                         createdAt: row.created_at || new Date().toISOString()
                     };
 
-                    if (isReview3(row.evaluation, row.created_at)) {
+                    if (isReview4(row.evaluation, row.created_at)) {
+                        const existing = r4Map.get(mKey);
+                        if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
+                            r4Map.set(mKey, entry);
+                        }
+                    } else if (isReview3(row.evaluation, row.created_at)) {
                         const existing = r3Map.get(mKey);
                         if (!existing || new Date(entry.createdAt) >= new Date(existing.createdAt)) {
                             r3Map.set(mKey, entry);
@@ -343,7 +352,8 @@ export const TeamAccessPage: React.FC<TeamAccessPageProps> = ({ view, squadId, o
                 setTeamEvaluations({
                     review1: Array.from(r1Map.values()),
                     review2: Array.from(r2Map.values()),
-                    review3: Array.from(r3Map.values())
+                    review3: Array.from(r3Map.values()),
+                    review4: Array.from(r4Map.values())
                 });
             } catch (err) {
                 console.error('[HPL] Failed to load team feedback:', err);
@@ -2576,6 +2586,19 @@ const allocationState = useMemo(() => {
                                                 <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                                             )}
                                         </button>
+                                        <button
+                                            onClick={() => setFeedbackFilter('review4')}
+                                            className={`px-4 py-2 rounded-xl text-xs font-display font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                feedbackFilter === 'review4'
+                                                    ? 'bg-[#1E1B4B] text-white shadow-[2px_2px_0px_#1E1B4B]'
+                                                    : 'bg-white text-slate-700 border border-[#1E1B4B]/20 hover:border-[#1E1B4B]'
+                                            }`}
+                                        >
+                                            <span>Review 4 · Wed (W3)</span>
+                                            {r4Feedback.hasReviews && (
+                                                <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -2612,6 +2635,15 @@ const allocationState = useMemo(() => {
                                                 title="Review 3 · Week 2 (Sat)"
                                                 subtitle="Final Sprint Polish, Real-Time Demo Defense & Scalability"
                                                 evaluations={teamEvaluations.review3}
+                                            />
+                                        )}
+
+                                        {(feedbackFilter === 'all' || feedbackFilter === 'review4') && (
+                                            <ReviewSprintFeedbackCard 
+                                                roundKey="review4"
+                                                title="Review 4 · Week 3 (Wed)"
+                                                subtitle="Sprint 4 Progress, Architectural Maturity & Final Polish"
+                                                evaluations={teamEvaluations.review4}
                                             />
                                         )}
                                     </div>
@@ -2733,7 +2765,7 @@ const allocationState = useMemo(() => {
 };
 
 interface ReviewSprintFeedbackCardProps {
-    roundKey: 'review1' | 'review2' | 'review3';
+    roundKey: 'review1' | 'review2' | 'review3' | 'review4';
     title: string;
     subtitle: string;
     evaluations: MentorEvaluationEntry[];
@@ -2754,7 +2786,7 @@ const ReviewSprintFeedbackCard: React.FC<ReviewSprintFeedbackCardProps> = ({
                 <div>
                     <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <span className="font-mono text-xs font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-lg">
-                            {roundKey === 'review1' ? 'Review 1' : roundKey === 'review2' ? 'Review 2' : 'Review 3'}
+                            {roundKey === 'review1' ? 'Review 1' : roundKey === 'review2' ? 'Review 2' : roundKey === 'review3' ? 'Review 3' : 'Review 4'}
                         </span>
                         {hasFeedback ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">

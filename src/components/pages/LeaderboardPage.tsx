@@ -251,6 +251,8 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
   // Review 1, Review 2 & Review 3 are officially published and live
   const isReview2Published = true;
   const isReview3Published = true;
+  // Review 4 is published dynamically via admin / database
+  const isReview4Published = getPsPublishStatus('all', 'review4').isPublished || round2AggTeams.some(t => t.isPublished);
 
   // Build the complete list of teams who selected a Problem Statement
   const rawLeaderboardTeams: LeaderboardTeamItem[] = useMemo(() => {
@@ -258,8 +260,10 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
     if (round2AggTeams && round2AggTeams.length > 0) {
       return round2AggTeams.map((team, idx) => {
         const palette = AVATAR_PALETTES[idx % AVATAR_PALETTES.length];
-        // Review 1, Review 2, and Review 3 are live
-        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3') ? true : (team.isPublished || isReview3Published);
+        // Review 1, Review 2, and Review 3 are live; Review 4 requires admin publication
+        const isPublished = (selectedReview === 'review1' || selectedReview === 'review2' || selectedReview === 'review3') 
+          ? true 
+          : (team.isPublished || isReview4Published);
         const isGraded = isPublished && team.evaluationsCount > 0;
         const marks = isGraded ? (team.averageMarks ?? 0) : 0;
         const feedback = team.feedbacks.map(f => `[${f.mentorName}]: ${f.text}`).join('\n\n');
@@ -652,6 +656,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   <option value="review1">Review 1 · Wednesday (Live)</option>
                   <option value="review2">Review 2 · Saturday Week 1 (Live)</option>
                   <option value="review3">Review 3 · Saturday Week 2 (Live)</option>
+                  <option value="review4">Review 4 · Wednesday Week 3 ({isReview4Published ? 'Live' : 'Pending'})</option>
                 </select>
                 <ChevronDown className="w-4 h-4 text-[#582A9C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -694,6 +699,24 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                   <span>Review 3</span>
                   <span className="text-[9px] px-1 py-0.2 rounded font-bold bg-emerald-500 text-white">
                     LIVE
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedReview('review4')}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selectedReview === 'review4'
+                      ? 'bg-[#3B1A6B] text-white shadow-2xs'
+                      : 'text-[#1E1B4B]/70 hover:text-[#1E1B4B]'
+                  }`}
+                >
+                  <span>Review 4</span>
+                  <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                    isReview4Published
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-amber-500/20 text-amber-950 border border-amber-500/40'
+                  }`}>
+                    {isReview4Published ? 'LIVE' : 'PENDING'}
                   </span>
                 </button>
               </div>
@@ -939,7 +962,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                                 </span>
                                 <span className="text-gray-300 text-[10px]">&bull;</span>
                                 <span className="font-mono text-[9px] text-gray-500 font-bold">
-                                  {selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
+                                  {selectedReview === 'review4' ? 'Review 4 · Wed (W3)' : selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
                                 </span>
                               </div>
                             </div>
@@ -1076,7 +1099,7 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
 
                               {/* 4. Evaluation Round */}
                               <td className="py-3 px-2 sm:px-3 text-center font-mono text-gray-600 text-[11px] font-bold">
-                                {selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
+                                {selectedReview === 'review4' ? 'Review 4 · Wed (W3)' : selectedReview === 'review3' ? 'Review 3 · Sat (W2)' : selectedReview === 'review2' ? 'Review 2 · Sat (W1)' : 'Review 1 · Wed'}
                               </td>
 
                               {/* 5. Marks */}
@@ -1171,7 +1194,9 @@ export const LeaderboardPage: React.FC<LeaderboardPageProps> = ({ onNavigate, on
                     Awaiting Evaluation Marks
                   </span>
                   <p className="text-[11px] font-sans text-gray-600 mt-1 max-w-xs leading-relaxed">
-                    {selectedReview === 'review3'
+                    {selectedReview === 'review4'
+                      ? `Review 4 · Wednesday Week 3 marks for ${selectedPsFilter.toUpperCase()} are currently pending admin publication. Scores will appear here once officially published.`
+                      : selectedReview === 'review3'
                       ? `Review 3 · Saturday Week 2 marks for ${selectedPsFilter.toUpperCase()} are currently pending jury review. Scores will appear here once officially published.`
                       : selectedReview === 'review2'
                       ? `Review 2 · Saturday marks for ${selectedPsFilter.toUpperCase()} are currently pending admin publication. Scores will appear here once officially published.`

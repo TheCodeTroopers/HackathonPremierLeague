@@ -103,13 +103,53 @@ export interface TeamAggregatedEvaluation {
   publishedAt?: string;
 }
 
-export type Round2ReviewRound = 'review1' | 'review2' | 'review3';
+export type Round2ReviewRound = 'review1' | 'review2' | 'review3' | 'review4';
 
-export function isReview3(evalStr?: string, createdAt?: string): boolean {
+export function isReview4(evalStr?: string, createdAt?: string): boolean {
   if (evalStr) {
     const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // 1. Explicit Week 2 or Review 3 / 4 check
+    // 1. Explicit Review 4 / Week 3 / Wednesday sprint checks
+    if (
+      clean.includes('review4') ||
+      clean.includes('rev4') ||
+      clean.includes('eval4') ||
+      clean.includes('checkpoint4') ||
+      clean.includes('cp4') ||
+      clean.includes('week3wed') ||
+      clean.includes('week3')
+    ) {
+      return true;
+    }
+  }
+
+  // 2. Fallback to timestamp if created on/after Sept 29, 2026 and contains 'wed'
+  if (createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime()) && d >= new Date('2026-09-29T00:00:00Z')) {
+        if (evalStr) {
+          const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (clean.includes('wed') || clean.includes('wednesday')) {
+            return true;
+          }
+        }
+      }
+    } catch {}
+  }
+  return false;
+}
+
+export function isReview3(evalStr?: string, createdAt?: string): boolean {
+  // If it matches Review 4, it cannot be Review 3
+  if (isReview4(evalStr, createdAt)) {
+    return false;
+  }
+
+  if (evalStr) {
+    const clean = evalStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // 1. Explicit Week 2 or Review 3 check
     if (
       clean.includes('week2') ||
       clean.includes('review3') ||
@@ -117,10 +157,7 @@ export function isReview3(evalStr?: string, createdAt?: string): boolean {
       clean.includes('eval3') ||
       clean.includes('checkpoint3') ||
       clean.includes('cp3') ||
-      clean.includes('review4') ||
-      clean.includes('rev4') ||
-      clean.includes('eval4') ||
-      clean.includes('cp4')
+      clean.includes('week2sat')
     ) {
       return true;
     }
@@ -142,8 +179,8 @@ export function isReview3(evalStr?: string, createdAt?: string): boolean {
     try {
       const d = new Date(createdAt);
       if (!isNaN(d.getTime())) {
-        // Week 2 Saturday starts from Sept 24, 2026 onwards
-        if (d >= new Date('2026-09-24T00:00:00Z')) {
+        // Week 2 Saturday starts from Sept 24, 2026 until Sept 29, 2026
+        if (d >= new Date('2026-09-24T00:00:00Z') && d < new Date('2026-09-29T00:00:00Z')) {
           return true;
         }
       }
@@ -153,8 +190,8 @@ export function isReview3(evalStr?: string, createdAt?: string): boolean {
 }
 
 export function isReview2(evalStr?: string, createdAt?: string): boolean {
-  // If it matches Review 3, it cannot be Review 2
-  if (isReview3(evalStr, createdAt)) {
+  // If it matches Review 4 or Review 3, it cannot be Review 2
+  if (isReview4(evalStr, createdAt) || isReview3(evalStr, createdAt)) {
     return false;
   }
 
@@ -205,6 +242,7 @@ export function isReview2(evalStr?: string, createdAt?: string): boolean {
 }
 
 export function isReview1(evalStr?: string, createdAt?: string): boolean {
+  if (isReview4(evalStr, createdAt)) return false;
   if (isReview3(evalStr, createdAt)) return false;
   if (isReview2(evalStr, createdAt)) return false;
   return true;
@@ -356,11 +394,13 @@ export async function fetchRound2AggregatedEvaluations(
     const selectionsList = psRes.data || [];
     const rawEvals = evalRes.data || [];
 
-    // Filter to ONLY reviews matching the selected review round (Wed Review 1 vs Sat Review 2 vs Sat Review 3)
+    // Filter to ONLY reviews matching the selected review round (Wed Review 1 vs Sat Review 2 vs Sat Review 3 vs Wed Review 4)
     const actualEvals = rawEvals.filter((r: any) => {
       if (!r || !r.id) return false;
       if (r.team_name && r.team_name.startsWith('__PUBLISHED_')) return false;
-      if (reviewType === 'review3') {
+      if (reviewType === 'review4') {
+        return isReview4(r.evaluation, r.created_at);
+      } else if (reviewType === 'review3') {
         return isReview3(r.evaluation, r.created_at);
       } else if (reviewType === 'review2') {
         return isReview2(r.evaluation, r.created_at);
@@ -434,7 +474,7 @@ export async function fetchRound2AggregatedEvaluations(
           (Number(row.mark5) || 0)
         ),
         feedback: (row.feedback || '').trim(),
-        evaluation: row.evaluation || (reviewType === 'review3' ? 'Week 2 · Sat' : reviewType === 'review2' ? 'Week 1 · Sat' : 'Week 1 · Wed'),
+        evaluation: row.evaluation || (reviewType === 'review4' ? 'Review 4 · Wed' : reviewType === 'review3' ? 'Week 2 · Sat' : reviewType === 'review2' ? 'Week 1 · Sat' : 'Week 1 · Wed'),
         status: row.status || 'submitted',
         createdAt: row.created_at || new Date().toISOString()
       };
@@ -775,7 +815,7 @@ export async function publishPsMarksToLeaderboard(
         await supabase.from('round2_evaluations').insert({
           team_name: `__PUBLISHED_${pid}_${reviewType}`,
           mentor_name: adminEmail,
-          evaluation: reviewType === 'review3' ? 'Review 3 · Sat' : reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
+          evaluation: reviewType === 'review4' ? 'Review 4 · Wed' : reviewType === 'review3' ? 'Review 3 · Sat' : reviewType === 'review2' ? 'Review 2 · Sat' : 'Review 1 · Wed',
           mark1: 0,
           mark2: 0,
           mark3: 0,
@@ -791,13 +831,17 @@ export async function publishPsMarksToLeaderboard(
 
     // 2. Mark PS as published in-memory and in localStorage for this reviewType
     if (psId === 'all') {
-      ['ps-01', 'ps-02', 'ps-03', 'ps-04'].forEach(id => setPsPublishStatus(id, true, reviewType));
+      ['ps-01', 'ps-02', 'ps-03', 'ps-04', 'all'].forEach(id => {
+        setPsPublishStatus(id, true, reviewType);
+        markPsPublishedInMemory(id, reviewType);
+      });
     } else {
       setPsPublishStatus(psId, true, reviewType);
+      markPsPublishedInMemory(psId, reviewType);
     }
 
     // 3. Broadcast events for real-time reactivity across all browser tabs
-    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: reviewType === 'review3' ? 'week2' : 'week1', psId, reviewType } }));
+    window.dispatchEvent(new CustomEvent('hpl-evaluations-update', { detail: { week: reviewType === 'review4' ? 'week3' : reviewType === 'review3' ? 'week2' : 'week1', psId, reviewType } }));
     window.dispatchEvent(new Event('hpl-selection-update'));
     window.dispatchEvent(new StorageEvent('storage', { key: `${PUBLISHED_KEY_PREFIX}${psId}_${reviewType}` }));
 
